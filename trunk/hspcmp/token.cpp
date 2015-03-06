@@ -2645,8 +2645,10 @@ ppresult_t CToken::PP_Module( void )
 
 	wrtbuf->PutStrf( "#module %s",tagname );
 	wrtbuf->PutCR();
-	wrtbuf->PutStrf( "goto@hsp *_%s_exit",tagname );
-	wrtbuf->PutCR();
+	if ( !(hed_cmpmode & CMPMODEEX_MODULE_NOSKIP) ) {
+		wrtbuf->PutStrf("goto@hsp *_%s_exit", tagname);
+		wrtbuf->PutCR();
+	}
 
 	if ( PeekToken() != TK_NONE ) {
 	  wrtbuf->PutStrf( "#struct %s ",tagname );
@@ -2685,8 +2687,10 @@ ppresult_t CToken::PP_Global( void )
 	//
 	wrtbuf->PutStr( "#global" );
 	wrtbuf->PutCR();
-	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
-	wrtbuf->PutCR();
+	if ( !(hed_cmpmode & CMPMODEEX_MODULE_NOSKIP) ) {
+		wrtbuf->PutStrf("*_%s_exit", GetModuleName());
+		wrtbuf->PutCR();
+	}
 	SetModuleName( "" );
 	return PPRESULT_WROTE_LINES;
 }
@@ -2847,6 +2851,9 @@ ppresult_t CToken::PP_CmpOpt( void )
 	}
 	if (tstrcmp(optname,"skipjpspc")) {		// skip Japanese Space Code sw
 		i = CMPMODE_SKIPJPSPC;
+	}
+	if (tstrcmp(optname,"module_noskip")) {
+		i = CMPMODEEX_MODULE_NOSKIP;
 	}
 
 	if ( i == 0 ) {

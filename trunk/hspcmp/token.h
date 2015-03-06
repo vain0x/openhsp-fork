@@ -38,6 +38,8 @@
 #define CMPMODE_OPTPRM 64
 #define CMPMODE_SKIPJPSPC 128
 
+#define CMPMODEEX_MODULE_NOSKIP 512 // ue_dai: not producing `goto` for module-global
+
 #define CG_FLAG_ENABLE 0
 #define CG_FLAG_DISABLE 1
 
