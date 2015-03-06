@@ -2457,9 +2457,24 @@ void CToken::PutCS( int type, double value, int exflg )
 {
 	//		Register command code (double)
 	//
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->Put( value );
+	int i = ds_buf->GetSize();
+	bool needsToPutDS = true;
+
+	// double literal pool
+	if ( hed_cmpmode & CMPMODE_OPTCODE ) {
+		auto const it = double_literal_table->find(value);
+		if ( it != double_literal_table->end() ) {
+			i = it->second;
+			needsToPutDS = false;
+			if ( hed_cmpmode & CMPMODE_OPTINFO ) { Mesf("#実数プール %f %s", value, CG_scriptPositionString()); }
+		} else {
+			double_literal_table->insert({ value, i });
+		}
+	}
+
+	if ( needsToPutDS ) {
+		ds_buf->Put(value);
+	}
 	PutCS( type, i, exflg );
 }
 
@@ -2499,22 +2514,17 @@ int CToken::PutDS( char *str )
 {
 	//		Register strings to data segment (script string)
 	//
-	int i;
-	int size;
-	char *p;
-	i = ds_buf->GetSize();
 
 	// output as UTF8 format
 	if ( cg_utf8out ) {
-		p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
-		size = (int)strlen(p) + 1;
-		ds_buf->PutData( p, size );
+		int i = ds_buf->GetSize();
+		char* p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
+		size_t size = strlen(p) + 1;
+		ds_buf->PutData( p, static_cast<int>(size) );
 		return i;
 	}
 
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
+	return PutDSBuf(str);
 }
 
 
@@ -2524,6 +2534,23 @@ int CToken::PutDSBuf( char *str )
 	//
 	int i;
 	i = ds_buf->GetSize();
+
+	// string literal pool
+	// TODO: UTF-8への対応。そのまま適用できるか調べるか、または対応できるようにする。
+	if ( CG_optShort() ) {
+		auto const it = string_literal_table->find(str);
+		if ( it != string_literal_table->end() ) {
+			i = it->second;
+			if ( hed_cmpmode & CMPMODE_OPTINFO ) {
+				std::unique_ptr<char, std::function<void(void*)>> literalStr(to_hsp_string_literal(str), free);
+				Mesf("#文字列プール %s %s", literalStr.get(), CG_scriptPositionString());
+			}
+			return i;
+		} else {
+			string_literal_table->emplace(std::string(str), i);
+		}
+	}
+
 	ds_buf->PutStr( str );
 	ds_buf->Put( (char)0 );
 	return i;
@@ -2953,6 +2980,8 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	mi_buf = new CMemBuf;
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
+	string_literal_table.reset(new std::map<std::string, int>());
+	double_literal_table.reset(new std::map<double, int>());
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 
