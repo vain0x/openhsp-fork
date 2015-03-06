@@ -1812,21 +1812,27 @@ ppresult_t CToken::PP_Include( int is_addition )
 		}
 		return PPRESULT_ERROR;
 	}
+
 	incinf++;
-	if ( incinf > 32 ) {
+	if ( incinf > INCLUDE_LEVEL_MAX ) {
 		SetError("too many include level");
 		return PPRESULT_ERROR;
 	}
+	RegistExtMacro("__include_level__", incinf);
+
 	strcpy( tmp_spath, search_path );
 	if ( is_addition ) add_bak = SetAdditionMode( 1 );
 	int res = ExpandFile( wrtbuf, word, word );
 	if ( is_addition ) SetAdditionMode( add_bak );
 	strcpy( search_path, tmp_spath );
+
 	incinf--;
 	if (res) {
 		if ( is_addition && res == -1 ) return PPRESULT_SUCCESS;
 		return PPRESULT_ERROR;
 	}
+	RegistExtMacro("__include_level__", incinf);
+
 	return PPRESULT_INCLUDED;
 }
 
@@ -2221,7 +2227,7 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 	int i,id;
 	char *word;
 	char *mod;
-	char fixname[128];
+	char fixname[OBJNAME_MAX + 2];
 	int glmode, premode;
 
 	word = (char *)s3;
@@ -2277,6 +2283,11 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 		wrtbuf->PutStr( mod );
 		if ( wp != NULL ) wrtbuf->Put( ',' );
 	}
+	{
+		char ident_quoted[OBJNAME_MAX] = "";
+		sprintf_s(ident_quoted, "\"%s\"", fixname);
+		RegistExtMacro("__func__", ident_quoted);
+	}
 
 	/*
 	char resname[512];
@@ -2329,7 +2340,7 @@ ppresult_t CToken::PP_Deffunc( int mode )
 	int i,id;
 	char *word;
 	char *mod;
-	char fixname[128];
+	char fixname[OBJNAME_MAX + 2];
 	int glmode, premode;
 
 	word = (char *)s3;
@@ -2384,14 +2395,24 @@ ppresult_t CToken::PP_Deffunc( int mode )
 		}
 
 	} else {
+		if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
 		if ( mode == 2 ) {
 			wrtbuf->PutStr( "#deffunc __init modinit " );
+			strcpy_s(fixname, "modinit");
 		} else {
 			wrtbuf->PutStr( "#deffunc __term modterm " );
+			strcpy_s(fixname, "modterm");
 		}
-		if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
+		AddModuleName(fixname);
+
 		wrtbuf->PutStr( mod );
 		if ( wp != NULL ) wrtbuf->Put( ',' );
+	}
+
+	{
+		char ident_quoted[OBJNAME_MAX] = "";
+		sprintf_s(ident_quoted, "\"%s\"", fixname);
+		RegistExtMacro("__func__", ident_quoted);
 	}
 
 	while(1) {
@@ -2624,7 +2645,11 @@ ppresult_t CToken::PP_Module( void )
 	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "goto@hsp *_%s_exit",tagname );
 	wrtbuf->PutCR();
-
+	{
+		char tagname_quoted[MODNAME_MAX + 4];
+		sprintf_s(tagname_quoted, "\"%s\"", tagname);
+		RegistExtMacro("__module__", tagname_quoted);
+	}
 	if ( PeekToken() != TK_NONE ) {
 	  wrtbuf->PutStrf( "#struct %s ",tagname );
 	  while(1) {
@@ -2663,7 +2688,9 @@ ppresult_t CToken::PP_Global( void )
 	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
 	wrtbuf->PutCR();
-	SetModuleName( "" );
+	SetModuleName("");
+	RegistExtMacro("__module__", "\"\"");
+	RegistExtMacro("__func__", "\"\"");
 	return PPRESULT_WROTE_LINES;
 }
 
