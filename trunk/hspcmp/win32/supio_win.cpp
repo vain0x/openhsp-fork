@@ -290,10 +290,9 @@ void cutlast2( char *st )
 	}
 	ts[a1]=0;
 
-	while(1) {
+	while (a1 >= 1) {
 		a1--;c1=ts[a1];
-		if (c1==0x5c) { a1++;break; }
-		if (a1==0) break;
+		if (c1=='\\') { a1++;break; }
 	}
 	strcpy(st,ts+a1);
 }
@@ -431,6 +430,32 @@ void CutLastChr( char *p, char code )
 	}
 }
 
+
+static int htoi_sub(char hstr)
+{
+	//	exchange hex to int
+
+	char a1;
+	a1 = tolower(hstr);
+	if ( (a1 >= '0') && (a1 <= '9') ) return a1 - '0';
+	if ( (a1 >= 'a') && (a1 <= 'f') ) return a1 - 'a' + 10;
+	return 0;
+}
+
+
+int htoi(char *str)
+{
+	char a1;
+	int d;
+	int conv;
+	conv = 0;
+	d = 0;
+	while ( 1 ) {
+		a1 = str[d++]; if ( a1 == 0 ) break;
+		conv = (conv << 4) + htoi_sub(a1);
+	}
+	return conv;
+}
 
 /*----------------------------------------------------------*/
 //					HSP string trim support
