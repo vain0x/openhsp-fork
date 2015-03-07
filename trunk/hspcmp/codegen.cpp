@@ -54,16 +54,16 @@ CToken::ConstCode CToken::ConstCode::castTo(int destType) const
 			switch ( type ) {
 				case TYPE_STRING: return ConstCode::makeDouble(static_cast<double>(atof(str)), exflag);
 				case TYPE_INUM:   return ConstCode::makeDouble(static_cast<double>(inum), exflag);
-			}
-		}
+	}
+}
 		case TYPE_INUM: {
 			switch ( type ) {
 				case TYPE_STRING: return ConstCode::makeInt( (str[0] == '$') ? htoi(str) : atoi(str),  exflag);
 				case TYPE_DNUM:   return ConstCode::makeInt( static_cast<int>(dval), exflag );
-			}
-		}
-		default: assert_sentinel;
+}
 	}
+		default: assert_sentinel;
+}
 }
 
 CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& lhs, CToken::ConstCode const& rhs)
@@ -98,7 +98,7 @@ CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& 
 				case CALCCODE_GTEQ: return ConstCode::makeInt(lhs.dval >= rhs.dval, exf);
 				default: Mesf("#実数値に対して演算子 %s は適用できません。", stringFromCalcCode(op));
 					throw CGERROR_CALCEXP;
-			}
+		}
 		case TYPE_INUM:
 			switch ( op ) {
 				case CALCCODE_ADD:  return ConstCode::makeInt(lhs.inum + rhs.inum, exf);
@@ -118,7 +118,7 @@ CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& 
 				case CALCCODE_LR:   return ConstCode::makeInt(lhs.inum << rhs.inum, exf);
 				case CALCCODE_RR:   return ConstCode::makeInt(lhs.inum >> rhs.inum, exf);
 				default: assert_sentinel;
-			}
+	}
 		default: assert_sentinel;
 	}
 }
@@ -157,7 +157,7 @@ CToken::ConstCode CToken::ConstCode::makeStr(char const* str, int exf)
 	self.str = static_cast<char*>(malloc(strlen(str) + 1));
 	strcpy(self.str, str);
 	return std::move(self);
-}
+	}
 CToken::ConstCode CToken::ConstCode::makeDouble(double dval, int exf)
 {
 	ConstCode self { TYPE_DNUM, exf };
@@ -169,7 +169,7 @@ CToken::ConstCode CToken::ConstCode::makeInt(int ival, int exf)
 	ConstCode self { TYPE_INUM, exf };
 	self.inum = ival;
 	return std::move(self);
-}
+	}
 bool CToken::ConstCode::isConst() const {
 	return (type == TYPE_STRING || type == TYPE_DNUM || type == TYPE_INUM);
 }
@@ -290,8 +290,8 @@ void CToken::CalcCG_regmark( int mark )
 	if ( stack_calculator->size() >= 2
 		&& stack_calculator->back().isConst()
 		&& stack_calculator->at(stack_calculator->size() - 2).isConst() ) {
-		auto const&& rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
-		auto const&& lhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
+		auto const rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
+		auto const lhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
 
 		// const expr folding
 		stack_calculator->push_back(CalcCG_evalConstExpr(op, lhs, rhs));
@@ -2736,7 +2736,7 @@ int CToken::PutDSBuf( char *str )
 		} else {
 			string_literal_table->insert({ std::string(str), i });
 		}
-	}
+}
 
 	ds_buf->PutStr( str );
 	ds_buf->Put( (char)0 );
@@ -3158,8 +3158,8 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	hpi_buf = new CMemBuf;
 
 	if ( CG_optCode() ) {
-		string_literal_table.reset(new std::map<std::string, int>());
-		double_literal_table.reset(new std::map<double, int>());
+	string_literal_table.reset(new std::map<std::string, int>());
+	double_literal_table.reset(new std::map<double, int>());
 		stack_calculator.reset(new std::decay_t<decltype(*stack_calculator)>());
 	}
 
