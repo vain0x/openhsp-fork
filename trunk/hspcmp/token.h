@@ -343,12 +343,16 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
-	struct CGCalcElem;
-	CGCalcElem CalcCG_evalConstExpr(int op, CGCalcElem const& lhs, CGCalcElem const& rhs);
-	CGCalcElem CalcCG_castCalcElem(CGCalcElem const&, int destType);
-	void CalcCG_putCSCalcElem(CGCalcElem const&);
-	void CalcCG_ceaseConstFolding(bool pushNonconstValue);
+	struct ConstCode;
+	ConstCode CalcCG_evalConstExpr(int op, ConstCode const& lhs, ConstCode const& rhs);
+	ConstCode CalcCG_castCalcElem(ConstCode const&, int destType);
+	void CalcCG_putConstElem(ConstCode&& elem);
+	void CalcCG_putCSCalcElem(ConstCode const&);
+	void CalcCG_ceaseConstFolding();
 
+	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
+	char const* CG_scriptPositionString() const;
 
 	//		Data
 	//
@@ -453,17 +457,29 @@ private:
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
 
-	struct CGCalcElem {
-		//TYPE_STRING/DNUM/INUM; or _VAR (non-const); or _ERROR (stack bottom)
-		int type;
-		//ñ‚ëË: åvéZíÜÇÃï∂éöóÒÇéùÇøâ^Ç‘ÇΩÇﬂÇ…dsbufÇóòópÇµÇƒÇ¢ÇÈ
-		union { int dsindex; double dval; int inum; };
+	struct ConstCode final
+	{
+		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
+		union { char* str; double dval; int inum; };
 		int exflag;
 
+		static ConstCode makeStr(const char* str, int exf);
+		static ConstCode makeDouble(double dval, int exf);
+		static ConstCode makeInt(int ival, int exf);
+		static ConstCode const mark;
 		bool isConst() const;
-		static CGCalcElem makeDouble(double dval, int exf);
+		std::string toString() const;
+		ConstCode castTo(int destType) const;
+		~ConstCode();
+
+		ConstCode(ConstCode&&) _NOEXCEPT; // movable
+		ConstCode& operator = (ConstCode&&) _NOEXCEPT;
+		ConstCode(ConstCode const&);
+		ConstCode& operator = (ConstCode const&);
+	private:
+		ConstCode(int type, int exflag) : type(type), exflag(exflag) { }
 	};
-	std::unique_ptr<std::stack<CGCalcElem>> stack_calculator;
+	std::unique_ptr<std::vector<ConstCode>> stack_calculator;
 
 	//		for Header info
 	int hed_option;
