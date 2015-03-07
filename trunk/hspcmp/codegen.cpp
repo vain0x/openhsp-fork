@@ -24,6 +24,184 @@
 
 #include "errormsg.h"
 
+#define assert_sentinel assert(false); throw CGERROR_UNKNOWN;
+
+static char const* stringFromCalcCode(int op) {
+	static char const* table[] = { "+", "-", "*", "/", "\\", "&", "|", "^", "=", "!", ">", "<", ">=", "<=", ">>", "<<" };
+	assert(0 <= op && op <= CALCCODE_MAX);
+	return table[op];
+}
+
+// コード出力中の、スクリプトの位置を表す文字列
+// 返値の有効期限はすぐに切れる
+char const* CToken::CG_scriptPositionString() const
+{
+	static char stt_buf[HSP_MAX_PATH + 100];
+	sprintf_s(stt_buf, "#%d[%s]", cg_orgline, cg_orgfile);
+	return stt_buf;
+}
+
+//-------------------------------------------------------------
+// ConstCode
+//-------------------------------------------------------------
+CToken::ConstCode const CToken::ConstCode::mark { TYPE_MARK, 0 };
+
+CToken::ConstCode CToken::ConstCode::castTo(int destType) const
+{
+	assert(type != destType && isConst());
+	switch ( destType ) {
+		case TYPE_STRING: return ConstCode::makeStr(toString().c_str(), exflag);
+		case TYPE_DNUM: {
+			switch ( type ) {
+				case TYPE_STRING: return ConstCode::makeDouble(static_cast<double>(atof(str)), exflag);
+				case TYPE_INUM:   return ConstCode::makeDouble(static_cast<double>(inum), exflag);
+			}
+		}
+		case TYPE_INUM: {
+			switch ( type ) {
+				case TYPE_STRING: return ConstCode::makeInt( (str[0] == '$') ? htoi(str) : atoi(str),  exflag);
+				case TYPE_DNUM:   return ConstCode::makeInt( static_cast<int>(dval), exflag );
+			}
+		}
+		default: assert_sentinel;
+	}
+}
+
+CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& lhs, CToken::ConstCode const& rhs)
+{
+	if ( lhs.type != rhs.type ) {
+		return CalcCG_evalConstExpr(op, lhs, rhs.castTo(lhs.type));
+	}
+
+	int const exf = lhs.exflag;
+	switch ( lhs.type ) {
+		case TYPE_STRING:
+			switch ( op ) {
+				case CALCCODE_ADD: {
+					auto result = std::string(lhs.str) + rhs.str;
+					return ConstCode::makeStr(result.c_str(), exf);
+				}
+				case CALCCODE_EQ:return ConstCode::makeInt((strcmp(lhs.str, rhs.str) == 0 ? 1 : 0), exf);
+				case CALCCODE_NE:return ConstCode::makeInt(strcmp(lhs.str, rhs.str), exf);
+				default: Mesf("#文字列に対して演算子 %s は適用できません。", stringFromCalcCode(op));
+					throw CGERROR_CALCEXP;
+			}
+		case TYPE_DNUM:
+			switch ( op ) {
+				case CALCCODE_ADD:  return ConstCode::makeDouble(lhs.dval + rhs.dval, exf);
+				case CALCCODE_SUB:  return ConstCode::makeDouble(lhs.dval - rhs.dval, exf);
+				case CALCCODE_MUL:  return ConstCode::makeDouble(lhs.dval *  rhs.dval, exf);
+				case CALCCODE_DIV:  return ConstCode::makeDouble(lhs.dval / rhs.dval, exf);
+				case CALCCODE_MOD:  return ConstCode::makeDouble(fmod(lhs.dval, rhs.dval), exf);
+				case CALCCODE_EQ:   return ConstCode::makeInt(lhs.dval == rhs.dval, exf);
+				case CALCCODE_NE:   return ConstCode::makeInt(lhs.dval != rhs.dval, exf);
+				case CALCCODE_LT:   return ConstCode::makeInt(lhs.dval <  rhs.dval, exf);
+				case CALCCODE_GT:   return ConstCode::makeInt(lhs.dval >  rhs.dval, exf);
+				case CALCCODE_LTEQ: return ConstCode::makeInt(lhs.dval <= rhs.dval, exf);
+				case CALCCODE_GTEQ: return ConstCode::makeInt(lhs.dval >= rhs.dval, exf);
+				default: Mesf("#実数値に対して演算子 %s は適用できません。", stringFromCalcCode(op));
+					throw CGERROR_CALCEXP;
+			}
+		case TYPE_INUM:
+			switch ( op ) {
+				case CALCCODE_ADD:  return ConstCode::makeInt(lhs.inum + rhs.inum, exf);
+				case CALCCODE_SUB:  return ConstCode::makeInt(lhs.inum - rhs.inum, exf);
+				case CALCCODE_MUL:  return ConstCode::makeInt(lhs.inum *  rhs.inum, exf);
+				case CALCCODE_DIV:  return ConstCode::makeInt(lhs.inum / rhs.inum, exf);
+				case CALCCODE_EQ:   return ConstCode::makeInt(lhs.inum == rhs.inum, exf);
+				case CALCCODE_NE:   return ConstCode::makeInt(lhs.inum != rhs.inum, exf);
+				case CALCCODE_LT:   return ConstCode::makeInt(lhs.inum <  rhs.inum, exf);
+				case CALCCODE_GT:   return ConstCode::makeInt(lhs.inum >  rhs.inum, exf);
+				case CALCCODE_LTEQ: return ConstCode::makeInt(lhs.inum <= rhs.inum, exf);
+				case CALCCODE_GTEQ: return ConstCode::makeInt(lhs.inum >= rhs.inum, exf);
+				case CALCCODE_AND:  return ConstCode::makeInt(lhs.inum &  rhs.inum, exf);
+				case CALCCODE_OR:   return ConstCode::makeInt(lhs.inum | rhs.inum, exf);
+				case CALCCODE_XOR:  return ConstCode::makeInt(lhs.inum ^  rhs.inum, exf);
+				case CALCCODE_MOD:  return ConstCode::makeInt(lhs.inum %  rhs.inum, exf);
+				case CALCCODE_LR:   return ConstCode::makeInt(lhs.inum << rhs.inum, exf);
+				case CALCCODE_RR:   return ConstCode::makeInt(lhs.inum >> rhs.inum, exf);
+				default: assert_sentinel;
+			}
+		default: assert_sentinel;
+	}
+}
+
+CToken::ConstCode::~ConstCode() {
+	if ( type == TYPE_STRING ) free(str);
+}
+CToken::ConstCode::ConstCode(CToken::ConstCode const& rhs)
+	: type(rhs.type), exflag(rhs.exflag)
+{
+	switch ( rhs.type ) {
+		case TYPE_STRING: *this = makeStr(rhs.str, rhs.exflag); break;
+		case TYPE_DNUM: dval = rhs.dval; break;
+		case TYPE_INUM: inum = rhs.inum; break;
+		case TYPE_MARK: break;
+		default: assert_sentinel;
+	}
+}
+CToken::ConstCode::ConstCode(CToken::ConstCode&& rhs)
+	: type(rhs.type), exflag(rhs.exflag)
+{
+	switch ( rhs.type ) {
+		case TYPE_STRING: str = rhs.str; rhs.str = nullptr; break;
+		case TYPE_DNUM: dval = rhs.dval; break;
+		case TYPE_INUM: inum = rhs.inum; break;
+		case TYPE_MARK: break;
+		default: assert(false);
+	}
+}
+CToken::ConstCode& CToken::ConstCode::operator =(CToken::ConstCode&& rhs)
+{ new (const_cast<ConstCode*>(this)) ConstCode(std::move(rhs)); return *this; }
+
+CToken::ConstCode CToken::ConstCode::makeStr(char const* str, int exf)
+{
+	ConstCode self { TYPE_STRING, exf };
+	self.str = static_cast<char*>(malloc(strlen(str) + 1));
+	strcpy(self.str, str);
+	return std::move(self);
+}
+CToken::ConstCode CToken::ConstCode::makeDouble(double dval, int exf)
+{
+	ConstCode self { TYPE_DNUM, exf };
+	self.dval = dval;
+	return std::move(self);
+}
+CToken::ConstCode CToken::ConstCode::makeInt(int ival, int exf)
+{
+	ConstCode self { TYPE_INUM, exf };
+	self.inum = ival;
+	return std::move(self);
+}
+bool CToken::ConstCode::isConst() const
+{
+	return (type == TYPE_STRING || type == TYPE_DNUM || type == TYPE_INUM);
+}
+std::string CToken::ConstCode::toString() const
+{
+	static char conv[64];
+	switch ( type ) {
+		case TYPE_STRING: return str;
+		case TYPE_DNUM: sprintf_s(conv, "%f", dval); return conv;
+		case TYPE_INUM: sprintf_s(conv, "%d", inum); return conv;
+		default: assert_sentinel;
+	}
+}
+
+std::string CToken::ConstCode::inspect() const
+{
+	static char conv[64];
+	switch ( type ) {
+		case TYPE_STRING: {
+			std::unique_ptr<char, std::function<void(void*)>> literal_str(to_hsp_string_literal(str), free);
+			return std::string(literal_str.get());
+		}
+		case TYPE_DNUM: sprintf_s(conv, "%f", dval); return conv;
+		case TYPE_INUM: sprintf_s(conv, "%d", inum); return conv;
+		default: assert_sentinel;
+	}
+}
+
 //-------------------------------------------------------------
 //		Routines
 //-------------------------------------------------------------
@@ -60,142 +238,159 @@ static int is_statement_end( int type )
 }
 
 
+void CToken::CalcCG_putConstElem(CToken::ConstCode&& self)
+{
+	if ( CG_optCode() && self.isConst() ) {
+		// 定数値は畳み込むかもしれないのでスタックに積んでおく
+		stack_calculator->emplace_back(std::move(self));
+	} else {
+		CalcCG_putCSCalcElem(self);
+	}
+}
+
+void CToken::CalcCG_putCSCalcElem(CToken::ConstCode const& self)
+{
+	switch ( self.type ) {
+		case TYPE_STRING: PutCS(TYPE_STRING, PutDS(self.str), self.exflag); break;
+		case TYPE_DNUM:   PutCS(TYPE_DNUM, self.dval, self.exflag); break;
+		case TYPE_INUM:   PutCS(TYPE_INUM, self.inum, self.exflag); break;
+		case TYPE_MARK:
+		default: assert_sentinel;
+	}
+	calccount++;
+}
+
+// 変数が出現したか、式の終端に達したので、定数式畳み込みをやめる
+// 積み込んでいた定数をコードに書き出す
+void CToken::CalcCG_ceaseConstFolding()
+{
+	if ( !(CG_optCode()) ) return;
+
+	assert(!stack_calculator->empty());
+	auto const iterEnd = stack_calculator->end();
+	auto iterBegin = iterEnd;
+	while ( (iterBegin - 1)->isConst() ) { --iterBegin; }
+
+	for ( auto iter = iterBegin; iter != iterEnd; ++iter) {
+		CalcCG_putCSCalcElem(*iter);
+	}
+	stack_calculator->erase(iterBegin, iterEnd);
+}
+
+static int CalcCodeFromMark(int mark)
+{
+	switch ( mark ) {
+		case '+':  return CALCCODE_ADD;
+		case '-':  return CALCCODE_SUB;
+		case '*':  return CALCCODE_MUL;
+		case '/':  return CALCCODE_DIV;
+		case '=':  return CALCCODE_EQ;
+		case '!':  return CALCCODE_NE;
+		case '<':  return CALCCODE_LT;
+		case '>':  return CALCCODE_GT;
+		case 0x61: return CALCCODE_LTEQ;    // '<='
+		case 0x62: return CALCCODE_GTEQ;    // '>='
+		case '&':  return CALCCODE_AND;
+		case '|':  return CALCCODE_OR;
+		case '^':  return CALCCODE_XOR;
+		case 0x5c: return CALCCODE_MOD; // '\'
+		case 0x63: return CALCCODE_LR;  // '<<'
+		case 0x64: return CALCCODE_RR;  // '>>'
+		default: throw CGERROR_CALCEXP;
+	}
+}
+
 void CToken::CalcCG_regmark( int mark )
 {
 	//		演算子を登録する
 	//
-	int op;
-	op = 0;
-	switch( mark ) {
-	case '+':
-		op = CALCCODE_ADD;
-		break;
-	case '-':
-		op = CALCCODE_SUB;
-		break;
-	case '*':
-		op = CALCCODE_MUL;
-		break;
-	case '/':
-		op = CALCCODE_DIV;
-		break;
+	int const op = CalcCodeFromMark(mark);
 
-	case '=':
-		op = CALCCODE_EQ;
-		break;
-	case '!':
-		op = CALCCODE_NE;
-		break;
-	case '<':
-		op = CALCCODE_LT;
-		break;
-	case '>':
-		op = CALCCODE_GT;
-		break;
-	case 0x61:						// '<='
-		op = CALCCODE_LTEQ;
-		break;
-	case 0x62:						// '>='
-		op = CALCCODE_GTEQ;
-		break;
+	if ( stack_calculator->size() >= 2
+		&& stack_calculator->back().isConst()
+		&& stack_calculator->at(stack_calculator->size() - 2).isConst() ) {
+		auto const rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
+		auto const lhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
 
-	case '&':
-		op = CALCCODE_AND;
-		break;
-	case '|':
-		op = CALCCODE_OR;
-		break;
-	case '^':
-		op = CALCCODE_XOR;
-		break;
+		// const expr folding
+		stack_calculator->push_back(CalcCG_evalConstExpr(op, lhs, rhs));
 
-	case 0x5c:						// '\'
-		op = CALCCODE_MOD;
-		break;
-	case 0x63:						// '<<'
-		op = CALCCODE_LR;
-		break;
-	case 0x64:						// '>>'
-		op = CALCCODE_RR;
-		break;
-	default:
-		throw CGERROR_CALCEXP;
+		if ( CG_optInfo() ) {
+			auto const& result = stack_calculator->back();
+			Mesf("#定数式畳み込み (%s %s %s) → %s %s",
+				lhs.inspect().c_str(), stringFromCalcCode(op),
+				rhs.inspect().c_str(), result.inspect().c_str(), CG_scriptPositionString());
+		}
+		return;
 	}
-	calccount++;
-	PutCS( TK_NONE, op, texflag );
+
+	CalcCG_ceaseConstFolding();
+	PutCS( TK_NONE, op, texflag ); calccount++;
 }
 
 void CToken::CalcCG_factor( void )
 {
-	int id;
-
 	cs_lasttype = ttype;
 	switch( ttype ) {
-	case TK_NUM:
-		PutCS( TYPE_INUM, val, texflag );
-		texflag = 0;
-		CalcCG_token();
-		calccount++;
-		return;
+	case TK_NUM: // constants
 	case TK_DNUM:
-		PutCS( TYPE_DNUM, val_d, texflag );
-		texflag = 0;
-		CalcCG_token();
-		calccount++;
-		return;
 	case TK_STRING:
-		PutCS( TYPE_STRING, PutDS( cg_str ), texflag );
+		switch ( ttype ) {
+			case TK_NUM:   	CalcCG_putConstElem(ConstCode::makeInt(val, texflag)); break;
+			case TK_DNUM:  	CalcCG_putConstElem(ConstCode::makeDouble(val_d, texflag)); break;
+			case TK_STRING:	CalcCG_putConstElem(ConstCode::makeStr(cg_str, texflag)); break;
+		}
 		texflag = 0;
 		CalcCG_token();
-		calccount++;
-		return;
+		break;
 	case TK_LABEL:
-		GenerateCodeLabel( cg_str, texflag );
+		CalcCG_ceaseConstFolding();
+		GenerateCodeLabel(cg_str, texflag); calccount++;
+		//stack_calculator->push(ConstCode { TYPE_LABEL, { GenerateOTIndex(cg_str) }, texflag });
 		texflag = 0;
 		CalcCG_token();
-		calccount++;
-		return;
+		
+		break;
 	case TK_OBJ:
-		id = SetVarsFixed( cg_str, cg_defvarfix );
+	{
+		int const id = SetVarsFixed(cg_str, cg_defvarfix);
 		if ( lb->GetType(id) == TYPE_VAR ) {
 			if ( lb->GetInitFlag(id) == LAB_INIT_NO ) {
 #ifdef JPNMSG
-				Mesf( "#未初期化の変数があります(%s)", cg_str );
+				Mesf("#未初期化の変数 (%s). %s", cg_str, CG_scriptPositionString());
 #else
 				Mesf( "#Uninitalized variable (%s).", cg_str );
 #endif
 				if ( hed_cmpmode & CMPMODE_VARINIT ) {
 					throw CGERROR_VAR_NOINIT;
 				}
-				lb->SetInitFlag( id, LAB_INIT_DONE );
+				lb->SetInitFlag(id, LAB_INIT_DONE);
 			}
 		}
-		GenerateCodeVAR( id, texflag );
+		CalcCG_ceaseConstFolding();
+		GenerateCodeVAR(id, texflag);
+		calccount ++;
 		texflag = 0;
 		if ( ttype == TK_NONE ) ttype = val;		// CalcCG_token()に合わせるため
-		calccount++;
 		return;
+	}
 	case TK_SEPARATE:
 	case TK_EOL:
 	case TK_EOF:
-		return;
-	default:
 		break;
+	default:
+		//		カッコの処理
+		//
+		if ( ttype == '(' ) {
+			CalcCG_token_exprbeg();
+			CalcCG_start();
+			if ( ttype != ')' ) { ttype = TK_CALCERROR; return; }
+			CalcCG_token();
+		} else {
+			//Mesf("#Invalid%d",ttype);
+			ttype = TK_CALCERROR;
+		}
 	}
-
-	if( ttype!='(' ) {
-		//Mesf("#Invalid%d",ttype);
-		ttype=TK_CALCERROR;
-		return;
-	}
-
-	//		カッコの処理
-	//
-	CalcCG_token_exprbeg();
-	CalcCG_start();
-	if( ttype!=')' ) { ttype=TK_CALCERROR; return; }
-
-	CalcCG_token();
 }
 
 void CToken::CalcCG_unary( void )
@@ -208,7 +403,7 @@ void CToken::CalcCG_unary( void )
 		if ( is_statement_end(ttype) ) throw CGERROR_CALCEXP;
 		CalcCG_unary();
 		texflag = 0;
-		PutCS( TYPE_INUM, -1, texflag );
+		CalcCG_putConstElem(ConstCode::makeInt(-1, texflag));
 		CalcCG_regmark( '*' );
 	} else {
 		CalcCG_factor();
@@ -297,16 +492,26 @@ void CToken::CalcCG( int ex )
 	//		パラメーターの式を評価する
 	//		(結果は逆ポーランドでコードを出力する)
 	//
+	// 配列や関数があれば再帰的に呼ばれる
+
+	if ( CG_optCode() ) {
+		stack_calculator->push_back(ConstCode::mark); // virtual bottom
+	}
+
 	texflag = ex;
 	cs_lastptr = cs_buf->GetSize();
 	calccount = 0;
 
 	CalcCG_token_exprbeg_redo();
-
 	CalcCG_start();
 
 	if ( ttype == TK_CALCERROR ) {
 		throw CGERROR_CALCEXP;
+	}
+	if ( CG_optCode() ) {
+		CalcCG_ceaseConstFolding(); // write consts
+		assert(!stack_calculator->back().isConst());
+		stack_calculator->pop_back(); // remove bottom mark
 	}
 }
 
@@ -1170,10 +1375,9 @@ void CToken::GenerateCodeLabel( char *keyname, int ex )
 	PutCS( TYPE_LABEL, lb->GetOpt(id), ex );
 }
 
-
 void CToken::GenerateCodeVAR( int id, int ex )
 {
-	//		HSP3Codeを展開する(変数ほか)
+	//		HSP3Codeを展開する(変数や関数など)
 	//		(idはlabel ID)
 	//
 	int t;
@@ -1384,7 +1588,6 @@ void CToken::GenerateCodeLET( int id )
 	//		HSP3Codeを展開する(代入)
 	//		(idはlabel ID)
 	//
-	int op;
 	int t;
 	int mcall;
 
@@ -1407,10 +1610,9 @@ void CToken::GenerateCodeLET( int id )
 
 	if ( ttype != TK_NONE ) { throw CGERROR_SYNTAX; }
 
-	op = val;
-	//PutCS( TK_NONE, op, 0 );
+	int const op = val;
+	PutCS( TK_NONE, CalcCodeFromMark(op), 0 );
 	texflag = 0;
-	CalcCG_regmark( op );
 
 	cg_lastcmd  = CG_LASTCMD_LET;
 	cg_lastval  = op;
@@ -1583,7 +1785,7 @@ void CToken::GenerateCodePP_func( int deftype )
 	strncpy( fbase, cg_str, 1023 );
 
 	ref = -1;
-	if (( hed_cmpmode & CMPMODE_OPTCODE )&&( tmp_lb != NULL )) {		// プリプロセス情報から最適化を行なう
+	if ( CG_optCode() &&( tmp_lb != NULL )) {		// プリプロセス情報から最適化を行なう
 		i = tmp_lb->Search( fbase );
 		if ( i >= 0 ) {
 			ref = tmp_lb->GetReference( i );
@@ -1603,9 +1805,9 @@ void CToken::GenerateCodePP_func( int deftype )
 	}
 
 	if ( ref == 0 && (otflag & STRUCTDAT_OT_CLEANUP) == 0 ) {
-		if ( hed_cmpmode & CMPMODE_OPTINFO ) {
+		if ( CG_optInfo() ) {
 #ifdef JPNMSG
-			Mesf( "#不要な関数呼び出しを削除しました %s", fbase );
+			Mesf("#未参照のDll関数を削除(%s) %s", fbase, CG_scriptPositionString());
 #else
 			Mesf( "#Delete func %s", fbase );
 #endif
@@ -1757,7 +1959,7 @@ int CToken::GetParameterTypeCG( char *name )
 	if ( !strcmp( cg_str,"var" ) ) return MPTYPE_SINGLEVAR;
 	if ( !strcmp( cg_str,"val" ) ) { 
 #ifdef JPNMSG
-		Mesf( "警告:古いdeffunc表記があります 行%d.[%s]", cg_orgline, name );
+		Mesf("警告:古いdeffunc表記(%s) %s", cg_orgline, name, CG_scriptPositionString());
 #else
 		Mesf( "Warning:Old deffunc expression at %d.[%s]", cg_orgline, name );
 #endif
@@ -1978,15 +2180,15 @@ void CToken::GenerateCodePP_module( void )
 	if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
 	modname = cg_str;
 
-	if (( hed_cmpmode & CMPMODE_OPTCODE )&&( tmp_lb != NULL )) {		// プリプロセス情報から最適化を行なう
+	if ( CG_optCode() &&( tmp_lb != NULL )) {		// プリプロセス情報から最適化を行なう
 		i = tmp_lb->Search( modname );
 		if ( i >= 0 ) {
 			ref = tmp_lb->GetReference( i );
 			if ( ref == 0 ) {
 				cg_flag = CG_FLAG_DISABLE;
-				if ( hed_cmpmode & CMPMODE_OPTINFO ) {
+				if ( CG_optInfo() ) {
 #ifdef JPNMSG
-					Mesf( "#モジュールを削除しました %s", modname );
+					Mesf("#未使用のモジュールを削除(%s) %s", modname, CG_scriptPositionString());
 #else
 					Mesf( "#Delete module %s", modname );
 #endif
@@ -2463,14 +2665,14 @@ void CToken::PutCS( int type, double value, int exflg )
 	bool needsToPutDS = true;
 
 	// double literal pool
-	if ( hed_cmpmode & CMPMODE_OPTCODE ) {
+	if ( CG_optCode() ) {
 		auto const it = double_literal_table->find(value);
 		if ( it != double_literal_table->end() ) {
 			i = it->second;
 			needsToPutDS = false;
-			if ( hed_cmpmode & CMPMODE_OPTINFO ) { Mesf("#実数プール %f", value); }
+			if ( CG_optInfo() ) { Mesf("#実数プール %f %s", value, CG_scriptPositionString()); }
 		} else {
-			double_literal_table->insert({ value, i });
+			double_literal_table->emplace(value, i);
 		}
 	}
 
@@ -2543,9 +2745,9 @@ int CToken::PutDSBuf( char *str )
 		auto const it = string_literal_table->find(str);
 		if ( it != string_literal_table->end() ) {
 			i = it->second;
-			if ( hed_cmpmode & CMPMODE_OPTINFO ) {
+			if ( CG_optInfo() ) {
 				std::unique_ptr<char, std::function<void(void*)>> literalStr(to_hsp_string_literal(str), free);
-				Mesf("#文字列プール %s", literalStr.get());
+				Mesf("#文字列プール %s %s", literalStr.get(), CG_scriptPositionString());
 			}
 			return i;
 		} else {
@@ -2962,7 +3164,6 @@ int CToken::GenerateCode( char *fname, char *oname, int mode )
 	return GenerateCode( &srcbuf, oname, mode );
 }
 
-
 int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 {
 	//		ファイルをHSP3Codeに展開する
@@ -2982,8 +3183,12 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	mi_buf = new CMemBuf;
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
-	string_literal_table.reset(new std::map<std::string, int>());
-	double_literal_table.reset(new std::map<double, int>());
+
+	if ( CG_optCode() ) {
+		string_literal_table.reset(new std::map<std::string, int>());
+		double_literal_table.reset(new std::map<double, int>());
+		stack_calculator.reset(new std::decay_t<decltype(*stack_calculator)>());
+	}
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 

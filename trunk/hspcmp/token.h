@@ -342,6 +342,37 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
+	struct ConstCode final  // represents a const code
+	{
+		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
+		union { char* str; double dval; int inum; };
+		int exflag;
+
+		static ConstCode makeStr(const char* str, int exf);
+		static ConstCode makeDouble(double dval, int exf);
+		static ConstCode makeInt(int ival, int exf);
+		static ConstCode const mark;
+		bool isConst() const;
+		std::string toString() const;
+		std::string inspect() const;
+		ConstCode castTo(int destType) const;
+		~ConstCode();
+
+		ConstCode(ConstCode&&) _NOEXCEPT; // movable
+		ConstCode& operator = (ConstCode&&)_NOEXCEPT;
+		ConstCode(ConstCode const&);
+		ConstCode& operator = (ConstCode const&);
+	private:
+		ConstCode(int type, int exflag) : type(type), exflag(exflag) {}
+	};
+	ConstCode CalcCG_evalConstExpr(int op, ConstCode const& lhs, ConstCode const& rhs);
+	void CalcCG_putConstElem(ConstCode&& elem);
+	void CalcCG_putCSCalcElem(ConstCode const&);
+	void CalcCG_ceaseConstFolding();
+
+	char const* CG_scriptPositionString() const;
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
+	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
 
 	//		Data
 	//
@@ -443,6 +474,7 @@ private:
 
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
+	std::unique_ptr<std::vector<ConstCode>> stack_calculator;
 
 	//		for Header info
 	int hed_option;
