@@ -2832,6 +2832,17 @@ ppresult_t CToken::PP_PackOpt( void )
 	return PPRESULT_SUCCESS;
 }
 
+static int ParseCmpOptName(const char* optname)
+{
+	static char const* OptionNames[]  = { "ppout",       "optcode",      "case",       "optinfo",        "varname",       "varinit",       "optprm",       "skipjpspc",       "optcode_short" };
+	static int         OptionValues[] = { CMPMODE_PPOUT, CMPMODE_OPTCODE, CMPMODE_CASE, CMPMODE_OPTINFO, CMPMODE_PUTVARS, CMPMODE_VARINIT, CMPMODE_OPTPRM, CMPMODE_SKIPJPSPC, CMPMODE_OPTSHORT };
+	for ( int i = 0; i < sizeof(OptionValues) / sizeof(int); ++i ) {
+		if ( tstrcmp(optname, OptionNames[i]) ) {
+			return OptionValues[i];
+		}
+	}
+	return CMPMODE_ERROR;
+}
 
 ppresult_t CToken::PP_CmpOpt( void )
 {
@@ -2851,33 +2862,8 @@ ppresult_t CToken::PP_CmpOpt( void )
 		SetError("illegal option parameter"); return PPRESULT_ERROR;
 	}
 
-	i = 0;
-	if (tstrcmp(optname,"ppout")) {			// preprocessor out sw
-		i = CMPMODE_PPOUT;
-	}
-	if (tstrcmp(optname,"optcode")) {		// code optimization sw
-		i = CMPMODE_OPTCODE;
-	}
-	if (tstrcmp(optname,"case")) {			// case sensitive sw
-		i = CMPMODE_CASE;
-	}
-	if (tstrcmp(optname,"optinfo")) {		// optimization info sw
-		i = CMPMODE_OPTINFO;
-	}
-	if (tstrcmp(optname,"varname")) {		// VAR name out sw
-		i = CMPMODE_PUTVARS;
-	}
-	if (tstrcmp(optname,"varinit")) {		// VAR initalize check
-		i = CMPMODE_VARINIT;
-	}
-	if (tstrcmp(optname,"optprm")) {		// parameter optimization sw
-		i = CMPMODE_OPTPRM;
-	}
-	if (tstrcmp(optname,"skipjpspc")) {		// skip Japanese Space Code sw
-		i = CMPMODE_SKIPJPSPC;
-	}
-
-	if ( i == 0 ) {
+	i = ParseCmpOptName(optname);
+	if ( i == CMPMODE_ERROR ) {
 		SetError("illegal option name"); return PPRESULT_ERROR;
 	}
 

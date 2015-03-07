@@ -30,14 +30,16 @@
 #define DUMPMODE_DLLCMD 4
 #define DUMPMODE_ALL 15
 
-#define CMPMODE_PPOUT 1
-#define CMPMODE_OPTCODE 2
-#define CMPMODE_CASE 4
-#define CMPMODE_OPTINFO 8
-#define CMPMODE_PUTVARS 16
-#define CMPMODE_VARINIT 32
-#define CMPMODE_OPTPRM 64
-#define CMPMODE_SKIPJPSPC 128
+#define CMPMODE_ERROR 0
+#define CMPMODE_PPOUT 1        // output proprocessed code
+#define CMPMODE_OPTCODE 2      // optimize code
+#define CMPMODE_CASE 4         // case sensitive switch
+#define CMPMODE_OPTINFO 8      // log optimization info
+#define CMPMODE_PUTVARS 16     // output VAR names (DInfo)
+#define CMPMODE_VARINIT 32     // check VAR initialization
+#define CMPMODE_OPTPRM 64      // parameter optimization switch
+#define CMPMODE_SKIPJPSPC 128  // skip japanese space code switch
+#define CMPMODE_OPTSHORT 512   // optimaze to code short
 
 #define CG_FLAG_ENABLE 0
 #define CG_FLAG_DISABLE 1
@@ -182,16 +184,20 @@ public:
 	int GenerateCode( char *fname, char *oname, int mode );
 	int GenerateCode( CMemBuf *srcbuf, char *oname, int mode );
 
+	int GetCS( void );
 	void PutCS( int type, int value, int exflg );
 	void PutCSSymbol( int label_id, int exflag );
-	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
+	void SetCS(int csindex, int type, int value);
 	int PutOT( int value );
+	void PutOTBuf();
 	int PutDS( char *str );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
-	char *GetDS( int ptr );
+	char *GetDS(int ptr);
 	void SetOT( int id, int value );
+	int GetOT(int id); int GetOTCount();
+	int GetNewOTFromOldOT(int old_otindex);
 	void PutDI( void );
 	void PutDI( int dbg_code, int a, int subid );
 	void PutDIVars( void );
@@ -351,6 +357,7 @@ private:
 
 	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
 	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
+	bool CG_optShort() const { return CG_optCode() && (hed_cmpmode & CMPMODE_OPTSHORT) != 0; }
 	char const* CG_scriptPositionString() const;
 
 	//		Data
@@ -456,7 +463,11 @@ private:
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
 
-	struct ConstCode final
+	std::unique_ptr<std::vector<int>> working_ot_buf; // コードの解析中にラベル(cs位置)の情報を記憶しておく。あとでまとめて ot_buf に書き出される
+	std::unique_ptr<std::multimap<int, int>> label_reference_table; // キーであるラベル(otindex)を参照しているcs位置の表。otindexの重複除去に使う。
+	std::unique_ptr<std::map<int, int>> otindex_table; //csindex -> new otindex (or -1)
+
+	struct ConstCode final  // represents a const code
 	{
 		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
 		union { char* str; double dval; int inum; };
@@ -478,7 +489,7 @@ private:
 	private:
 		ConstCode(int type, int exflag) : type(type), exflag(exflag) { }
 	};
-	std::unique_ptr<std::vector<ConstCode>> stack_calculator;
+	std::unique_ptr<std::vector<ConstCode>> stack_calculator; // for const folding
 
 	//		for Header info
 	int hed_option;

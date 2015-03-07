@@ -145,7 +145,7 @@ CToken::ConstCode::ConstCode(CToken::ConstCode&& rhs)
 		case TYPE_DNUM: dval = rhs.dval; break;
 		case TYPE_INUM: inum = rhs.inum; break;
 		case TYPE_MARK: break;
-		default: assert_sentinel;
+		default: assert(false);
 	}
 }
 CToken::ConstCode& CToken::ConstCode::operator =(CToken::ConstCode&& rhs)
@@ -245,7 +245,7 @@ void CToken::CalcCG_putCSCalcElem(CToken::ConstCode const& self)
 // 積み込んでいた定数をコードに書き出す
 void CToken::CalcCG_ceaseConstFolding()
 {
-	if ( !(CG_optCode()) ) return;
+	if ( !CG_optCode() ) return;
 
 	assert(!stack_calculator->empty());
 	auto const iterEnd = stack_calculator->end();
@@ -290,11 +290,11 @@ void CToken::CalcCG_regmark( int mark )
 	if ( stack_calculator->size() >= 2
 		&& stack_calculator->back().isConst()
 		&& stack_calculator->at(stack_calculator->size() - 2).isConst() ) {
-		auto const&& rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
-		auto const&& lhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
+		auto const rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
+		auto const lhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
 
 		// const expr folding
-		stack_calculator->push_back(CalcCG_evalConstExpr(op, lhs, rhs));
+		stack_calculator->emplace_back(CalcCG_evalConstExpr(op, lhs, rhs));
 
 		if ( CG_optInfo() ) {
 			auto const& result = stack_calculator->back();
@@ -2418,7 +2418,7 @@ int CToken::GenerateCodeSub( void )
 				SetOT( lb->GetOpt(i), GetCS() );
 				lab->type = TYPE_LABEL; 
 			} else {
-				i = lb->Regist( cg_str, TYPE_LABEL, ot_buf->GetSize() / sizeof(int) );
+				i = lb->Regist( cg_str, TYPE_LABEL, GetOTCount() );
 				PutOT( GetCS() );
 			}
 			GetTokenCG( GETTOKEN_DEFAULT );
@@ -2620,6 +2620,26 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 }
 
 
+void CToken::SetCS(int csindex, int type, int value)
+{
+	// コードセグメントに上書きする
+	// bit 数は固定されているので注意
+
+	assert(0 <= csindex && csindex < GetCS());
+	unsigned short* const cscode = &reinterpret_cast<unsigned short*>(cs_buf->GetBuffer())[csindex];
+	auto const _type = *cscode & CSTYPE;
+	auto const _exf = *cscode &~ CSTYPE;
+	assert(0 <= _type && _type < TYPE_USERDEF + cg_varhpi);
+
+	*cscode = type | _exf;
+	if ( _exf & EXFLG_3 ) {
+		*reinterpret_cast<int*>(cscode + 1) = value;
+	} else {
+		assert(value < 0x10000);  // when 16 bit encode
+		cscode[1] = value;
+	}
+}
+
 void CToken::PutCS( int type, int value, int exflg )
 {
 	//		Register command code
@@ -2627,6 +2647,12 @@ void CToken::PutCS( int type, int value, int exflg )
 	//			type=0-0xfff ( -1 to debug line info )
 	//			val=16,32bit length supported
 	//
+	assert(type != TYPE_XLABEL);
+	if ( CG_optShort() && type == TYPE_LABEL ) {
+		label_reference_table->insert({ value, GetCS() });
+		Mesf("#ラベル参照 (cs#%d -> ot#%d)", GetCS(), value);
+	}
+
 	int a;
 	unsigned int v;
 	v=(unsigned int)value;
@@ -2637,7 +2663,7 @@ void CToken::PutCS( int type, int value, int exflg )
 		cs_buf->Put( (short)(v) );
 	}
 	else {									// when 32bit encode
-		cs_buf->Put( (short)(0x8000 | a) );
+		cs_buf->Put( (short)(EXFLG_3 | a) );
 		cs_buf->Put( (int)value );
 	}
 }
@@ -2739,6 +2765,7 @@ int CToken::PutDSBuf( char *str )
 {
 	//		Register strings to data segment (direct)
 	//
+	//todo: to be pooled
 	int i;
 	i = ds_buf->GetSize();
 	ds_buf->PutStr( str );
@@ -2760,24 +2787,89 @@ int CToken::PutDSBuf( char *str, int size )
 
 int CToken::PutOT( int value )
 {
-	//		Register object temp
+	// ラベル(cs位置参照)オブジェクトを確保し、そのIDを返す
+	// 参照先のcs位置が未確定の場合 (if文のジャンプ先など)、value < 0 で登録される。
 	//
-	int i;
-	i = ot_buf->GetSize() / sizeof( int );
-	ot_buf->Put( value );
+	int const i = GetOTCount();
+	working_ot_buf->push_back(value);
 	return i;
 }
 
 
 void CToken::SetOT( int id, int value )
 {
-	//		Modify object temp
+	// ラベル(cs位置参照)オブジェクトの参照先を確定させる
 	//
-	int *p;
-	p = (int *)( ot_buf->GetBuffer() );
-	p[ id ] = value;
+	assert(0 <= id && id < (int)working_ot_buf->size());
+	
+	auto& ref = working_ot_buf->at(id);
+	assert(ref < 0); // 未確定でなければならない
+
+	ref = value;
 }
 
+int CToken::GetOT(int id)
+{
+	assert(0 <= id && id < (int)working_ot_buf->size());
+	return working_ot_buf->at(id);
+}
+int CToken::GetOTCount() { return working_ot_buf->size(); }
+
+void CToken::PutOTBuf()
+{
+	// OTバッファを書き出す
+	// 最適化: ラベルの重複を取り除き、otindex を割り振りなおす
+
+	assert(ot_buf->GetSize() == 0);
+	int ot_count = 0;
+
+	for (int i = 0; i < static_cast<int>(working_ot_buf->size()); ++ i) {
+		auto const csindex = working_ot_buf->at(i);
+		assert(csindex >= 0);  // すべてのラベルが確定済みのはず
+
+		if ( CG_optShort() ) {
+			//同じ参照先をもつ既存ラベルをみつける
+			int const new_ot_index = GetNewOTFromOldOT(i);
+			if ( new_ot_index >= 0 ) {
+				//Mesf("#重複ラベルを発見 (otindex = %d -> %d; csindex = %d)", i, new_ot_index, csindex);
+				continue;  // skip output
+			} else {
+				otindex_table->insert({ csindex, ot_count });
+			}
+		}
+		ot_buf->Put(csindex); ot_count ++;
+	}
+
+	if ( CG_optShort() ) {
+		// cs からの参照を書き換える
+		for ( auto kv : *label_reference_table ) {
+			int const new_ot_index = GetNewOTFromOldOT(kv.first);
+			assert(new_ot_index >= 0);
+			if ( kv.second != new_ot_index ) {
+				//Mesf("#ラベル参照の書き換え (cs#%d, ot#%d -> %d)", kv.second, kv.first, new_ot_index);
+				SetCS(kv.second, TYPE_LABEL, new_ot_index);
+			}
+		}
+		// deffunc/defcfunc の呼び出し先を書き換える
+		for ( int i = 0; i < GET_FI_SIZE(); ++i ) {
+			auto const stdat = GET_FI(i);
+			if ( stdat->index == STRUCTDAT_INDEX_FUNC || stdat->index == STRUCTDAT_INDEX_CFUNC ) {
+				int const new_ot_index = GetNewOTFromOldOT(stdat->otindex);
+				//Mesf("#ラベル参照の書き換え (stdat#%d, ot#%d -> %d)", i, stdat->otindex, new_ot_index);
+				stdat->otindex = new_ot_index;
+			}
+		}
+	}
+}
+
+int CToken::GetNewOTFromOldOT(int old_otindex)
+{
+	if ( !CG_optShort() ) return old_otindex;
+
+	assert(0 <= old_otindex && old_otindex < (int)working_ot_buf->size());
+	auto iter = otindex_table->find(working_ot_buf->at(old_otindex));
+	return (iter != otindex_table->end()) ? iter->second : -1;
+};
 
 void CToken::PutDI( void )
 {
@@ -2862,25 +2954,29 @@ void CToken::PutDIVars( void )
 
 
 // ラベル名の情報を出力する
+// 識別子表(lb)は古い ot_index を用いて書かれているので注意
 void CToken::PutDILabels( void )
 {
-	int num = ot_buf->GetSize() / sizeof(int);
-	int *table = new int[num];
-	for (int i = 0; i < num; i++) table[i] = -1;
+	int const num = GetOTCount();  // old ot_index の数
+	std::vector<int> table;
+	table.resize(num, -1);  // 無効値で初期化
+
+	//識別子表からラベル名を抽出し、ラベルの名前として登録する
 	for (int i = 0; i < lb->GetNumEntry(); i++) {
 		if (lb->GetType(i) == TYPE_LABEL) {
 			int id = lb->GetOpt(i);
 			table[id] = i;
 		}
 	}
+
+	//ラベル名のリストを書き出す
 	di_buf->Put((unsigned char)255);
 	for (int i = 0; i < num; i ++) {
 		if (table[i] == -1) continue;
 		char *name = lb->GetName(table[i]);
 		int dsPos = PutDSBuf(name);
-		PutDI(251, dsPos, i);
+		PutDI(251, dsPos, GetNewOTFromOldOT(i));
 	}
-	delete[] table;
 }
 
 
@@ -3164,7 +3260,13 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		string_literal_table.reset(new std::map<std::string, int>());
 		double_literal_table.reset(new std::map<double, int>());
 		stack_calculator.reset(new std::decay_t<decltype(*stack_calculator)>());
+
+		if ( CG_optShort() ) {
+			otindex_table.reset(new std::decay_t<decltype(*otindex_table)>());
+			label_reference_table.reset(new std::decay_t<decltype(*label_reference_table)>());
+		}
 	}
+	working_ot_buf.reset(new std::decay_t<decltype(*working_ot_buf)>());
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 
@@ -3196,6 +3298,7 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		PutCS( TYPE_PROGCMD, 0, EXFLG_1 );
 		PutCS( TYPE_LABEL, i, 0 );
 
+		PutOTBuf();
 		if ( cg_debug ) {
 			PutDI();
 		}
