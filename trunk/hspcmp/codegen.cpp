@@ -145,7 +145,7 @@ CToken::ConstCode::ConstCode(CToken::ConstCode&& rhs)
 		case TYPE_DNUM: dval = rhs.dval; break;
 		case TYPE_INUM: inum = rhs.inum; break;
 		case TYPE_MARK: break;
-		default: assert_sentinel;
+		default: assert(false);
 	}
 }
 CToken::ConstCode& CToken::ConstCode::operator =(CToken::ConstCode&& rhs)
@@ -2704,17 +2704,26 @@ int CToken::PutDS( char *str )
 {
 	//		Register strings to data segment (script string)
 	//
-	int size;
-	char *p;
-	int i = ds_buf->GetSize();
 
 	// output as UTF8 format
 	if ( cg_utf8out ) {
-		p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
-		size = (int)strlen(p) + 1;
-		ds_buf->PutData( p, size );
+		int i = ds_buf->GetSize();
+		char* p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
+		size_t size = strlen(p) + 1;
+		ds_buf->PutData( p, static_cast<int>(size) );
 		return i;
 	}
+
+	return PutDSBuf(str);
+}
+
+
+int CToken::PutDSBuf( char *str )
+{
+	//		Register strings to data segment (direct)
+	//
+	int i;
+	i = ds_buf->GetSize();
 
 	// string literal pool
 	// todo: UTF8に対応。そのまま適用できるか調べるか、または対応できるようにする
@@ -2729,18 +2738,6 @@ int CToken::PutDS( char *str )
 		}
 	}
 
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
-}
-
-
-int CToken::PutDSBuf( char *str )
-{
-	//		Register strings to data segment (direct)
-	//
-	int i;
-	i = ds_buf->GetSize();
 	ds_buf->PutStr( str );
 	ds_buf->Put( (char)0 );
 	return i;
