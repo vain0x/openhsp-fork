@@ -2457,24 +2457,9 @@ void CToken::PutCS( int type, double value, int exflg )
 {
 	//		Register command code (double)
 	//
-	int i = ds_buf->GetSize();
-	bool needsToPutDS = true;
-
-	// double literal pool
-	if ( hed_cmpmode & CMPMODE_OPTCODE ) {
-		auto const it = double_literal_table->find(value);
-		if ( it != double_literal_table->end() ) {
-			i = it->second;
-			needsToPutDS = false;
-			if ( hed_cmpmode & CMPMODE_OPTINFO ) Mesf("#double literal pool %d (%f)", i, value);
-		} else {
-			double_literal_table->insert({ value, i });
-		}
-	}
-
-	if ( needsToPutDS ) {
-		ds_buf->Put(value);
-	}
+	int i;
+	i = ds_buf->GetSize();
+	ds_buf->Put( value );
 	PutCS( type, i, exflg );
 }
 
@@ -2514,9 +2499,10 @@ int CToken::PutDS( char *str )
 {
 	//		Register strings to data segment (script string)
 	//
+	int i;
 	int size;
 	char *p;
-	int i = ds_buf->GetSize();
+	i = ds_buf->GetSize();
 
 	// output as UTF8 format
 	if ( cg_utf8out ) {
@@ -2524,19 +2510,6 @@ int CToken::PutDS( char *str )
 		size = (int)strlen(p) + 1;
 		ds_buf->PutData( p, size );
 		return i;
-	}
-
-	// string literal pool
-	// todo: UTF8に対応。そのまま適用できるか調べるか、または対応できるようにする
-	if ( hed_cmpmode & CMPMODE_OPTCODE ) {
-		auto const it = string_literal_table->find(str);
-		if ( it != string_literal_table->end() ) {
-			i = it->second;
-			if ( hed_cmpmode & CMPMODE_OPTINFO ) Mesf("#string_literal_pool %d {\"%s\"}", i, str);
-			return i;
-		} else {
-			string_literal_table->insert({ std::string(str), i });
-		}
 	}
 
 	ds_buf->PutStr( str );
@@ -2970,8 +2943,6 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	mi_buf = new CMemBuf;
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
-	string_literal_table.reset(new std::map<std::string, int>());
-	double_literal_table.reset(new std::map<double, int>());
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 
