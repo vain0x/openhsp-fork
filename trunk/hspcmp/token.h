@@ -74,7 +74,6 @@
 #define	CALCVAR double
 
 #define LINEBUF_MAX 0x10000
-#define INCLUDE_LEVEL_MAX 64
 
 // line mode type
 #define LMODE_ON 0
@@ -394,8 +393,6 @@ private:
 		int len;
 	} undefined_symbol_t;
 	std::vector<undefined_symbol_t> undefined_symbols;
-	char modcmdname[OBJNAME_MAX + 2]; // current userdef command name
-
 	int cs_lastptr;					// パラメーターの初期CS位置
 	int cs_lasttype;				// パラメーターのタイプ(単一時)
 	int calccount;					// パラメーター個数
