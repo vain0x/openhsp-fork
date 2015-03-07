@@ -44,4 +44,3 @@ void Alertf( const char *format, ... );
 int ConvSJis2Utf8( char *pSource, char *pDist, int buffersize );
 
 
-int htoi(char *str);

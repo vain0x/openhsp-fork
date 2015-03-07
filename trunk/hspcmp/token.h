@@ -5,7 +5,6 @@
 #ifndef __token_h
 #define __token_h
 
-#include <stack>
 #include <vector>
 #include <map>
 #include <memory>
@@ -296,7 +295,6 @@ private:
 	int GenerateCodePRMF4( int t );
 	void GenerateCodeMethod( void );
 	void GenerateCodeLabel( char *name, int ex );
-	int GenerateOTIndex(char *name);
 
 	void GenerateCodePP_regcmd( void );
 	void GenerateCodePP_cmd( void );
@@ -344,12 +342,6 @@ private:
 	void CalcCG_bool( void );
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
-
-	struct CGCalcElem;
-	CGCalcElem CalcCG_evalConstExpr(int op, CGCalcElem const& lhs, CGCalcElem const& rhs);
-	CGCalcElem CalcCG_castCalcElem(CGCalcElem const&, int destType);
-	void CalcCG_putCSCalcElem(CGCalcElem const&);
-	void CalcCG_ceaseConstFolding(bool pushNonconstValue);
 
 
 	//		Data
@@ -454,18 +446,6 @@ private:
 
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
-
-	struct CGCalcElem {
-		//TYPE_STRING/DNUM/INUM; or _VAR (non-const); or _ERROR (stack bottom)
-		int type;
-		//–â‘è: ŒvZ’†‚Ì•¶š—ñ‚ğ‚¿‰^‚Ô‚½‚ß‚Édsbuf‚ğ—˜—p‚µ‚Ä‚¢‚é
-		union { int dsindex; double dval; int inum; };
-		int exflag;
-
-		bool isConst() const;
-		static CGCalcElem makeDouble(double dval, int exf);
-	};
-	std::unique_ptr<std::stack<CGCalcElem>> stack_calculator;
 
 	//		for Header info
 	int hed_option;
