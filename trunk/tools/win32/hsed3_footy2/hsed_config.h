@@ -14,7 +14,7 @@
 #define HSPVER3		// HSP version3.0 flag
 
 #ifdef HSPVER3
-#include "../hsp3/hsp3config.h"
+#include "../../../hsp3/hsp3config.h"
 #else
 #define vercode 0x0206		// HSP2 version code
 #endif

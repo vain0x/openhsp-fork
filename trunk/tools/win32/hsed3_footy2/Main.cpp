@@ -472,20 +472,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 	szExeDir[a]=0;
 
 	//		DLLを初期化
-
 	strcpy( szDllDir,szExeDir );
 	strcat( szDllDir,"\\" FILE_HSPCMP );
-	a=dll_ini( szDllDir );
-	if (a!=1) {
-		msgboxf(NULL,
-#ifdef JPNMSG
-		"%sが見つかりませんでした。"
-#else
-		"%s not found."
-#endif
-		, "Startup error", MB_OK | MB_ICONEXCLAMATION, szDllDir);
-		dll_bye(); return -1;
-	}
 
 	//		XPのチェック
 
@@ -587,7 +575,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
        }
 	}
 
-	dll_bye();							// DLLを開放
 #ifdef FOOTYSTATIC
 	Footy2End();
 #endif	/*FOOTYSTATIC*/
