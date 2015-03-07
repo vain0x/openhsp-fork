@@ -2667,8 +2667,7 @@ ppresult_t CToken::PP_Module( void )
 	wrtbuf->PutStrf( "#module %s",tagname );
 	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "goto@hsp *_%s_exit",tagname );
-		wrtbuf->PutCR();
-	}
+	wrtbuf->PutCR();
 	{
 		char tagname_quoted[MODNAME_MAX + 4];
 		sprintf_s(tagname_quoted, "\"%s\"", tagname);
@@ -2713,8 +2712,7 @@ ppresult_t CToken::PP_Global( void )
 	wrtbuf->PutStr( "#global" );
 	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
-		wrtbuf->PutCR();
-	}
+	wrtbuf->PutCR();
 	SetModuleName("");
 	RegistExtMacro("__module__", "\"\"");
 	RegistExtMacro("__func__", "");
