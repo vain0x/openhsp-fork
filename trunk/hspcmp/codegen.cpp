@@ -2769,20 +2769,6 @@ int CToken::PutDSBuf( char *str )
 	return i;
 }
 
-
-int CToken::PutDSBuf( char *str )
-{
-	//		Register strings to data segment (direct)
-	//
-	//todo: to be pooled
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
-}
-
-
 int CToken::PutDSBuf( char *str, int size )
 {
 	//		Register strings to data segment (direct)
