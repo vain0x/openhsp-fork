@@ -27,7 +27,7 @@
 
 static char const* stringFromCalcCode(int op) {
 	static char const* table[] = { "+", "-", "*", "/", "\\", "&", "|", "^", "=", "!", ">", "<", ">=", "<=", ">>", "<<" };
-	assert(0 <= op && op <= CALCCODE_MAX);
+	assert(0 <= op && op < CALCCODE_MAX);
 	return table[op];
 }
 
@@ -2635,7 +2635,7 @@ void CToken::SetCS(int csindex, int type, int value)
 	if ( _exf & EXFLG_3 ) {
 		*reinterpret_cast<int*>(cscode + 1) = value;
 	} else {
-		assert(value < 0x10000);  // when 16 bit encode
+		assert(static_cast<unsigned int>(value) < 0x10000);  // when 16 bit encode
 		cscode[1] = value;
 	}
 }
@@ -2650,7 +2650,7 @@ void CToken::PutCS( int type, int value, int exflg )
 	assert(type != TYPE_XLABEL);
 	if ( CG_optShort() && type == TYPE_LABEL ) {
 		label_reference_table->insert({ value, GetCS() });
-		Mesf("#ラベル参照 (cs#%d -> ot#%d)", GetCS(), value);
+		//Mesf("#ラベル参照 (cs#%d -> ot#%d)", GetCS(), value);
 	}
 
 	int a;
@@ -2768,20 +2768,6 @@ int CToken::PutDSBuf( char *str )
 	ds_buf->Put( (char)0 );
 	return i;
 }
-
-
-int CToken::PutDSBuf( char *str )
-{
-	//		Register strings to data segment (direct)
-	//
-	//todo: to be pooled
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
-}
-
 
 int CToken::PutDSBuf( char *str, int size )
 {
