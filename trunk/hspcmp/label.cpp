@@ -50,7 +50,7 @@ int CLabel::StrCase( char *str )
 
 int CLabel::GetHash( char *str )
 {
-	//		HUSH’l‚ð“¾‚é
+	//		Hash’l‚ð“¾‚é
 	//
 	int hash;
 	unsigned char a1;
