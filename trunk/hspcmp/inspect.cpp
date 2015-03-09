@@ -1,8 +1,6 @@
 // partial CToken
 // cf. knowbug/CAx::analyzeDInfo
 
-#ifdef HSPINSPECT
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +23,8 @@
 #include "comutil.h"
 
 #include "token.h"
+
+#ifdef HSPINSPECT
 
 extern char *hsp_prestr[];  // hspcmp.cpp
 extern char *hsp_prepp[];
