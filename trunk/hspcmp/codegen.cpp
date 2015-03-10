@@ -2629,7 +2629,7 @@ void CToken::SetCS(int csindex, int type, int value)
 	if ( _exf & EXFLG_3 ) {
 		*reinterpret_cast<int*>(cscode + 1) = value;
 	} else {
-		assert(value < 0x10000);  // when 16 bit encode
+		assert(static_cast<unsigned int>(value) < 0x10000);  // when 16 bit encode
 		cscode[1] = value;
 	}
 }
@@ -2644,7 +2644,7 @@ void CToken::PutCS( int type, int value, int exflg )
 	assert(type != TYPE_XLABEL);
 	if ( CG_optShort() && type == TYPE_LABEL ) {
 		label_reference_table->insert({ value, GetCS() });
-		Mesf("#ラベル参照 (cs#%d -> ot#%d)", GetCS(), value);
+		//Mesf("#ラベル参照 (cs#%d -> ot#%d)", GetCS(), value);
 	}
 
 	int a;
@@ -2756,7 +2756,7 @@ int CToken::PutDSBuf( char *str )
 		} else {
 			string_literal_table->insert({ std::string(str), i });
 		}
-	}
+}
 
 	ds_buf->PutStr( str );
 	ds_buf->Put( (char)0 );

@@ -254,7 +254,7 @@ int CHsc3::Compile( char *fname, char *outname, char *outname_axi, int mode )
 		res = tk.GenerateCode( fname, outname, mode );
 	}
 
-	if ( tk.GetCmpOption() & CMPMODE_AXIOUT ) {
+	if ( cmpopt & CMPMODE_AXIOUT ) {
 #ifdef HSPINSPECT
 		int const res = tk.SaveAxInspection(outname_axi);
 		if ( res < 0 ) {

@@ -282,7 +282,7 @@ EXPORT BOOL WINAPI hsc_comp ( int p1, int p2, int p3, int p4 )
 
 	char fname_axi[_MAX_PATH];
 	strcpy_s(fname_axi, fname);
-	strcat_s(fname_axi, "-axi.txt");
+	strcat_s(fname_axi, ".axi.txt");
 
 	st = hsc3->Compile( fname2, oname, fname_axi, cmpmode );
 	hsc3->PreProcessEnd();
