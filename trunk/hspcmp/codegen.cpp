@@ -1615,6 +1615,7 @@ void CToken::GenerateCodeLET( int id )
 	texflag = 0;
 
 	cg_lastcmd  = CG_LASTCMD_LET;
+	cg_lasttype = TYPE_VAR;
 	cg_lastval  = op;
 
 	GetTokenCG( GETTOKEN_DEFAULT );
@@ -2357,7 +2358,6 @@ int CToken::GenerateCodeSub( void )
 //	char tmp[512];
 
 	cg_errline = line;
-	cg_lastcmd = CG_LASTCMD_NONE;
 
 	if ( cg_ptr == NULL ) return TK_EOF;
 
@@ -2578,6 +2578,7 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 	cg_libindex = -1;
 	cg_libmode = CG_LIBMODE_NONE;
 	cg_lastcs = 0;
+	cg_lastcmd = CG_LASTCMD_NONE;
 	cg_localcur = 0;
 	cg_locallabel = 0;
 	cg_varhpi = 0;
@@ -3153,6 +3154,12 @@ void CToken::PutHPI( short flag, short option, char *libname, char *funcname )
 	hpi_buf->PutData( &hpi, sizeof(HPIDAT) );
 }
 
+//プログラムを絶対に順次実行させなくする命令
+static bool IsTerminateCode(int type, int val)
+{
+	return (type == TYPE_PROGCMD
+		&& (val == 0x00 || val == 0x02 || val == 0x10 || val == 0x11));
+}
 
 int CToken::GenerateCode( char *fname, char *oname, int mode )
 {
@@ -3214,11 +3221,27 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		int sz_hed, sz_opt, cs_size, ds_size, ot_size, di_size;
 		int li_size, fi_size, mi_size, fi2_size, hpi_size;
 
-		orgcs = GetCS();
-		PutCS( TYPE_PROGCMD, 0x11, EXFLG_1 );			// 終了コードを最後に入れる
-		i=PutOT( orgcs );
-		PutCS( TYPE_PROGCMD, 0, EXFLG_1 );
-		PutCS( TYPE_LABEL, i, 0 );
+		//終端命令
+		{
+			//Mesf("lastcode<%d>(%d,%d), cssize=%d", cg_lastcmd, cg_lasttype, cg_lastval, GetCS());
+			bool putTerminateCode = true;
+			if ( CG_optCode() && (cg_lastcmd  == CG_LASTCMD_CMD) && IsTerminateCode(cg_lasttype, cg_lastval) ) {
+				putTerminateCode = false;
+				//最後のコードより後にラベルがないこと
+				for ( int i = 0; i < GetOTCount(); ++ i ) {
+					if ( GetOT(i) >= GetCS() ) { putTerminateCode = true; break; }
+				}
+			}
+			if ( putTerminateCode ) {
+				orgcs = GetCS();
+				PutCS(TYPE_PROGCMD, 0x11, EXFLG_1);  // stop
+				i = PutOT(orgcs);
+				PutCS(TYPE_PROGCMD, 0, EXFLG_1);
+				PutCS(TYPE_LABEL, i, 0);
+			} else if ( CG_optInfo() ) {
+				Mes("#終端コード省略");
+			}
+		}
 
 		if ( cg_debug ) {
 			PutDI();
