@@ -34,6 +34,14 @@ char const* CToken::CG_scriptPositionString() const
 	return stt_buf;
 }
 
+//プログラムの次を絶対に実行させない命令
+// goto, return, break, continue, end, stop
+static bool IsTerminateCode(int type, int val)
+{
+	return (type == TYPE_PROGCMD
+		&& (val == 0x00 || val == 0x02 || val == 0x03 || val == 0x06 || val == 0x10 || val == 0x11));
+}
+
 //-------------------------------------------------------------
 // ConstCode
 //-------------------------------------------------------------
@@ -2136,6 +2144,8 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	}
 	int dat_index = is_command ? STRUCTDAT_INDEX_FUNC : STRUCTDAT_INDEX_CFUNC;
 	PutStructEnd( index, funcname, dat_index, ot, funcflag );
+
+	cg_evaluatable = true;
 }
 
 
@@ -2338,7 +2348,6 @@ int CToken::GenerateCodeSub( void )
 //	char tmp[512];
 
 	cg_errline = line;
-	//cg_lastcmd = CG_LASTCMD_NONE;
 
 	if ( cg_ptr == NULL ) return TK_EOF;
 
@@ -2374,6 +2383,15 @@ int CToken::GenerateCodeSub( void )
 		case TK_OBJ:
 			cg_lastcmd = CG_LASTCMD_LET;
 			i = lb->Search( cg_str );
+
+			if ( !cg_evaluatable ) {
+				cg_evaluatable = (lb->GetType(i) == TYPE_PROGCMD && lb->GetOpt(i) == 0x005); // loop
+				if ( !cg_evaluatable ) {
+					if ( CG_optInfo() ) Mesf("#実行されないコードの抑制 %s", CG_scriptPositionString());
+					return TK_EOL;
+				}
+			}
+
 			if ( i < 0 ) {
 				//Mesf( "[%s][%d]",cg_str, cg_valcnt );
 				i = SetVarsFixed( cg_str, cg_defvarfix );
@@ -2392,6 +2410,7 @@ int CToken::GenerateCodeSub( void )
 					break;
 				default:
 					GenerateCodeCMD( i );
+					if ( IsTerminateCode(cg_lasttype, cg_lastval) ) { cg_evaluatable = false; }
 					break;
 				}
 			}
@@ -2399,6 +2418,8 @@ int CToken::GenerateCodeSub( void )
 //			Mes( tmp );
 			break;
 		case TK_LABEL:
+			cg_evaluatable = true;
+
 			//Mesf( "#lab:%s",cg_str );
 			if ( *cg_str == '@') {
 				sprintf(cg_str, "@l%d", cg_locallabel );				// local label
@@ -2477,6 +2498,7 @@ int CToken::GenerateCodeBlock( void )
 		cg_ptr = GetLineCG();
 		if ( iflev ) {
 			if ( ifscope[iflev-1] == CG_IFCHECK_LINE ) CheckCMDIF_Fin(0);			// 'if' jump support
+			cg_evaluatable = true;
 		}
 		if ( cg_debug ) PutDI();
 		cg_orgline++;
@@ -2490,6 +2512,7 @@ int CToken::GenerateCodeBlock( void )
 		} else if (a1=='}') {			// when '}'
 			if ( iflev == 0 ) throw CGERROR_BLOCKEXP;
 			if ( ifscope[iflev-1] != CG_IFCHECK_SCOPE ) throw CGERROR_BLOCKEXP;
+			cg_evaluatable = true;
 
 			ff = 0;
 			p = GetTokenCG( cg_ptr, GETTOKEN_DEFAULT );
@@ -2549,6 +2572,7 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 	int a;
 	line = 0;
 	cg_flag = CG_FLAG_ENABLE;
+	cg_evaluatable = true;
 	cg_valcnt = 0;
 	cg_typecnt = HSP3_TYPE_USER;
 	cg_pptype = -1;
@@ -2567,8 +2591,7 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 
 	iflev=0;
 	replev=0;
-
-	for( a=0; a<CG_REPLEV_MAX; a++) { repend[a] = -1; }
+	std::fill(repend, &repend[CG_REPLEV_MAX], -1);
 
 	try {
 		RegisterFuncLabels();
@@ -3216,13 +3239,6 @@ void CToken::PutHPI( short flag, short option, char *libname, char *funcname )
 	hpi_buf->PutData( &hpi, sizeof(HPIDAT) );
 }
 
-//プログラムを絶対に順次実行させなくする命令
-static bool IsTerminateCode(int type, int val)
-{
-	return (type == TYPE_PROGCMD
-		&& (val == 0x00 || val == 0x02 || val == 0x10 || val == 0x11));
-}
-
 int CToken::GenerateCode( char *fname, char *oname, int mode )
 {
 	CMemBuf srcbuf;
@@ -3290,25 +3306,14 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		int li_size, fi_size, mi_size, fi2_size, hpi_size;
 
 		//終端命令
-		{
-			//Mesf("lastcode<%d>(%d,%d), cssize=%d", cg_lastcmd, cg_lasttype, cg_lastval, GetCS());
-			bool putTerminateCode = true;
-			if ( CG_optCode() && (cg_lastcmd  == CG_LASTCMD_CMD) && IsTerminateCode(cg_lasttype, cg_lastval) ) {
-				putTerminateCode = false;
-				//最後のコードより後にラベルがないこと
-				for ( int csindex : *working_ot_buf ) {
-					if ( csindex >= GetCS() ) { putTerminateCode = true; break; }
-				}
-			}
-			if ( putTerminateCode ) {
-				orgcs = GetCS();
-				PutCS(TYPE_PROGCMD, 0x11, EXFLG_1);  // stop
-				i = PutOT(orgcs);
-				PutCS(TYPE_PROGCMD, 0, EXFLG_1);
-				PutCS(TYPE_LABEL, i, 0);
-			} else if ( CG_optInfo() ) {
-				Mes("#終端コード省略");
-			}
+		if ( CG_optCode() && !cg_evaluatable ) {
+			if ( CG_optInfo() ) { Mes("#終端コード省略"); }
+		} else {
+			orgcs = GetCS();
+			PutCS(TYPE_PROGCMD, 0x11, EXFLG_1);  // stop
+			i = PutOT(orgcs);
+			PutCS(TYPE_PROGCMD, 0, EXFLG_1);
+			PutCS(TYPE_LABEL, i, 0);
 		}
 
 		PutOTBuf();

@@ -439,7 +439,8 @@ private:
 
 	//		for CodeGenerator
 	//
-	int cg_flag;
+	int cg_flag;  // 削除されるモジュールの内部コードを出力抑制するフラグ
+	bool cg_evaluatable;  // gotoやreturnの後ろの、絶対に実行されないコードを出力抑制するフラグ (ラベルか#deffunc、"}"で解除)
 	int cg_debug;
 	int cg_iflev;
 	int cg_valcnt;
@@ -465,7 +466,7 @@ private:
 	int ifptr[CG_IFLEV_MAX];
 	int ifterm[CG_IFLEV_MAX];
 
-	int cg_lastcmd;
+	int cg_lastcmd;  // 直前に書き込んだコマンド; cmdif等は未実装
 	int cg_lasttype;
 	int cg_lastval;
 	int cg_lastcs;
