@@ -75,8 +75,9 @@ int CLabel::Regist( char *name, int type, int opt )
 {
 	if ( name[0]==0 ) return -1;
 
-	int const label_id = cur;
-	LABOBJ *lab=&mem_lab[cur++];
+	int const label_id = GetCount();
+	mem_lab.push_back({});
+	LABOBJ *lab = &mem_lab.back();
 	lab->flag = 1;
 	lab->type = type;
 	lab->opt  = opt;
@@ -174,8 +175,6 @@ int CLabel::Search( char *oname )
 {
 	//		object name search
 	//
-	if (cur==0) return -1;
-
 	int hash = StrCase( oname );
 	if (*oname != 0) {
 		auto const r = labels.equal_range( oname );
@@ -195,8 +194,6 @@ int CLabel::SearchLocal( char *oname, char *loname )
 	//		object name search ( for local )
 	//
 	int hash, hash2;
-	if (cur == 0) return -1;
-
 	hash = StrCase(oname);
 	hash2 = GetHash(loname);
 	if (*oname != 0) {
@@ -228,7 +225,7 @@ CLabel::CLabel( void )
 	: mem_lab {}
 	, maxsymbol(def_maxsymbol)
 {
-	mem_lab.resize(def_maxlab);
+	mem_lab.reserve(def_maxlab);
 	std::fill(symblock, &symblock[def_maxblock], nullptr);
 	Reset();
 }
@@ -236,7 +233,6 @@ CLabel::CLabel( void )
 
 void CLabel::Reset( void )
 {
-	cur = 0;
 	labels.clear();
 	for ( auto& elem : mem_lab ) { elem.flag = -1; }
 	DisposeSymbolBuffer();
@@ -288,7 +284,7 @@ char *CLabel::ExpandSymbolBuffer( int size )
 
 int CLabel::GetCount( void )
 {
-	return cur;
+	return mem_lab.size();
 }
 
 
@@ -565,9 +561,9 @@ void CLabel::DumpLabel( char *str )
 	int a;
 	p = str;
 	p=Prt( p,"#Debug dump" );
-	sprintf( tmp,"#Labels:%d",cur );
+	sprintf( tmp,"#Labels:%d",GetCount() );
 	p=Prt( p,tmp );
-	for(a=0;a<cur;a++) {
+	for(a=0;a<GetCount();a++) {
 		LABOBJ *lab=&mem_lab[a];
 		sprintf( tmp,"#ID:%d (%s) flag:%d  type:%d  opt:%x",a,lab->name,lab->flag,lab->type,lab->opt );
 		p=Prt( p,tmp );
@@ -590,7 +586,7 @@ void CLabel::DumpHSPLabel( char *str, int option, int maxsize )
 	p = str;
 	p_limit = p + maxsize;
 
-	for(a=0;a<cur;a++) {
+	for(a=0;a<GetCount();a++) {
 		if ( p >= p_limit ) break;
 
 		LABOBJ *lab=&mem_lab[a]; typem = NULL;

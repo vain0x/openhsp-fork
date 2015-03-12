@@ -112,7 +112,12 @@ int CToken::Inspect_CSElem(int csindex)
 
 	switch ( type ) {
 		case TYPE_MARK: {
-			output << stringFromCalcCode(value);
+			if ( value < CALCCODE_MAX ) {
+				output << stringFromCalcCode(value);
+			} else {
+				assert(value == '(' || value == ')' || value == '[' || value == ']' || value == '?');
+				output << static_cast<char>(value);
+			}
 			break;
 		}
 		case TYPE_STRING:
@@ -170,18 +175,21 @@ int CToken::Inspect_CSElem(int csindex)
 			break;
 		}
 		default: assert(type >= TYPE_INTCMD);
-			if ( type < TYPE_USERDEF ) {
-				//(type, value)に対応する組み込みコマンドの名前を検索する
-				int id = -1;
-				for ( id = 0; id < lb->GetNumEntry(); ++id ) {
-					if ( lb->GetType(id) == type && lb->GetOpt(id) == value ) break;
-				}
-				assert( id != lb->GetNumEntry() );
-				output << lb->GetName(id);
-			} else {
-				//todo: #cmd で登録されたキーワードの名前をみつける
-				output << "unknown";
+			//(type, value)に対応するコマンドの名前を検索する
+			// button, onexit などのgoto/gosubと連鎖する命令は opt に 0x10000 がついているので注意
+			// #cmd で定義されるプラグインコマンドも一緒にみつかるはず
+			if ( type == TYPE_PROGCMD && value == 0x00C ) { //隠しコマンド
+				output << "_foreach_check@hsp";
+				break;
 			}
+
+			int id = 0;
+			for ( ; id < lb->GetNumEntry(); ++id ) {
+				if ( lb->GetType(id) == type && (lb->GetOpt(id) & 0xFFFF) == value ) break;
+			}
+
+			assert(id < lb->GetNumEntry());
+			output << (id < lb->GetNumEntry() ? lb->GetName(id) : "unknown");
 			break;
 	}
 

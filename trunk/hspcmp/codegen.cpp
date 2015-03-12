@@ -234,7 +234,7 @@ static int is_statement_end( int type )
 
 void CToken::CalcCG_putConstElem(CToken::ConstCode&& self)
 {
-	if ( CG_optCode() && self.isConst() ) {
+	if ( CG_optShort() && self.isConst() ) {
 		// 定数値は畳み込むかもしれないのでスタックに積んでおく
 		stack_calculator->emplace_back(std::move(self));
 	} else {
@@ -258,7 +258,7 @@ void CToken::CalcCG_putCSCalcElem(CToken::ConstCode const& self)
 // 積み込んでいた定数をコードに書き出す
 void CToken::CalcCG_ceaseConstFolding()
 {
-	if ( !(CG_optCode()) ) return;
+	if ( !CG_optShort() ) return;
 
 	assert(!stack_calculator->empty());
 	auto const iterEnd = stack_calculator->end();
@@ -300,7 +300,8 @@ void CToken::CalcCG_regmark( int mark )
 	//
 	int const op = CalcCodeFromMark(mark);
 
-	if ( stack_calculator->size() >= 2
+	if ( CG_optShort()
+		&& stack_calculator->size() >= 2
 		&& stack_calculator->back().isConst()
 		&& stack_calculator->at(stack_calculator->size() - 2).isConst() ) {
 		auto const rhs = std::move(stack_calculator->back()); stack_calculator->pop_back();
@@ -340,7 +341,6 @@ void CToken::CalcCG_factor( void )
 	case TK_LABEL:
 		CalcCG_ceaseConstFolding();
 		GenerateCodeLabel(cg_str, texflag); calccount++;
-		//stack_calculator->push(ConstCode { TYPE_LABEL, { GenerateOTIndex(cg_str) }, texflag });
 		texflag = 0;
 		CalcCG_token();
 		
@@ -488,7 +488,7 @@ void CToken::CalcCG( int ex )
 	//
 	// 配列や関数があれば再帰的に呼ばれる
 
-	if ( CG_optCode() ) {
+	if ( CG_optShort() ) {
 		stack_calculator->push_back(ConstCode::mark); // virtual bottom
 	}
 
@@ -502,7 +502,7 @@ void CToken::CalcCG( int ex )
 	if ( ttype == TK_CALCERROR ) {
 		throw CGERROR_CALCEXP;
 	}
-	if ( CG_optCode() ) {
+	if ( CG_optShort() ) {
 		CalcCG_ceaseConstFolding(); // write consts
 		assert(!stack_calculator->back().isConst());
 		stack_calculator->pop_back(); // remove bottom mark
@@ -2680,7 +2680,7 @@ void CToken::PutCS( int type, double value, int exflg )
 	bool needsToPutDS = true;
 
 	// double literal pool
-	if ( CG_optCode() ) {
+	if ( CG_optShort() ) {
 		auto const it = double_literal_table->find(value);
 		if ( it != double_literal_table->end() ) {
 			i = it->second;
@@ -3205,7 +3205,7 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
 
-	if ( CG_optCode() ) {
+	if ( CG_optShort() ) {
 		string_literal_table.reset(new std::map<std::string, int>());
 		double_literal_table.reset(new std::map<double, int>());
 		stack_calculator.reset(new std::decay_t<decltype(*stack_calculator)>());
@@ -3414,7 +3414,7 @@ void CToken::CG_MesLabelDefinition(int label_id)
 	if ( !cg_debug ) return;
 
 	LABOBJ* const labobj = lb->GetLabel(label_id);
-	if ( labobj->definition_file[0] != '\0' ) {
+	if ( labobj->definition_file ) {
 		Mesf("#Identifier Definition (%s) in line %d [%s]", lb->GetName(label_id), labobj->definition_line, labobj->definition_file);
 	}
 }

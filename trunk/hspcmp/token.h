@@ -481,8 +481,7 @@ private:
 
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
-
-	struct ConstCode final
+	struct ConstCode final  // represents a const code
 	{
 		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
 		union { char* str; double dval; int inum; };
