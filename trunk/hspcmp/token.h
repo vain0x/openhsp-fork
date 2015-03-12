@@ -443,7 +443,6 @@ private:
 	//		for CodeGenerator
 	//
 	int cg_flag;  // 削除されるモジュールの内部コードを出力抑制するフラグ
-	bool cg_evaluatable;  // gotoやreturnの後ろの、絶対に実行されないコードを出力抑制するフラグ (ラベルか#deffunc、"}"で解除)
 	int cg_debug;
 	int cg_iflev;
 	int cg_valcnt;
