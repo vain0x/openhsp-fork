@@ -18,19 +18,15 @@ int CLabel::StrCase( char *str )
 {
 	//	string case to lower
 	//
-	int hash;
-	unsigned char a1;
-	unsigned char a2;
-	unsigned char *ss;
-	hash = 0;
-
 	if ( casemode ) {			// 大文字小文字を区別する
 		return GetHash( str );
 	}
 
-	ss = (unsigned char *)str;
+	unsigned char *ss = (unsigned char *)str;
+	int hash = 0;
+
 	while(1) {
-		a1=*ss;
+		unsigned char a1=*ss;
 		if (a1==0) break;
 		if (a1>=0x80) {
 			ss++;
@@ -39,7 +35,7 @@ int CLabel::StrCase( char *str )
 			hash += (int)a1;
 		}
 		else {
-			a2 = tolower(a1);
+			unsigned char a2 = tolower(a1);
 			hash += (int)a2;
 			*ss++ = a2;
 		}
@@ -75,41 +71,11 @@ int CLabel::GetHash( char *str )
 }
 
 
-int CLabel::StrCmp( char *str1, char *str2 )
-{
-	//	string compare (0=not same/-1=same)
-	//  (case sensitive)
-	int ap;
-	char as;
-	ap=0;
-	while(1) {
-		as=str1[ap];
-		if (as!=str2[ap]) return 0;
-		if (as==0) break;
-		ap++;
-	}
-	return -1;
-}
-
-
 int CLabel::Regist( char *name, int type, int opt )
 {
-	int a;
-
 	if ( name[0]==0 ) return -1;
-	if ( cur>=maxlab ) {				// ラベルバッファ拡張
-		LABOBJ *tmp;
-		int i,oldsize;
-		oldsize = sizeof(LABOBJ)*maxlab;
-		maxlab += def_maxlab;
-		tmp = (LABOBJ *)malloc( sizeof(LABOBJ)*maxlab );
-		for(i=0;i<maxlab;i++) { tmp[i].flag = -1; }
-		memcpy( (char *)tmp, (char *)mem_lab, oldsize );
-		free( mem_lab );
-		mem_lab = tmp;
-	}
 
-	a = cur;
+	int const label_id = cur;
 	LABOBJ *lab=&mem_lab[cur++];
 	lab->flag = 1;
 	lab->type = type;
@@ -123,8 +89,10 @@ int CLabel::Regist( char *name, int type, int opt )
 	lab->rel = NULL;
 	lab->init = LAB_INIT_NO;
 	lab->typefix = LAB_TYPEFIX_NONE;
-	labels.insert(std::make_pair(lab->name, a));
-	return a;
+	lab->definition_file = nullptr; //lab->definition_line = -1;
+
+	labels.insert(std::make_pair(lab->name, label_id));
+	return label_id;
 }
 
 
@@ -210,9 +178,9 @@ int CLabel::Search( char *oname )
 
 	int hash = StrCase( oname );
 	if (*oname != 0) {
-		std::pair<LabelMap::iterator, LabelMap::iterator> r = labels.equal_range( oname );
-		for(LabelMap::iterator it = r.first; it != r.second; ++it) {
-			LABOBJ *lab = mem_lab + it->second;
+		auto const r = labels.equal_range( oname );
+		for(auto it = r.first; it != r.second; ++it) {
+			LABOBJ *lab = &mem_lab[it->second];
 			if ( lab->flag >= 0 ) {
 				return it->second;
 			}
@@ -232,17 +200,17 @@ int CLabel::SearchLocal( char *oname, char *loname )
 	hash = StrCase(oname);
 	hash2 = GetHash(loname);
 	if (*oname != 0) {
-		std::pair<LabelMap::iterator, LabelMap::iterator> r = labels.equal_range( oname );
-		for(LabelMap::iterator it = r.first; it != r.second; ++it) {
-			LABOBJ *lab = mem_lab + it->second;
+		auto const r = labels.equal_range( oname );
+		for(auto it = r.first; it != r.second; ++it) {
+			LABOBJ *lab = &mem_lab[it->second];
 			if (lab->flag >= 0 && lab->eternal) {
 				return it->second;
 			}
 		}
 
-		std::pair<LabelMap::iterator, LabelMap::iterator> r2 = labels.equal_range( loname );
-		for(LabelMap::iterator it = r2.first; it != r2.second; ++it) {
-			LABOBJ *lab = mem_lab + it->second;
+		auto const r2 = labels.equal_range( loname );
+		for(auto it = r2.first; it != r2.second; ++it) {
+			LABOBJ *lab = &mem_lab[it->second];
 			if (lab->flag >= 0 && !lab->eternal) {
 				return it->second;
 			}
@@ -257,33 +225,20 @@ int CLabel::SearchLocal( char *oname, char *loname )
 //-------------------------------------------------------------
 
 CLabel::CLabel( void )
+	: mem_lab {}
+	, maxsymbol(def_maxsymbol)
 {
-	int i;
-	maxsymbol = def_maxsymbol;
-	maxlab = def_maxlab;
-	mem_lab = (LABOBJ *)malloc( sizeof(LABOBJ)*maxlab );
-	for(i=0;i<def_maxblock;i++) { symblock[i] = NULL; }
-	Reset();
-}
-
-
-CLabel::CLabel( int symmax, int worksize )
-{
-	int i;
-	maxsymbol = worksize;
-	maxlab = symmax;
-	mem_lab = (LABOBJ *)malloc( sizeof(LABOBJ)*maxlab );
-	for(i=0;i<def_maxblock;i++) { symblock[i] = NULL; }
+	mem_lab.resize(def_maxlab);
+	std::fill(symblock, &symblock[def_maxblock], nullptr);
 	Reset();
 }
 
 
 void CLabel::Reset( void )
 {
-	int i;
 	cur = 0;
 	labels.clear();
-	for(i=0;i<maxlab;i++) { mem_lab[i].flag = -1; }
+	for ( auto& elem : mem_lab ) { elem.flag = -1; }
 	DisposeSymbolBuffer();
 	MakeSymbolBuffer();
 	casemode = 0;
@@ -293,7 +248,6 @@ void CLabel::Reset( void )
 CLabel::~CLabel( void )
 {
 	DisposeSymbolBuffer();
-	if ( mem_lab != NULL ) free( mem_lab );
 }
 
 
@@ -309,11 +263,8 @@ void CLabel::MakeSymbolBuffer( void )
 void CLabel::DisposeSymbolBuffer( void )
 {
 	int i;
-	for(i=0;i<def_maxblock;i++) {
-		if ( symblock[i] != NULL ) {
-			free( symblock[i] );
-			symblock[i] = NULL;
-		}
+	for ( i = 0; i < def_maxblock; i++ ) {
+		free(symblock[i]); symblock[i] = NULL;
 	}
 	curblock = 0;
 }
@@ -414,7 +365,7 @@ char *CLabel::RegistSymbol( char *str )
 		a1=*src++;
 		*p++ = a1;
 		if ( a1 == 0 ) break;
-		if ( i >= (maxname-1) ) { *p=0; i++; break; }
+		if ( i >= (LAB_NAME_MAX - 1) ) { *p = 0; i++; break; }
 		i++;
 	}
 	//if (i) a1 = str[i-1];
@@ -770,3 +721,9 @@ void CLabel::SetCaseMode( int flag )
 	casemode = flag;
 }
 
+void CLabel::SetDefinition(int id, char const* file, int line)
+{
+	LABOBJ* const it = GetLabel(id);
+	it->definition_file = file;
+	it->definition_line = line;
+}
