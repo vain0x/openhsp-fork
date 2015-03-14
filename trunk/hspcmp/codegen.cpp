@@ -361,10 +361,28 @@ void CToken::CalcCG_factor( void )
 				lb->SetInitFlag(id, LAB_INIT_DONE);
 			}
 		}
-		CalcCG_ceaseConstFolding();
-		GenerateCodeVAR(id, texflag);
-		calccount ++;
-		texflag = 0;
+
+		int const code = lb->GetOpt(id);
+		if ( CG_optShort() && lb->GetType(id) == TYPE_INTFUNC && (code == 0x00 || code == 0x100 || code == 0x185) ) {
+			// 組み込み型変換関数 int,str,double は (零元 + (式)) に変形する (畳み込み可能)
+			switch ( code ) {
+				case 0x000: CalcCG_putConstElem(ConstCode::makeInt(0, texflag)); break;
+				case 0x100: CalcCG_putConstElem(ConstCode::makeStr("", texflag)); break;
+				case 0x185: CalcCG_putConstElem(ConstCode::makeDouble(0.0, texflag)); break;
+				default: assert_sentinel;
+			}
+			texflag = 0;
+			CalcCG_token();
+			if ( ttype != '(' ) throw CGERROR_CALCEXP;
+			CalcCG_start();
+			CalcCG_regmark('+');
+
+		} else {
+			CalcCG_ceaseConstFolding();   // これは畳み込めない
+			GenerateCodeVAR(id, texflag);
+			calccount++;
+			texflag = 0;
+		}
 		if ( ttype == TK_NONE ) ttype = val;		// CalcCG_token()に合わせるため
 		return;
 	}
@@ -372,18 +390,15 @@ void CToken::CalcCG_factor( void )
 	case TK_EOL:
 	case TK_EOF:
 		break;
+	case '(':  // カッコで括られた式
+		CalcCG_token_exprbeg();
+		CalcCG_start();
+		if ( ttype != ')' ) { ttype = TK_CALCERROR; return; }
+		CalcCG_token();
+		break;
 	default:
-		//		カッコの処理
-		//
-		if ( ttype == '(' ) {
-			CalcCG_token_exprbeg();
-			CalcCG_start();
-			if ( ttype != ')' ) { ttype = TK_CALCERROR; return; }
-			CalcCG_token();
-		} else {
-			//Mesf("#Invalid%d",ttype);
-			ttype = TK_CALCERROR;
-		}
+		//Mesf("#Invalid%d",ttype);
+		ttype = TK_CALCERROR;
 	}
 }
 
@@ -807,10 +822,10 @@ char *CToken::GetTokenCG( char *str, int option )
 		}
 	}
 
-	int is_negative_number = 0;
-	if ( option & GETTOKEN_EXPRBEG && a1 == '-' ) {
-		is_negative_number = isdigit(vs[1]);
-	}
+	bool const is_negative_number = 
+		(option & GETTOKEN_EXPRBEG != 0)
+		&& a1 == '-'
+		&& isdigit(vs[1]);
 
 	if ( is_negative_number || isdigit(a1) ) {				// when 0-9 numerical
 		a=0;chk=0;
@@ -2288,6 +2303,7 @@ void CToken::GenerateCodePP_defvars( int fixedvalue )
 int CToken::SetVarsFixed( char *varname, int fixedvalue )
 {
 	//		変数の固定型を設定する
+	// 出現した識別子 varname は変数とは限らないが、もし変数でなければ変数として登録する
 	//
 	int id;
 	id = lb->Search( varname );
