@@ -1471,19 +1471,24 @@ void CToken::CheckInternalIF( int opt )
 }
 
 
-void CToken::CheckInternalCMD1( int opt )
+void CToken::CheckInternalListenerCMD(int opt)
 {
-	//		命令生成時チェック(命令+命令セット)
+	//		命令生成時チェック (goto/gosubを伴う命令)
 	//
-	int i,t,o;
 	if ( ttype != TK_OBJ ) return;
-	i = lb->Search( cg_str );
-	if ( i < 0 ) return;
-	t = lb->GetType(i);
-	o = lb->GetOpt(i);
-	if ( t != TYPE_PROGCMD ) return;
-	PutCS( t, o & 0xffff, 0 );
-	GetTokenCG( GETTOKEN_DEFAULT );
+	int const label_id = lb->Search( cg_str );
+	if ( label_id < 0 ) return;
+	int const t = lb->GetType(label_id);
+	int const o = lb->GetOpt(label_id);
+
+	if ( t == TYPE_PROGCMD ) {
+		if ( CG_optCode() && o == 0x00 ) {  // goto
+			if ( CG_optInfo() ) { Mesf("#goto keyward omission. %s", CG_scriptPositionString());}
+		} else {
+			PutCS(t, o & 0xffff, 0);
+		}
+		GetTokenCG(GETTOKEN_DEFAULT);
+	}
 }
 
 
@@ -1538,7 +1543,8 @@ void CToken::CheckInternalProgCMD( int opt, int orgcs )
 		break;
 	case 0x19:					// on
 		GetTokenCG( GETTOKEN_DEFAULT );
-		CalcCG( 0 );								// 式の評価
+		CalcCG( 0 );  // 引数式
+		//goto/gosub
 		if ( ttype != TK_OBJ ) throw CGERROR_SYNTAX;
 		i = lb->Search( cg_str );
 		if ( i < 0 ) throw CGERROR_SYNTAX;
@@ -1583,7 +1589,7 @@ void CToken::GenerateCodeCMD( int id )
 	if ( t == TYPE_CMPCMD ) CheckInternalIF( opt );
 	GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( opt & 0x10000 ) CheckInternalCMD1( opt );
+	if ( opt & 0x10000 ) CheckInternalListenerCMD(opt);
 
 	GenerateCodePRM();
 	cg_lastcmd  = CG_LASTCMD_CMD;
