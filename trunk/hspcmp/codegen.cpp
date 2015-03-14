@@ -396,13 +396,26 @@ void CToken::CalcCG_unary( void )
 	//		íPçÄââéZéq
 	//
 	int op;
-	if ( ttype=='-' ) {
-		op=ttype; CalcCG_token_exprbeg();
+	if ( ttype == '-' || ttype == '!' ) {
+		op = ttype; CalcCG_token_exprbeg();
 		if ( is_statement_end(ttype) ) throw CGERROR_CALCEXP;
 		CalcCG_unary();
 		texflag = 0;
-		CalcCG_putConstElem(ConstCode::makeInt(-1, texflag));
-		CalcCG_regmark( '*' );
+
+		switch ( op ) {
+			case '-':
+				CalcCG_putConstElem(ConstCode::makeInt(-1, 0x0000));
+				CalcCG_regmark('*');
+				if ( CG_optShort() && CG_optInfo() ) {
+					Mesf("#Warning: If x is int, use (0 - x) instead of (- x) for short code. %s", CG_scriptPositionString());
+				}
+				break;
+			case '!':
+				CalcCG_putConstElem(ConstCode::makeInt(0, 0x0000));
+				CalcCG_regmark('=');
+				break;
+			default: assert_sentinel;
+		}
 	} else {
 		CalcCG_factor();
 	}
