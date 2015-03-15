@@ -16,6 +16,7 @@
 
 #include "supio.h"
 #include "token.h"
+#include "axcode.h"
 #include "label.h"
 #include "tagstack.h"
 #include "membuf.h"
@@ -45,41 +46,43 @@ int CToken::SaveAxInspection(char* fname)
 void CToken::InspectAxCode()
 {
 	assert(!axi_buf);
-	axi_buf.reset(new CMemBuf());
-
-	Inspect_AnalyzeDInfo();
-
-	Inspect_CodeSegment();
-	Inspect_FInfoSegment();
-	//Inspect_LInfoSegment();
-	//Inspect_HpiSegment();
+	AxCodeInspector inspector { *axcode };
+	axi_buf = inspector.GetBuffer();
+	return;
 }
 
-void CToken::Inspect_BeginSegment(char const* segment_title)
+AxCodeInspector::AxCodeInspector(AxCode& ax)
+	: ax_(ax)
+	, axi_buf(new CMemBuf())
 {
-	assert(!!axi_buf);
+	AnalyzeDInfo();
+	CodeSegment();
+	FInfoSegment();
+	//LInfoSegment();
+	//HpiSegment();
+}
+
+void AxCodeInspector::BeginSegment(char const* segment_title)
+{
 	axi_buf->PutStrf("[%s]", segment_title);
 	axi_buf->PutCR();
 }
 
-void CToken::Inspect_CodeSegment()
+void AxCodeInspector::CodeSegment()
 {
 	//todo: タブ文字ではなく桁数指定で揃えたい
-	Inspect_BeginSegment("CodeSegment");
+	BeginSegment("CodeSegment");
 	axi_buf->PutStr("位置\tタイプ\t\t値\t単項\t文頭\tカンマ\t分岐先\t値の意味");
 	axi_buf->PutCR();
-
-	for ( int i = 0; i < GetCS(); ) {
-		i += Inspect_CSElem(i);
+	for ( int i = 0; i < ax_.GetCS(); ) {
+		i += CSElem(i);
 	}
-
 	axi_buf->PutCR();
 }
 
-int CToken::Inspect_CSElem(int csindex)
+int AxCodeInspector::CSElem(int csindex)
 {
-	auto const cur_cs = &reinterpret_cast<unsigned short*>(cs_buf->GetBuffer())[csindex];
-
+	auto const cur_cs = &ax_.GetCSBuffer()[csindex];
 	//analyze single code
 	int const c = cur_cs[0];
 	int const type = c & CSTYPE;
@@ -104,7 +107,7 @@ int CToken::Inspect_CSElem(int csindex)
 	std::ostringstream output;
 	output
 		<< csindex << '\t'
-		<< Inspect_TypeName(type) << '\t'
+		<< TypeName(type) << '\t'
 		<< value << '\t';
 	for ( int i = 0; i < 3; ++ i) {
 		output << (exflags[i] ? "yes" : "-") << '\t';
@@ -126,10 +129,10 @@ int CToken::Inspect_CSElem(int csindex)
 			break;
 		}
 		case TYPE_STRING:
-			output << "{\"" << (&ds_buf->GetBuffer()[value]) << "\"}";
+			output << "{\"" << (ax_.GetDS(value)) << "\"}";
 			break;
 		case TYPE_DNUM:
-			output << reinterpret_cast<double*>(&ds_buf->GetBuffer()[value]);
+			output << *reinterpret_cast<double*>(ax_.GetDS(value));
 			break;
 		case TYPE_INUM:
 			output << value;
@@ -148,7 +151,7 @@ int CToken::Inspect_CSElem(int csindex)
 			if ( it != inspect_lab_names->end() ) {
 				output << '*' << it->second;
 			} else {
-				int const csindex = reinterpret_cast<int*>(ot_buf->GetBuffer())[value];
+				int const csindex = ax_.GetOTBuffer()[value];
 				output << "*(lb#" << value << ": " << csindex << ")";
 			}
 			break;
@@ -165,14 +168,14 @@ int CToken::Inspect_CSElem(int csindex)
 		}
 		case TYPE_STRUCT: {
 			if ( value < 0 ) { output << "thismod"; break; }
-			auto const stprm = &reinterpret_cast<STRUCTPRM*>(mi_buf->GetBuffer())[value];
+			auto const stprm = &ax_.GetMIBuffer()[value];
 			auto stdat = (stprm->subid >= 0)
-				? &reinterpret_cast<STRUCTDAT*>(fi_buf->GetBuffer())[stprm->subid]
+				? &ax_.GetFIBuffer()[stprm->subid]
 				: nullptr;
 
 			// moduletag (newmod の第2引数)
 			if ( stdat && stprm->mptype == MPTYPE_STRUCTTAG ) {
-				output << (&ds_buf->GetBuffer()[stdat->nameidx]);
+				output << ax_.GetDS(stdat->nameidx);
 				break;
 			}
 
@@ -184,13 +187,13 @@ int CToken::Inspect_CSElem(int csindex)
 			} else {
 				//どの関数のパラメータかを検索
 				if ( !stdat ) {
-					auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *fi_buf), [&](STRUCTDAT& it) {
+					auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *ax_.fi_buf), [&](STRUCTDAT& it) {
 						return ((value - it.prmindex) < it.prmmax);
 					});
-					stdat = (found != MEMBUF_END(STRUCTDAT, *fi_buf)) ? found : nullptr;
+					stdat = (found != MEMBUF_END(STRUCTDAT, *ax_.fi_buf)) ? found : nullptr;
 				}
 				if ( stdat ) {
-					char const* funcname = &ds_buf->GetBuffer()[stdat->nameidx];
+					char const* const funcname = ax_.GetDS(stdat->nameidx);
 					output << "(prm#" << value << ": " << funcname << "#" << (value - stdat->prmindex) << ")";
 				} else {
 					output << "(prm#" << value << ")";
@@ -207,6 +210,7 @@ int CToken::Inspect_CSElem(int csindex)
 				break;
 			}
 
+			auto const lb = ax_.tk_->GetLabelInfo();
 			int id = 0;
 			for ( ; id < lb->GetNumEntry(); ++id ) {
 				if ( lb->GetType(id) == type && (lb->GetOpt(id) & 0xFFFF) == value ) break;
@@ -222,7 +226,7 @@ int CToken::Inspect_CSElem(int csindex)
 	return code_size;
 }
 
-char const* CToken::Inspect_TypeName(int type) {
+char const* AxCodeInspector::TypeName(int type) {
 	assert(type >= 0);
 	static char const* internalTypeNames[] = {
 		"TYPE_MARK", "TYPE_VAR", "TYPE_STRING", "TYPE_DNUM", "TYPE_INUM", "TYPE_STRUCT",
@@ -271,11 +275,11 @@ static char const* stringFromMPType(int mptype)
 	}
 }
 
-void CToken::Inspect_FInfoSegment()
+void AxCodeInspector::FInfoSegment()
 {
-	Inspect_BeginSegment("FInfo");
-	std::for_each(MEMBUF_RANGE(STRUCTDAT, *fi_buf), [this](STRUCTDAT& stdat) {
-		char const* const name = &ds_buf->GetBuffer()[stdat.nameidx];
+	BeginSegment("FInfo");
+	std::for_each(MEMBUF_RANGE(STRUCTDAT, *ax_.fi_buf), [this](STRUCTDAT& stdat) {
+		char const* const name = ax_.GetDS(stdat.nameidx);
 		bool const isCType = (stdat.index == STRUCTDAT_INDEX_CFUNC);
 
 		std::ostringstream output;
@@ -287,7 +291,7 @@ void CToken::Inspect_FInfoSegment()
 			//parameters
 			for ( int i = 0; i < stdat.prmmax; ++i ) {
 				if ( i != 0 ) { output << ", "; }
-				auto& stprm = MEMBUF_BEGIN(STRUCTPRM, *mi_buf)[stdat.prmindex];
+				auto& stprm = MEMBUF_BEGIN(STRUCTPRM, *ax_.mi_buf)[stdat.prmindex];
 				output << stringFromMPType(stprm.mptype);
 			}
 		}
@@ -296,14 +300,14 @@ void CToken::Inspect_FInfoSegment()
 
 	});
 }
-//void CToken::Inspect_LInfoSegment() {}
-//void CToken::Inspect_HpiSegment() {}
+//void AxCodeInspector::LInfoSegment() {}
+//void AxCodeInspector::HpiSegment() {}
 
 
 static unsigned short wpeek(unsigned char const* p) { return *reinterpret_cast<unsigned short const*>(p); }
 static unsigned int tripeek(unsigned char const* p) { return (p[0] | p[1] << 8 | p[2] << 16); }
 
-void CToken::Inspect_AnalyzeDInfo()
+void AxCodeInspector::AnalyzeDInfo()
 {
 	assert(!inspect_var_names);
 	assert(!inspect_lab_names);
@@ -314,7 +318,7 @@ void CToken::Inspect_AnalyzeDInfo()
 
 	return;
 	//
-
+	/*
 	enum DInfoCtx {	// ++ したいので enum class にしない
 		DInfoCtx_Default = 0,
 		DInfoCtx_LabelNames,
@@ -363,6 +367,7 @@ void CToken::Inspect_AnalyzeDInfo()
 	}
 break_loop:
 	return;
+	//*/
 }
 
 #endif

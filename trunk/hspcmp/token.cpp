@@ -135,7 +135,7 @@ CToken::CToken( void )
 	, filename_table(new std::set<std::string>())
 {
 	s3 = (unsigned char *)malloc( s3size );
-	hed_cmpmode = CMPMODE_OPTCODE | CMPMODE_OPTPRM | CMPMODE_SKIPJPSPC;
+	hed_info.cmpmode = CMPMODE_OPTCODE | CMPMODE_OPTPRM | CMPMODE_SKIPJPSPC;
 	errbuf = NULL;
 	packbuf = NULL;
 	ahtmodel = NULL;
@@ -176,16 +176,16 @@ void CToken::ResetCompiler( void )
 	line = 1;
 	fpbit = 256.0;
 	incinf = 0;
-	swsp = 0; swmode = 0; swlevel = 0;
+	swsp = 0; swmode = 0; swlevel = LineMode::On;
 	SetModuleName( "" ); modgc = 0;
 	search_path[0] = 0;
 	lb->Reset();
 	fileadd = 0;
 
 	//		reset header info
-	hed_option = 0;
-	hed_runtime[0] = 0;
-	hed_autoopt_timer = 0;
+	hed_info.option = 0;
+	hed_info.runtime[0] = 0;
+	hed_info.autoopt_timer = 0;
 }
 
 
@@ -334,7 +334,6 @@ char *CToken::Pickstr2( char *str )
 	return (char *)vs;
 }
 
-
 int CToken::CheckModuleName( char *name )
 {
 	int a;
@@ -347,9 +346,7 @@ int CToken::CheckModuleName( char *name )
 		a1=*p;
 		if (a1==0) { return 0; }
 		if (a1<0x30) break;
-		if ((a1>=0x3a)&&(a1<=0x3f)) break;
-		if ((a1>=0x5b)&&(a1<=0x5e)) break;
-		if ((a1>=0x7b)&&(a1<=0x7f)) break;
+		if (is_symbol_char(a1)) break;
 		if (a1>=129) {						// 全角文字チェック
 			if (a1<=159) { p++;a1=*p; }
 			else if (a1>=224) { p++;a1=*p; }
@@ -387,7 +384,7 @@ int CToken::GetToken( void )
 #ifdef HSPWIN
 		if ( a1 == 0x81 ) {
 			if ( wp[1] == 0x40 ) {	// 全角スペースは無視
-				if ( hed_cmpmode & CMPMODE_SKIPJPSPC ) {
+				if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
 					wp+=2; continue;
 				}
 			}
@@ -412,9 +409,7 @@ int CToken::GetToken( void )
 
 	//	Check Extra Character
 	if (a1<0x30) rval=TK_NONE;
-	if ((a1>=0x3a)&&(a1<=0x3f)) rval=TK_NONE;
-	if ((a1>=0x5b)&&(a1<=0x5e)) rval=TK_NONE;
-	if ((a1>=0x7b)&&(a1<=0x7f)) rval=TK_NONE;
+	if (is_symbol_char(a1)) rval=TK_NONE;
 
 	if (a1==':' || a1 == '{' || a1 == '}') {   // multi statement
 		wp++;
@@ -431,8 +426,8 @@ int CToken::GetToken( void )
 		while(1) {
 			a1=toupper(*wp);b=-1;
 			if (a1==0) { wp=NULL;break; }
-			if ((a1>=0x30)&&(a1<=0x39)) b=a1-0x30;
-			if ((a1>=0x41)&&(a1<=0x46)) b=a1-55;
+			if (isdigit(a1)) b=a1-'0';
+			if (isupper(a1)) b=a1-'A';
 			if (a1=='_') b=-2;
 			if (b==-1) break;
 			if (b>=0) { s3[a++]=a1;val=(val<<4)+b; }
@@ -447,7 +442,7 @@ int CToken::GetToken( void )
 		while(1) {
 			a1=*wp;b=-1;
 			if (a1==0) { wp=NULL;break; }
-			if ((a1>=0x30)&&(a1<=0x31)) b=a1-0x30;
+			if (a1 == '0' || a1 == '1') b = a1 - '0';
 			if (a1=='_') b=-2;
 			if (b==-1) break;
 			if (b>=0) { s3[a++]=a1;val=(val<<1)+b; }
@@ -467,7 +462,7 @@ int CToken::GetToken( void )
 		a1=an;						// 次が数値ならばそのまま継続
 	}
 */		
-	if ((a1>=0x30)&&(a1<=0x39)) {			// when 0-9 numerical
+	if (isdigit(a1)) {			// when 0-9 numerical
 		fpflag = 0;
 		ft_bak = 0;
 		while(1) {
@@ -478,7 +473,7 @@ int CToken::GetToken( void )
 					break;
 				}
 				a2=*(wp+1);
-				if ((a2<0x30)||(a2>0x39)) break;
+				if (!isdigit(a2)) break;
 				wp_bak = wp;
 				ft_bak = a;
 				fpflag = 3;
@@ -486,7 +481,7 @@ int CToken::GetToken( void )
 				s3[a++]=a1;wp++;
 				continue;
 			}
-			if ((a1<0x30)||(a1>0x39)) break;
+			if (!isdigit(a1)) break;
 			s3[a++]=a1;
 			wp++;
 		}
@@ -585,16 +580,14 @@ int CToken::GetToken( void )
 		a1=*wp;
 		if (a1==0) { wp=NULL;break; }
 		if (a1<0x30) break;
-		if ((a1>=0x3a)&&(a1<=0x3f)) break;
-		if ((a1>=0x5b)&&(a1<=0x5e)) break;
-		if ((a1>=0x7b)&&(a1<=0x7f)) break;
+		if (is_symbol_char(a1)) break;
 
 		if ( a>=OBJNAME_MAX ) break;
 
 		if (a1>=129) {						// 全角文字チェック
 
 #ifdef HSPWIN
-			if ( hed_cmpmode & CMPMODE_SKIPJPSPC ) {
+			if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
 				if ( a1 == 0x81 ) {
 					if ( wp[1] == 0x40 ) {	// 全角スペースは終端として処理
 						break;
@@ -920,7 +913,7 @@ char *CToken::ExpandStrEx( char *str )
 		if (a1==0x22) {
 			if (vs[1]=='}') {
 				s3[a++]=0x22; s3[a++]='}';
-				mulstr=LMODE_ON; vs+=2; break;
+				mulstr=LineMode::On; vs+=2; break;
 			}
 			s3[a++]=0x5c; s3[a++]=0x22;
 			vs++;
@@ -961,7 +954,7 @@ char *CToken::ExpandStrComment( char *str, int opt )
 		}
 		if (a1=='*') {
 			if (vs[1]=='/') {
-				mulstr=LMODE_ON; vs+=2; break;
+				mulstr=LineMode::On; vs+=2; break;
 			}
 			vs++;
 			continue;
@@ -1084,7 +1077,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 			return ExpandStr( (char *)vs+2, 0 );
 		}
 		if (vs[1]=='*') {
-			mulstr = LMODE_COMMENT;
+			mulstr = LineMode::Comment;
 			*type = TK_VOID;
 			*vs=0;
 			return ExpandStrComment( (char *)vs+2, 0 );
@@ -1101,7 +1094,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	if (a1=='{') {							// {"～"}
 		if (vs[1]==0x22) {
 			if (wrtbuf!=NULL) wrtbuf->PutStr( "{\"" );
-			mulstr = LMODE_STR;
+			mulstr = LineMode::String;
 			*type = TK_STRING;
 			return ExpandStrEx( (char *)vs+2 );
 		}
@@ -1130,7 +1123,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	}
 
 #ifdef HSPWIN
-	if ( hed_cmpmode & CMPMODE_SKIPJPSPC ) {
+	if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
 		if ( a1 == 0x81 && vs[1] == 0x40 ) {	// 全角スペースを半角スペースに変換する
 			*type = TK_CODE;
 			vs+=2;
@@ -1143,9 +1136,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 #endif
 
 	chk=0;
-	if ((a1>=0x3a)&&(a1<=0x3f)) chk++;
-	if ((a1>=0x5b)&&(a1<=0x5e)) chk++;
-	if ((a1>=0x7b)&&(a1<=0x7f)) chk++;
+	if (is_symbol_char(a1)) chk++;
 
 	if (chk) {
 		vs++;
@@ -1154,7 +1145,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 		return (char *)vs;
 	}
 
-	if ((a1>=0x30)&&(a1<=0x39)) {			// when 0-9 numerical
+	if (isdigit(a1)) {			// when 0-9 numerical
 		a=0; flcnt=0;
 		while(1) {
 			a1=*vs;
@@ -1198,7 +1189,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	//		半角スペースの検出
 	//
 #ifdef HSPWIN
-	if (( hed_cmpmode & CMPMODE_SKIPJPSPC ) == 0 ) {
+	if ( (hed_info.cmpmode & CMPMODE_SKIPJPSPC) == 0 ) {
 		if ( strncmp( (char *)s2,"　",2 )==0 ) {
 			SetError("SJIS space code error");
 			*type = TK_ERROR; return (char *)vs;
@@ -1215,7 +1206,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 
 		if (a1>=129) {				// 全角文字チェック
 #ifdef HSPWIN
-			if ( hed_cmpmode & CMPMODE_SKIPJPSPC ) {
+			if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
 				if ( a1 == 0x81 && vs[1] == 0x40 ) {	// 全角スペースは終端と判断
 					break;
 				}
@@ -1237,9 +1228,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 
 		chk=0;
 		if (a1<0x30) chk++;
-		if ((a1>=0x3a)&&(a1<=0x3f)) chk++;
-		if ((a1>=0x5b)&&(a1<=0x5e)) chk++;
-		if ((a1>=0x7b)&&(a1<=0x7f)) chk++;
+		if (is_symbol_char(a1)) chk++;
 		if ( chk ) break;
 		vs++;
 
@@ -1499,10 +1488,10 @@ char *CToken::ExpandStrComment2( char *str )
 {
 	//		"*/" で終端していない場合は NULL を返す
 	//
-	int mulstr_bak = mulstr;
-	mulstr = LMODE_COMMENT;
+	LineMode const mulstr_bak = mulstr;
+	mulstr = LineMode::Comment;
 	char *result = ExpandStrComment( str, 1 );
-	if ( mulstr == LMODE_COMMENT ) {
+	if ( mulstr == LineMode::Comment ) {
 		result = NULL;
 	}
 	mulstr = mulstr_bak;
@@ -1746,7 +1735,7 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 
 ppresult_t CToken::PP_SwitchStart( int sw )
 {
-	if ( swsp==0 ) { swflag = 1; swlevel = LMODE_ON; }
+	if ( swsp==0 ) { swflag = 1; swlevel = LineMode::On; }
 	if ( swsp >= SWSTACK_MAX ) {
 		SetError("#if nested too deeply");
 		return PPRESULT_ERROR;
@@ -1757,10 +1746,10 @@ ppresult_t CToken::PP_SwitchStart( int sw )
 	swsp++;
 	swmode = 0;
 	if ( swflag == 0 ) return PPRESULT_SUCCESS;
-	if ( sw==0 ) { swlevel = LMODE_OFF; }
-			else { swlevel = LMODE_ON; }
+	if ( sw==0 ) { swlevel = LineMode::Off; }
+			else { swlevel = LineMode::On; }
 	mulstr = swlevel;
-	if ( mulstr == LMODE_OFF ) swflag=0;
+	if ( mulstr == LineMode::Off ) swflag=0;
 	return PPRESULT_SUCCESS;
 }
 
@@ -1792,7 +1781,7 @@ ppresult_t CToken::PP_SwitchReverse( void )
 	}
 	if ( swstack[swsp-1] == 0 ) return PPRESULT_SUCCESS;	// 上のスタックが無効なら無視
 	swmode = 1;
-	if ( swlevel == LMODE_ON ) { swlevel = LMODE_OFF; } else { swlevel = LMODE_ON; }
+	swlevel = ( swlevel == LineMode::On ) ? LineMode::Off : LineMode::On;
 	mulstr = swlevel;
 	swflag ^= 1;
 	return PPRESULT_SUCCESS;
@@ -2001,7 +1990,7 @@ char *CToken::CheckValidWord( void )
 					*p = 0; break;
 				}
 				if (p[1]=='*') {
-					mulstr = LMODE_COMMENT;
+					mulstr = LineMode::Comment;
 					p2 = ExpandStrComment( (char *)p+2, 1 );
 					while(1) {
 						if ( p>=p2 ) break;
@@ -2845,9 +2834,9 @@ ppresult_t CToken::PP_CmpOpt( void )
 	}
 
 	if ( val ) {
-		hed_cmpmode |= i;
+		hed_info.cmpmode |= i;
 	} else {
-		hed_cmpmode &= ~i;
+		hed_info.cmpmode &= ~i;
 	}
 	//Alertf("%s(%d)",optname,val);
 	//wrtbuf->PutCR();
@@ -2866,15 +2855,15 @@ ppresult_t CToken::PP_RuntimeOpt( void )
 	if ( i != TK_STRING ) {
 		SetError("illegal runtime name"); return PPRESULT_ERROR;
 	}
-	strncpy( hed_runtime, (char *)s3, sizeof hed_runtime );
-	hed_runtime[sizeof hed_runtime - 1] = '\0';
+	strncpy(hed_info.runtime, (char *)s3, sizeof(hed_info.runtime));
+	hed_info.runtime[sizeof(hed_info.runtime) - 1] = '\0';
 
 	if ( packbuf!=NULL ) {
-		sprintf( tmp, ";!runtime=%s.hrt", hed_runtime );
+		sprintf( tmp, ";!runtime=%s.hrt", hed_info.runtime );
 		AddPackfile( tmp, 2 );
 	}
 
-	hed_option |= HEDINFO_RUNTIME;
+	hed_info.option |= HEDINFO_RUNTIME;
 	return PPRESULT_SUCCESS;
 }
 
@@ -2901,7 +2890,7 @@ ppresult_t CToken::PP_BootOpt(void)
 	i = 0;
 	if (tstrcmp(optname, "notimer")) {			// No MMTimer sw
 		i = HEDINFO_NOMMTIMER;
-		hed_autoopt_timer = -1;
+		hed_info.autoopt_timer = -1;
 	}
 	if (tstrcmp(optname, "nogdip")) {			// No GDI+ sw
 		i = HEDINFO_NOGDIP;
@@ -2918,10 +2907,10 @@ ppresult_t CToken::PP_BootOpt(void)
 	}
 
 	if (val) {
-		hed_option |= i;
+		hed_info.option |= i;
 	}
 	else {
-		hed_option &= ~i;
+		hed_info.option &= ~i;
 	}
 	return PPRESULT_SUCCESS;
 }
@@ -2977,8 +2966,10 @@ ppresult_t CToken::PreprocessNM( char *str )
 
 	//		ソース生成コントロール
 	//
-	if (tstrcmp(word,"ifdef")) {		// generate control
-		if ( mulstr == LMODE_OFF ) {
+	bool const is_ifdef = tstrcmp(word,"ifdef") != 0;
+	bool const is_ifndef = tstrcmp(word,"ifndef") != 0;
+	if ( is_ifdef || is_ifndef ) {		// generate control
+		if ( mulstr == LineMode::Off ) {
 			res = PP_SwitchStart( 0 );
 		} else {
 			res = PPRESULT_ERROR; type = GetToken();
@@ -2988,23 +2979,7 @@ ppresult_t CToken::PreprocessNM( char *str )
 				id = lb->SearchLocal( word, fixname );
 
 				//id = lb->Search( word );
-				res = PP_SwitchStart( (id!=-1) );
-			}
-		}
-		return res;
-	}
-	if (tstrcmp(word,"ifndef")) {		// generate control
-		if ( mulstr == LMODE_OFF ) {
-			res = PP_SwitchStart( 0 );
-		} else {
-			res = PPRESULT_ERROR; type = GetToken();
-			if ( type == TK_OBJ ) {
-				strcase2( word, fixname );
-				AddModuleName( fixname );
-				id = lb->SearchLocal( word, fixname );
-
-				//id = lb->Search( word );
-				res = PP_SwitchStart( (id==-1) );
+				res = PP_SwitchStart( is_ifdef ^ (id == -1) );
 			}
 		}
 		return res;
@@ -3018,7 +2993,7 @@ ppresult_t CToken::PreprocessNM( char *str )
 
 	//		これ以降は#off時に実行しません
 	//
-	if ( mulstr == LMODE_OFF ) { return PPRESULT_UNKNOWN_DIRECTIVE; }
+	if ( mulstr == LineMode::Off ) { return PPRESULT_UNKNOWN_DIRECTIVE; }
 
 	if (tstrcmp(word,"define")) {		// keyword define
 		return PP_Define();
@@ -3062,7 +3037,7 @@ ppresult_t CToken::Preprocess( char *str )
 	//		ソース生成コントロール
 	//
 	if (tstrcmp(word,"if")) {			// generate control
-		if ( mulstr == LMODE_OFF ) {
+		if ( mulstr == LineMode::Off ) {
 			res = PP_SwitchStart( 0 );
 		} else {
 			res = PPRESULT_SUCCESS;
@@ -3076,130 +3051,101 @@ ppresult_t CToken::Preprocess( char *str )
 
 	//		これ以降は#off時に実行しません
 	//
-	if ( mulstr == LMODE_OFF ) { return PPRESULT_SUCCESS; }
+	if ( mulstr == LineMode::Off ) { return PPRESULT_SUCCESS; }
 
 	//		コード生成コントロール
 	//
 	if (tstrcmp(word,"include")) {		// text include
-		res = PP_Include( 0 );
-		return res;
+		return PP_Include( 0 );
 	}
 	if (tstrcmp(word,"addition")) {		// text include
-		res = PP_Include( 1 );
-		return res;
+		return PP_Include( 1 );
 	}
 	if (tstrcmp(word,"const")) {		// constant define
-		res = PP_Const();
-		return res;
+		return PP_Const();
 	}
 	if (tstrcmp(word,"enum")) {			// constant enum define
-		res = PP_Enum();
-		return res;
+		return PP_Enum();
 	}
 /*
 	if (tstrcmp(word,"define")) {		// keyword define
-		res = PP_Define();
+		return PP_Define();
 		if ( res==6 ) SetError("bad macro parameter expression");
-		return res;
 	}
 */
 	if (tstrcmp(word,"module")) {		// module define
-		res = PP_Module();
-		return res;
+		return PP_Module();
 	}
 	if (tstrcmp(word,"global")) {		// module exit
-		res = PP_Global();
-		return res;
+		return PP_Global();
 	}
 	if (tstrcmp(word,"deffunc")) {		// module function
-		res = PP_Deffunc(0);
-		return res;
+		return PP_Deffunc(0);
 	}
 	if (tstrcmp(word,"defcfunc")) {		// module function (1)
-		res = PP_Defcfunc(0);
-		return res;
+		return PP_Defcfunc(0);
 	}
 	if (tstrcmp(word,"modfunc")) {		// module function (2)
-		res = PP_Deffunc(1);
-		return res;
+		return PP_Deffunc(1);
 	}
 	if (tstrcmp(word,"modcfunc")) {		// module function (2+)
-		res = PP_Defcfunc(1);
-		return res;
+		return PP_Defcfunc(1);
 	}
 	if (tstrcmp(word,"modinit")) {		// module function (3)
-		res = PP_Deffunc(2);
-		return res;
+		return PP_Deffunc(2);
 	}
 	if (tstrcmp(word,"modterm")) {		// module function (4)
-		res = PP_Deffunc(3);
-		return res;
+		return PP_Deffunc(3);
 	}
 	if (tstrcmp(word,"struct")) {		// struct define
-		res = PP_Struct();
-		return res;
+		return PP_Struct();
 	}
 	if (tstrcmp(word,"func")) {			// DLL function
-		res = PP_Func( "func" );
-		return res;
+		return PP_Func( "func" );
 	}
 	if (tstrcmp(word,"cfunc")) {		// DLL function
-		res = PP_Func( "cfunc" );
-		return res;
+		return PP_Func( "cfunc" );
 	}
 	if (tstrcmp(word,"cmd")) {			// DLL function (3.0)
-		res = PP_Cmd( "cmd" );
-		return res;
+		return PP_Cmd( "cmd" );
 	}
 /*
 	if (tstrcmp(word,"func2")) {		// DLL function (2)
-		res = PP_Func( "func2" );
-		return res;
+		return PP_Func( "func2" );
 	}
 */
 	if (tstrcmp(word,"comfunc")) {		// COM Object function
-		res = PP_Func( "comfunc" );
-		return res;
+		return PP_Func( "comfunc" );
 	}
 	if (tstrcmp(word,"aht")) {			// AHT definition
-		res = PP_Aht();
-		return res;
+		return PP_Aht();
 	}
 	if (tstrcmp(word,"ahtout")) {		// AHT command line output
-		res = PP_Ahtout();
-		return res;
+		return PP_Ahtout();
 	}
 	if (tstrcmp(word,"ahtmes")) {		// AHT command line output (mes)
-		res = PP_Ahtmes();
-		return res;
+		return PP_Ahtmes();
 	}
 	if (tstrcmp(word,"pack")) {			// packfile process
-		res = PP_Pack( 0 );
-		return res;
+		return PP_Pack( 0 );
 	}
 	if (tstrcmp(word,"epack")) {		// packfile process
-		res = PP_Pack( 1 );
-		return res;
+		return PP_Pack( 1 );
 	}
 	if (tstrcmp(word,"packopt")) {		// packfile process
-		res = PP_PackOpt();
-		return res;
+		return PP_PackOpt();
 	}
 	if (tstrcmp(word,"runtime")) {		// runtime process
-		res = PP_RuntimeOpt();
-		return res;
+		return PP_RuntimeOpt();
 	}
 	if (tstrcmp(word, "bootopt")) {		// boot option process
-		res = PP_BootOpt();
-		return res;
+		return PP_BootOpt();
 	}
 	if (tstrcmp(word, "cmpopt")) {		// compile option process
-		res = PP_CmpOpt();
-		return res;
+		return PP_CmpOpt();
 	}
 	if (tstrcmp(word,"usecom")) {		// COM definition
-		res = PP_Usecom();
-		return res;
+		return PP_Usecom();
 	}
 
 	//		登録キーワード以外はコンパイラに渡す
@@ -3219,14 +3165,14 @@ int CToken::ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preproces
 	*lineext = 0;				// 1行->複数行にマクロ展開されたか?
 	int macloop = 0;			// マクロ展開無限ループチェック用カウンタ
 	while(1) {
-		if ( mulstr == LMODE_OFF ) {				// １行無視
+		if ( mulstr == LineMode::Off ) {			// １行無視
 			if ( wrtbuf!=NULL ) wrtbuf->PutCR();	// 行末CR/LFを追加
 			break;
 		}
 
 		// {"～"}の処理
 		//
-		if ( mulstr == LMODE_STR ) {
+		if ( mulstr == LineMode::String ) {
 			wrtbuf = buf;
 			vp = ExpandStrEx( vp );
 			if ( *vp!=0 ) continue;
@@ -3234,7 +3180,7 @@ int CToken::ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preproces
 
 		// /*～*/の処理
 		//
-		if ( mulstr == LMODE_COMMENT ) {
+		if ( mulstr == LineMode::Comment ) {
 			vp = ExpandStrComment( vp, 0 );
 			if ( *vp!=0 ) continue;
 		}
@@ -3269,7 +3215,7 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 	char *p = src->GetBuffer();
 	int pline = 1;
 	enumgc = 0;
-	mulstr = LMODE_ON;
+	mulstr = LineMode::On;
 	*errtmp = 0;
 	unsigned char a1;
 
@@ -3282,7 +3228,7 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 				p++; continue;
 			}
 #ifdef HSPWIN
-			if ( hed_cmpmode & CMPMODE_SKIPJPSPC ) {
+			if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
 				if ( a1 == 0x81 && p[1] == 0x40 ) {		// 全角スペースチェック
 					p+=2; continue;
 				}
@@ -3295,8 +3241,8 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 		ahtkeyword = NULL;					// AHTキーワードをリセットする
 
 		int is_preprocess_line = *p == '#' &&
-		                         mulstr != LMODE_STR &&
-		                         mulstr != LMODE_COMMENT;
+		                         mulstr != LineMode::String &&
+		                         mulstr != LineMode::Comment;
 
 		//		行データをlinebufに展開
 		int mline;
@@ -3479,10 +3425,9 @@ void CToken::FinishPreprocess( CMemBuf *buf )
 	//
 	int read_pos = 0;
 	int write_pos = 0;
-	size_t i;
 	size_t len = undefined_symbols.size();
 	char *p = buf->GetBuffer();
-	for ( i = 0; i < len; i ++ ) {
+	for ( size_t i = 0; i < len; i ++ ) {
 		undefined_symbol_t sym = undefined_symbols[i];
 		int pos = sym.pos;
 		int len_include_modname = sym.len_include_modname;

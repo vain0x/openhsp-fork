@@ -211,11 +211,11 @@ void CMemBuf::PutCR( void )
 }
 
 
-void CMemBuf::PutData( void *data, int sz )
+void CMemBuf::PutData( void const *data, int sz )
 {
 	char *p;
 	p = PreparePtr( sz );
-	memcpy( p, (char *)data, sz );
+	memcpy( p, data, sz );
 }
 
 

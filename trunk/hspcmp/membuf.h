@@ -41,7 +41,7 @@ public:
 	void PutStrDQ( char *data );
 	void PutStrBlock( char *data );
 	void PutCR( void );
-	void PutData( void *data, int sz );
+	void PutData( void const *data, int sz );
 	void PutStrf( char *format, ... );
 	int PutFile( char *fname );
 	int SaveFile( char *fname );

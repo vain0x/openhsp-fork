@@ -42,19 +42,23 @@
 #define CMPMODE_OPTSHORT 512   // optimaze to code short
 #define CMPMODE_AXIOUT 1024    // output ax inspection file
 
-#define CG_FLAG_ENABLE 0
-#define CG_FLAG_DISABLE 1
+enum class CGFlag : unsigned char {
+	Enable = 0,
+	Disable,
+};
 
-#define CG_LASTCMD_NONE 0
-#define CG_LASTCMD_LET 1
-#define CG_LASTCMD_CMD 2
-#define CG_LASTCMD_CMDIF 3
-#define CG_LASTCMD_CMDMIF 4
-#define CG_LASTCMD_CMDELSE 5
-#define CG_LASTCMD_CMDMELSE 6
+enum class CGLastCmd : unsigned char {
+	None = 0,   // 未出力
+	Let,        // 代入文
+	Cmd,        // 一般のコマンド文
+	CmdIf,  // (未実装)
+	CmdMIf,
+	CmdElse,
+	CmdMElse,
+};
 
-#define CG_IFLEV_MAX 128
-#define CG_REPLEV_MAX 128
+static size_t const CGIfLevelMax = 128;
+static size_t const CGRepeatLevelMax = 128;
 
 // option for 'GetTokenCG'
 #define GETTOKEN_DEFAULT 0
@@ -62,27 +66,33 @@
 #define GETTOKEN_LABEL 2		// '*'に続く名前をラベルとして取得
 #define GETTOKEN_EXPRBEG 4		// 式の先頭
 
-#define CG_LOCALSTRUCT_MAX 256
+static size_t const CG_LOCALSTRUCT_MAX = 256;
 
-#define CG_IFCHECK_SCOPE 0
-#define CG_IFCHECK_LINE 1
+enum class CGIfScope : unsigned char {
+	Block = 0,
+	Line
+};
 
-#define CG_LIBMODE_NONE -1
-#define CG_LIBMODE_DLL 0
-#define CG_LIBMODE_DLLNEW 1
-#define CG_LIBMODE_COM 2
-#define CG_LIBMODE_COMNEW 3
+enum class CGLibMode {
+	None = 0,
+	Dll,      // #uselib 状態
+	DllNew,   // #uselib 状態 (Dll名の指定が初回の場合)
+	Com,      // #usecom 状態
+	ComNew,   // #usecom 状態 (Dll名の指定が初回の場合)
+};
 
-#define	CALCVAR double
+using CALCVAR = double;
 
 #define LINEBUF_MAX 0x10000
 #define INCLUDE_LEVEL_MAX 64
 
 // line mode type
-#define LMODE_ON 0
-#define LMODE_STR 1
-#define LMODE_COMMENT 2
-#define LMODE_OFF 3
+enum class LineMode : unsigned char {
+	On = 0,
+	String,
+	Comment,
+	Off,
+};
 
 // macro default data storage
 typedef struct MACDEF {
@@ -98,7 +108,7 @@ typedef struct MACDEF {
 #define COMP_MODE_DEBUGWIN 2
 #define COMP_MODE_UTF8 4
 
-#define SWSTACK_MAX 32
+static size_t const SWSTACK_MAX = 32;
 
 #define HEDINFO_RUNTIME 0x1000		// 動的ランタイムを有効にする
 #define HEDINFO_NOMMTIMER 0x2000	// マルチメディアタイマーを無効にする
@@ -120,6 +130,7 @@ class CMemBuf;
 class CTagStack;
 class CStrNote;
 class AHTMODEL;
+class AxCode;
 
 #define SCNVBUF_DEFAULTSIZE 0x8000
 #define SCNV_OPT_NONE 0
@@ -184,48 +195,43 @@ public:
 	int GenerateCode( char *fname, char *oname, int mode );
 	int GenerateCode( CMemBuf *srcbuf, char *oname, int mode );
 
-	int GetCS( void );
-	void PutCS( int type, int value, int exflg );
-	void PutCSSymbol( int label_id, int exflag );
-	void PutCS( int type, double value, int exflg );
+	int GetCS();
+	void PutCS(int type, int value, int exflg);
+	void PutCSSymbol(int label_id, int exflag);
+	void PutCS(int type, double value, int exflg);
 	void SetCS(int csindex, int type, int value);
-	int PutOT( int value );
-	void PutOTBuf();
-	int PutDS( char *str );
-	int PutDSBuf( char *str );
-	int PutDSBuf( char *str, int size );
+	int PutOT(int value);
+	int PutDS(char *str);
+	int PutDSBuf(char *str);
+	int PutDSBuf(char *str, int size);
 	char *GetDS(int ptr);
-	void SetOT( int id, int value );
 	int GetOT(int id); int GetOTCount();
-	int GetNewOTFromOldOT(int old_otindex);
-	void PutDI( void );
-	void PutDI( int dbg_code, int a, int subid );
-	void PutDIVars( void );
-	void PutDILabels( void );
-	void PutDIParams( void );
-	void PutHPI( short flag, short option, char *libname, char *funcname );
-	int PutLIB( int flag, char *name );
-	void SetLIBIID( int id, char *clsid );
-	int PutStructParam( short mptype, int extype );
-	int PutStructParamTag( void );
-	void PutStructStart( void );
-	int PutStructEnd( char *name, int libindex, int otindex, int funcflag );
-	int PutStructEnd( int i, char *name, int libindex, int otindex, int funcflag );
-	int PutStructEndDll( char *name, int libindex, int subid, int otindex );
-
+	void PutDI(int dbgcode, int value, int subid);
+	
 	void CalcCG( int ex );
 
 	// others
-
-	int GetHeaderOption( void ) { return hed_option; }
-	char *GetHeaderRuntimeName( void ) { return hed_runtime; }
-	void SetHeaderOption( int opt, char *name ) { hed_option=opt; strcpy( hed_runtime, name ); }
-	int GetCmpOption( void ) { return hed_cmpmode; }
-	void SetCmpOption( int cmpmode ) { hed_cmpmode = cmpmode; }
+	struct HeaderInfo {
+		int option;
+		char runtime[64];
+		int cmpmode;
+		int autoopt_timer;
+	};
+	int GetHeaderOption(void) { return hed_info.option; }
+	char *GetHeaderRuntimeName(void) { return hed_info.runtime; }
+	void SetHeaderOption(int opt, char *name) { hed_info.option = opt; strcpy(hed_info.runtime, name); }
+	int GetCmpOption(void) { return hed_info.cmpmode; }
+	void SetCmpOption(int cmpmode) { hed_info.cmpmode = cmpmode; }
+	
+	bool CG_optCode() const { return (hed_info.cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_info.cmpmode & CMPMODE_OPTINFO) != 0; }
+	bool CG_optShort() const { return CG_optCode() && (hed_info.cmpmode & CMPMODE_OPTSHORT) != 0; }
+	bool CG_OutputsUtf8() const { return cg_utf8out; }
 
 	//		For inspection
 	void InspectAxCode();
 	int SaveAxInspection(char* fname);
+	char const* CG_scriptPositionString() const;
 
 private:
 	//		For preprocess
@@ -364,25 +370,6 @@ private:
 
 	void CG_MesLabelDefinition(int label_id);
 
-#ifdef HSPINSPECT
-	//		For inspection
-	void Inspect_CodeSegment();
-	int  Inspect_CSElem(int csindex);
-	void Inspect_FInfoSegment();
-	void Inspect_LInfoSegment();
-	void Inspect_HpiSegment();
-
-	void Inspect_AnalyzeDInfo();
-	void Inspect_BeginSegment(char const* segment_title);
-
-	char const* Inspect_TypeName(int type);
-#endif
-
-	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
-	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
-	bool CG_optShort() const { return CG_optCode() && (hed_cmpmode & CMPMODE_OPTSHORT) != 0; }
-	char const* CG_scriptPositionString() const;
-
 	//		Data
 	//
 	std::shared_ptr<CLabel> lb;         // label object
@@ -414,13 +401,13 @@ private:
 	char errtmp[128];				// temp for error message
 	char mestmp[128];				// meseage temp
 	int incinf;						// include level
-	int mulstr;						// multiline string flag
+	LineMode mulstr;				// multiline string flag
 	short swstack[SWSTACK_MAX];		// generator sw stack (flag)
 	short swstack2[SWSTACK_MAX];	// generator sw stack (mode)
-	short swstack3[SWSTACK_MAX];	// generator sw stack (sw)
+	LineMode swstack3[SWSTACK_MAX];	// generator sw stack (sw)
 	int swsp;						// generator sw stack pointer
 	int swmode;						// generator sw mode (0=if/1=else)
-	int swlevel;					// first stack level ( when off )
+	LineMode swlevel;				// first stack level ( when off )
 	int fileadd;					// File Addition Mode (1=on)
 	int swflag;						// generator sw enable flag
 	char *ahtkeyword;				// keyword for AHT
@@ -442,17 +429,17 @@ private:
 
 	//		for CodeGenerator
 	//
-	int cg_flag;  // 削除されるモジュールの内部コードを出力抑制するフラグ
-	int cg_debug;
+	CGFlag cg_flag;  // 削除されるモジュールの内部コードを出力抑制するフラグ
+	bool cg_debug;
 	int cg_iflev;
 	int cg_valcnt;
 	int cg_typecnt;
 	int cg_pptype;
 	int cg_locallabel;
 	int cg_varhpi;
-	int cg_putvars;
+	//int cg_putvars;
 	int cg_defvarfix;
-	int cg_utf8out;
+	bool cg_utf8out;
 	char *cg_ptr;
 	char *cg_ptr_bak;
 	char *cg_str;
@@ -460,35 +447,20 @@ private:
 	char cg_libname[1024];
 
 	int	replev;
-	int repend[CG_REPLEV_MAX];
+	int repend[CGRepeatLevelMax];
 	int iflev;
-	int iftype[CG_IFLEV_MAX];
-	int ifmode[CG_IFLEV_MAX];
-	int ifscope[CG_IFLEV_MAX];
-	int ifptr[CG_IFLEV_MAX];
-	int ifterm[CG_IFLEV_MAX];
+	int iftype[CGIfLevelMax];
+	int ifmode[CGIfLevelMax];
+	CGIfScope ifscope[CGIfLevelMax];
+	int ifptr[CGIfLevelMax];
+	int ifterm[CGIfLevelMax];
 
-	int cg_lastcmd;  // 直前に書き込んだコマンド; cmdif等は未実装
+	CGLastCmd cg_lastcmd;  // 直前に書き込んだコマンド; cmdif等は未実装
 	int cg_lasttype;
 	int cg_lastval;
 	int cg_lastcs;
 
-	CMemBuf *cs_buf;
-	CMemBuf *ds_buf;
-	CMemBuf *ot_buf;
-	CMemBuf *di_buf;
-
-	CMemBuf *li_buf;
-	CMemBuf *fi_buf;
-	CMemBuf *mi_buf;
-	CMemBuf *fi2_buf;
-	CMemBuf *hpi_buf;
-
-	std::unique_ptr<std::map<std::string, int>> string_literal_table;
-	std::unique_ptr<std::map<double, int>> double_literal_table;
-	std::unique_ptr<std::vector<int>> working_ot_buf; // コードの解析中にラベル(cs位置)の情報を記憶しておく。あとでまとめて ot_buf に書き出される
-	std::unique_ptr<std::multimap<int, int>> label_reference_table; // キーであるラベル(otindex)を参照しているcs位置の表。otindexの重複除去に使う。
-	std::unique_ptr<std::map<int, int>> otindex_table; //csindex -> new otindex (or -1)
+	std::shared_ptr<AxCode> axcode;
 
 	struct ConstCode final  // represents a const code
 	{
@@ -515,19 +487,13 @@ private:
 	std::unique_ptr<std::vector<ConstCode>> stack_calculator; // for const folding
 
 	//		for Header info
-	int hed_option;
-	char hed_runtime[64];
-	int hed_cmpmode;
-	int hed_autoopt_timer;
+	HeaderInfo hed_info;
 
 	//		for Struct
-	int	cg_stnum;
-	int	cg_stsize;
-	int cg_stptr;
 	int cg_libindex;
-	int cg_libmode;
-	int cg_localstruct[CG_LOCALSTRUCT_MAX];
-	int cg_localcur;
+	CGLibMode cg_libmode;
+	int cg_localstruct[CG_LOCALSTRUCT_MAX];  // 今の文脈で定義されている引数エイリアスの、label_idの列(値はlabel_id)
+	int cg_localcur;  // cg_local_structの現在の長さ
 
 	//		for Error
 	//
@@ -540,17 +506,24 @@ private:
 	char *scnvbuf;			// SCNV変換バッファ
 	int	scnvsize;			// SCNV変換バッファサイズ
 
-
 #ifdef HSPINSPECT
 	//		for Inspection
-	std::unique_ptr<CMemBuf> axi_buf;
-	using identTable_t = std::map<int, char const*>;
-	std::unique_ptr<identTable_t> inspect_var_names;
-	std::unique_ptr<identTable_t> inspect_lab_names;
-	std::unique_ptr<identTable_t> inspect_prm_names;
+	std::shared_ptr<CMemBuf> axi_buf;
 #endif
 };
 
 extern char const* stringFromCalcCode(int op);
+
+static bool is_symbol_char(unsigned char c)
+{
+	return((0x3a <= c && c <= 0x3f)
+		|| (0x5b <= c && c <= 0x5e)
+		|| (0x7b <= c && c <= 0x7f));
+}
+static unsigned char* skip_blanks(unsigned char* p)
+{
+	while ( *p == ' ' || *p == '\t' ) { ++p; }
+	return p;
+}
 
 #endif
