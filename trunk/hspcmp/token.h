@@ -294,7 +294,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
-	void SymbolOverloadingError(char* keyword, int labelId);
+	ppresult_t SetErrorSymbolOverloading(char* keyword, int labelId);
 
 	//		For Code Generate
 	//
@@ -399,14 +399,15 @@ private:
 	char mestmp[128];				// meseage temp
 	int incinf;						// include level
 	LineMode mulstr;				// multiline string flag
-	short swstack[SWSTACK_MAX];		// generator sw stack (flag)
-	short swstack2[SWSTACK_MAX];	// generator sw stack (mode)
-	LineMode swstack3[SWSTACK_MAX];	// generator sw stack (sw)
-	int swsp;						// generator sw stack pointer
-	int swmode;						// generator sw mode (0=if/1=else)
-	LineMode swlevel;				// first stack level ( when off )
+	struct PPSwitchCtx {     // generator switch (#if/#else) context info
+		bool is_enabled;     // enable flag
+		bool in_else;        // (0=if/1=else)
+		LineMode lmode;
+	};
+	int ppswlev;						// generator sw stack pointer
+	PPSwitchCtx ppswctx_stack[SWSTACK_MAX];
+	PPSwitchCtx ppswctx;
 	int fileadd;					// File Addition Mode (1=on)
-	int swflag;						// generator sw enable flag
 	char *ahtkeyword;				// keyword for AHT
 
 	char modname[MODNAME_MAX+2];	// Module Name Prefix
@@ -444,11 +445,14 @@ private:
 	int	replev;
 	int repend[CGRepeatLevelMax];
 	int iflev;
-	int iftype[CGIfLevelMax];
-	int ifmode[CGIfLevelMax];
-	CGIfScope ifscope[CGIfLevelMax];
-	int ifptr[CGIfLevelMax];
-	int ifterm[CGIfLevelMax];
+	struct CGIfInfo {
+		int type;          // 0: if, 1: else
+		int base_index;    // cs_index after if/else symbol
+		int offset_index;  // cs_index of jump offset
+		CGIfScope scope;   // scope type (line or block)
+		bool is_term;      // is terminated?
+	};
+	CGIfInfo cg_if[CGIfLevelMax];
 
 	CGLastCmd cg_lastcmd;  // 前行のコマンド; cmdif等は未実装
 	int cg_lasttype;
@@ -511,7 +515,8 @@ extern char const* stringFromCalcCode(int op);
 
 static bool is_symbol_char(unsigned char c)
 {
-	return((0x3a <= c && c <= 0x3f)
+	return((c < 0x30)
+		|| (0x3a <= c && c <= 0x3f)
 		|| (0x5b <= c && c <= 0x5e)
 		|| (0x7b <= c && c <= 0x7f));
 }
@@ -519,6 +524,13 @@ static unsigned char* skip_blanks(unsigned char* p)
 {
 	while ( *p == ' ' || *p == '\t' ) { ++p; }
 	return p;
+}
+template<int N>
+static void strcpy_safe(char dst[N], char const* src)
+{
+	strncpy(dst, src, N - 1);
+	dst[N - 1] = '\0';
+	return;
 }
 
 #endif

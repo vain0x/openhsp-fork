@@ -1395,44 +1395,46 @@ void CToken::GenerateCodeVAR( int id, int ex )
 }
 
 
-void CToken::CheckCMDIF_Set( int mode )
+void CToken::CheckCMDIF_Set(int code)
 {
 	//		set 'if'&'else' command additional code
 	//			mode/ 0=if 1=else
 	//
 	if ( iflev >= CGIfLevelMax ) throw CGERROR_IF_OVERFLOW;
+	int const cs_index = GetCS();
 
-	iftype[iflev] = mode;
-	ifptr[iflev] = GetCS();
+	cg_if[iflev].type = code;
+	cg_if[iflev].offset_index = GetCS();
 
 	axcode->PutCSJumpOffsetPlaceholder();
 
-	ifmode[iflev] = GetCS();
-	ifscope[iflev] = CGIfScope::Line;
-	ifterm[iflev] = 0;
+	cg_if[iflev].base_index = GetCS();
+	cg_if[iflev].scope = CGIfScope::Line;
+	cg_if[iflev].is_term = 0;
 	iflev++;
 	//sprintf(tmp,"#IF BEGIN [L=%d(%d)]\n",cline,iflev);
 	//prt(tmp);
 }
 
 
-void CToken::CheckCMDIF_Fin( int mode )
+void CToken::CheckCMDIF_Fin(int mode)
 {
 	//		finish 'if'&'else' command
-	//			mode/ 0=if 1=else
+	// mode : (0: elseによる終端、1: 文区切り(行末や'}')による終端)
 	//
 	assert(iflev > 0);
-finag:
+	assert(mode == 0 || mode == 1);
+
 	iflev--;
 
 	int const offset
-		= (GetCS() - ifmode[iflev])
-		+ (mode ? 1 : 0);      // if 'else'
+		= (GetCS() - cg_if[iflev].base_index)
+		+ mode;      // plus 1 if 'else' occuers
 
 	//if ( offset > 0xFFFF ) { Mesf("#if/else block is too wide.", offset); throw CGERROR_FATAL; }
-	if ( ifterm[iflev] == 0 ) {
-		ifterm[iflev] = 1;
-		axcode->SetCSJumpOffset(ifptr[iflev], static_cast<short>(offset));
+	if ( cg_if[iflev].is_term == 0 ) {
+		cg_if[iflev].is_term = 1;
+		axcode->SetCSJumpOffset(cg_if[iflev].offset_index, static_cast<short>(offset));
 	}
 
 	//sprintf(tmp,"#IF FINISH [L=%d(%d)] [skip%d]\n",cline,iflev,a);
@@ -1440,10 +1442,8 @@ finag:
 
 	//Mesf( "lev%d : %d: line%d", iflev, ifscope[iflev], cg_orgline );
 
-	if (mode==0) {
-		if ( iflev ) {
-			if ( ifscope[iflev-1] == CGIfScope::Line ) goto finag;
-		}
+	if ( mode == 0 && iflev > 0 && cg_if[iflev - 1].scope == CGIfScope::Line ) {
+		return CheckCMDIF_Fin(mode);
 	}
 }
 
@@ -2490,9 +2490,7 @@ int CToken::GenerateCodeBlock( void )
 	if ( res == TK_EOF ) return res;
 	if ( res == TK_EOL ) {
 		cg_ptr = GetLineCG();
-		if ( iflev ) {
-			if ( ifscope[iflev-1] == CGIfScope::Line ) CheckCMDIF_Fin(0);			// 'if' jump support
-		}
+		if ( iflev > 0 && cg_if[iflev - 1].scope == CGIfScope::Line ) { CheckCMDIF_Fin(0); }    // 'if' jump support
 		if ( cg_debug ) PutDIOffset();
 		cg_orgline++;
 	}
@@ -2500,11 +2498,12 @@ int CToken::GenerateCodeBlock( void )
 		char const a1 = cg_str[0];
 		if (a1=='{') {					// when '{'
 			if ( iflev == 0 
-				|| ifscope[iflev-1] == CGIfScope::Block ) throw CGERROR_BLOCKEXP;
-			ifscope[iflev-1] = CGIfScope::Block;
+				|| cg_if[iflev-1].scope == CGIfScope::Block ) throw CGERROR_BLOCKEXP;
+			cg_if[iflev-1].scope = CGIfScope::Block;
 		} else if (a1=='}') {			// when '}'
+			if ( iflev > 0 && cg_if[iflev - 1].scope == CGIfScope::Line ) { CheckCMDIF_Fin(0); }  // {} の内側にある行末スコープのif文を終わらせる
 			if ( iflev == 0 
-				|| ifscope[iflev-1] != CGIfScope::Block ) throw CGERROR_BLOCKEXP;
+				|| cg_if[iflev-1].scope != CGIfScope::Block ) throw CGERROR_BLOCKEXP;
 
 			char* p = GetTokenCG( cg_ptr, GETTOKEN_DEFAULT );
 
@@ -2525,7 +2524,7 @@ int CToken::GenerateCodeBlock( void )
 				int const id = lb->Search( cg_str );
 				if ( id >= 0 ) {
 					if (( lb->GetType(id)==TYPE_CMPCMD )&&( lb->GetOpt(id)==1 )) {
-						//ifscope[iflev-1] = CGIfScope::Line;					// line scope on	
+						//cg_if.scope[iflev-1] = CGIfScope::Line;					// line scope on	
 						follows_else_clause = true;
 					}
 				}

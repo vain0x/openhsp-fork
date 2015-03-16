@@ -176,7 +176,8 @@ void CToken::ResetCompiler( void )
 	line = 1;
 	fpbit = 256.0;
 	incinf = 0;
-	swsp = 0; swmode = 0; swlevel = LineMode::On;
+	ppswlev = 0;
+	ppswctx = { true, false, LineMode::On };
 	SetModuleName( "" ); modgc = 0;
 	search_path[0] = 0;
 	lb->Reset();
@@ -1735,55 +1736,55 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 
 ppresult_t CToken::PP_SwitchStart( int sw )
 {
-	if ( swsp==0 ) { swflag = 1; swlevel = LineMode::On; }
-	if ( swsp >= SWSTACK_MAX ) {
+	if ( ppswlev == 0 ) { ppswctx.is_enabled = true; ppswctx.lmode = LineMode::On; }
+	if ( ppswlev >= SWSTACK_MAX ) {
 		SetError("#if nested too deeply");
 		return PPRESULT_ERROR;
 	}
-	swstack[swsp] = swflag;				// 有効フラグ
-	swstack2[swsp] = swmode;			// elseモード
-	swstack3[swsp] = swlevel;			// ON/OFF
-	swsp++;
-	swmode = 0;
-	if ( swflag == 0 ) return PPRESULT_SUCCESS;
-	if ( sw==0 ) { swlevel = LineMode::Off; }
-			else { swlevel = LineMode::On; }
-	mulstr = swlevel;
-	if ( mulstr == LineMode::Off ) swflag=0;
+	ppswctx_stack[ppswlev] = ppswctx;
+	ppswlev++;
+	ppswctx.in_else = false;
+	if ( ppswctx.is_enabled ) {
+		ppswctx.lmode = (sw == 0) ? LineMode::Off : LineMode::On;
+		mulstr = ppswctx.lmode;
+		if ( mulstr == LineMode::Off ) ppswctx.is_enabled = false;
+	}
 	return PPRESULT_SUCCESS;
 }
 
 
 ppresult_t CToken::PP_SwitchEnd( void )
 {
-	if ( swsp == 0 ) {
+	if ( ppswlev == 0 ) {
 		SetError("#endif without #if");
 		return PPRESULT_ERROR;
 	}
-	swsp--;
-	swflag = swstack[swsp];
-	swmode = swstack2[swsp];
-	swlevel = swstack3[swsp];
-	if ( swflag ) mulstr = swlevel;
+	ppswlev--;
+	ppswctx = ppswctx_stack[ppswlev];
+	if ( ppswctx.is_enabled ) mulstr = ppswctx.lmode;
 	return PPRESULT_SUCCESS;
 }
 
 
 ppresult_t CToken::PP_SwitchReverse( void )
 {
-	if ( swsp == 0 ) {
+	if ( ppswlev == 0 ) {
 		SetError("#else without #if");
 		return PPRESULT_ERROR;
 	}
-	if ( swmode != 0 ) {
+	if ( ppswctx.in_else ) {
 		SetError("#else after #else");
 		return PPRESULT_ERROR;
 	}
-	if ( swstack[swsp-1] == 0 ) return PPRESULT_SUCCESS;	// 上のスタックが無効なら無視
-	swmode = 1;
-	swlevel = ( swlevel == LineMode::On ) ? LineMode::Off : LineMode::On;
-	mulstr = swlevel;
-	swflag ^= 1;
+	if ( ppswctx_stack[ppswlev - 1].is_enabled ) {	// 上のスタックも有効のときのみ有効化
+		PPSwitchCtx const new_ctx = {
+			!ppswctx.is_enabled,
+			true,
+			((ppswctx.lmode == LineMode::On) ? LineMode::Off : LineMode::On)
+		};
+		ppswctx = new_ctx;
+		mulstr = new_ctx.lmode;
+	}
 	return PPRESULT_SUCCESS;
 }
 
@@ -1864,11 +1865,9 @@ ppresult_t CToken::PP_Const(void)
 
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
-	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
-		return PPRESULT_ERROR;
-	}
-
+	res = lb->Search( keyword );
+	if ( res != -1 ) { return SetErrorSymbolOverloading(keyword, res); }
+	
 	if ( Calc(cres) ) return PPRESULT_ERROR;
 
 	//		AHT keyword check
@@ -1937,10 +1936,8 @@ ppresult_t CToken::PP_Enum( void )
 
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
-	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
-		return PPRESULT_ERROR;
-	}
+	res = lb->Search( keyword );
+	if ( res != -1 ) { return SetErrorSymbolOverloading(keyword, res); }
 
 	if ( GetToken() == '=' ) {
 		if ( Calc( cres ) ) return PPRESULT_ERROR;
@@ -2057,10 +2054,8 @@ ppresult_t CToken::PP_Define( void )
 	}
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
-	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
-		return PPRESULT_ERROR;
-	}
+	res = lb->Search( keyword );
+	if ( res != -1 ) { return SetErrorSymbolOverloading(keyword, res); }
 
 	// not skip space,tab code
 	if ( wp==NULL ) a1=0;
@@ -2239,9 +2234,10 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 
 	strcase2( word, fixname );
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-	i = lb->Search( fixname );if ( i != -1 ) {
+	i = lb->Search( fixname );
+	if ( i != -1 ) {
 		if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-			SymbolOverloadingError(fixname, i); return PPRESULT_ERROR;
+			return SetErrorSymbolOverloading(fixname, i);
 		}
 		id = i;
 	}
@@ -2353,9 +2349,10 @@ ppresult_t CToken::PP_Deffunc( int mode )
 
 		strcase2( word, fixname );
 		if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-		i = lb->Search( fixname );if ( i != -1 ) {
+		i = lb->Search( fixname );
+		if ( i != -1 ) {
 			if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-				SymbolOverloadingError(fixname, i); return PPRESULT_ERROR;
+				return SetErrorSymbolOverloading(fixname, i);
 			}
 			id = i;
 		}
@@ -2471,9 +2468,8 @@ ppresult_t CToken::PP_Struct( void )
 
 	strcpy( tagname, word );
 	if ( glmode ) FixModuleName( tagname ); else AddModuleName( tagname );
-	res = lb->Search(tagname); if ( res != -1 ) {
-		SymbolOverloadingError(tagname, res); return PPRESULT_ERROR;
-	}
+	res = lb->Search(tagname);
+	if ( res != -1 ) { return SetErrorSymbolOverloading(tagname, res); }
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
 
@@ -2492,9 +2488,8 @@ ppresult_t CToken::PP_Struct( void )
 
 		sprintf( keyword,"%s_%s", tagname, word );
 		if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
-		res = lb->Search(keyword); if ( res != -1 ) {
-			SymbolOverloadingError(keyword, res); return PPRESULT_ERROR;
-		}
+		res = lb->Search(keyword);
+		if ( res != -1 ) { return SetErrorSymbolOverloading(keyword, res); }
 		id = lb->Regist( keyword, LAB_TYPE_PPDLLFUNC, 0 );
 		if ( glmode ) lb->SetEternal( id );
 		wrtbuf->PutStr( keyword );
@@ -2535,7 +2530,7 @@ ppresult_t CToken::PP_Func( char *name )
 
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	//AddModuleName( word );
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverloading(word, i); return PPRESULT_ERROR; }
 	id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
 	//
@@ -2555,7 +2550,7 @@ ppresult_t CToken::PP_Cmd( char *name )
 	word = (char *)s3;
 	i = GetToken();
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverloading(word, i); return PPRESULT_ERROR; }
 
 	id = lb->Regist( word, LAB_TYPE_PPINTMAC, 0 );		// 内部マクロとして定義
 	strcat( word, "@hsp" );
@@ -2593,7 +2588,7 @@ ppresult_t CToken::PP_Usecom( void )
 		glmode=1;
 	}
 
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverloading(word, i); return PPRESULT_ERROR; }
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	id = lb->Regist( word, LAB_TYPE_COMVAR, 0 );
 	if ( glmode ) lb->SetEternal( id );
@@ -2625,7 +2620,7 @@ ppresult_t CToken::PP_Module( void )
 	}
 	sprintf( tagname, "%.*s", MODNAME_MAX, word );
 	res = lb->Search( tagname );if ( res != -1 ) {
-		SymbolOverloadingError(tagname, res); return PPRESULT_ERROR;
+		SetErrorSymbolOverloading(tagname, res); return PPRESULT_ERROR;
 	}
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	lb->SetEternal( id );
@@ -2649,7 +2644,7 @@ ppresult_t CToken::PP_Module( void )
 		if ( i != TK_OBJ ) { SetError("invalid module param"); return PPRESULT_ERROR; }
 		AddModuleName( word );
 		res = lb->Search(word); if ( res != -1 ) {
-			SymbolOverloadingError(word, res); return PPRESULT_ERROR; 
+			SetErrorSymbolOverloading(word, res); return PPRESULT_ERROR; 
 		}
 		id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 		wrtbuf->PutStr( "var " );
@@ -3697,14 +3692,14 @@ char *CToken::ExecSCNV( char *srcbuf, int opt )
 	return scnvbuf;
 }
 
-void CToken::SymbolOverloadingError(char* keyword, int labelId)
+ppresult_t CToken::SetErrorSymbolOverloading(char* keyword, int labelId)
 {
 	// 識別子の多重定義に関するエラー
 
 	char strtmp[0x100];
 	sprintf( strtmp,"symbol in use [%s]", keyword );
 	SetError(strtmp);
-	return;
+	return PPRESULT_ERROR;
 }
 
 
