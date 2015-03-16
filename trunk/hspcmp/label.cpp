@@ -71,7 +71,7 @@ int CLabel::GetHash( char *str )
 }
 
 
-int CLabel::Regist( char *name, int type, int opt )
+int CLabel::Regist( char const* name, int type, int opt )
 {
 	if ( name[0]==0 ) return -1;
 
@@ -342,20 +342,19 @@ int CLabel::GetInitFlag( int id )
 }
 
 
-char *CLabel::RegistSymbol( char *str )
+char *CLabel::RegistSymbol( char const *str )
 {
 	//		シンボルテーブルに文字列を登録
 	//
 	char *p;
 	char *pmaster;
-	char *src;
 	char a1,a2;
 	int i;
 	//int hush;
 	i = 0;
 	p = ExpandSymbolBuffer( (int)strlen(str)+1 );
 	pmaster = p;
-	src = str;
+	char const* src = str;
 	a2 = *src;
 	while(1) {
 		a1=*src++;
@@ -372,14 +371,12 @@ char *CLabel::RegistSymbol( char *str )
 }
 
 
-char *CLabel::RegistTable( char *str, int size )
+char *CLabel::RegistTable( char const *str, int size )
 {
 	//		シンボルテーブルにテーブルデータを登録
 	//
-	char *p;
-	char *src;
-	src = str;
-	p = ExpandSymbolBuffer( size );
+	char const* const src = str;
+	char* const p = ExpandSymbolBuffer( size );
 	memcpy( p, src, size );
 	return p;
 }

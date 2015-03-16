@@ -5,9 +5,23 @@
 #include <vector>
 #include <string>
 
+struct HSPHED;
+class CLabel;
 class CMemBuf;
 class CToken;
 class AxCodeInspector;
+
+namespace DInfoCode {
+	static unsigned char const
+		ChangeContext = 0xFF,   // 255; 次の文脈に移行する。2連続なら末尾を表す。
+		SourceFile = 0xFE,      // 254; ソースファイル指定
+		VarName = 0xFD,         // 253; 変数名の記録
+		DebugIdent = 0xFB,      // 251; デバッグ時識別子(ラベル、仮引数名)の記録
+		WideOffset = 0xFC,      // 252; 次の命令までのCSオフセット値 (16bit)
+		CodeMin = 0xFB;         // 251: (特別な意味で扱うコードの最小値)
+};
+
+#define STRUCTDAT_INDEX_DUMMY ((short)0x8000)
 
 class AxCode
 {
@@ -15,6 +29,7 @@ class AxCode
 private:
 	CToken* tk_;
 
+	std::unique_ptr<HSPHED> hed_buf;
 	std::unique_ptr<CMemBuf> cs_buf;
 	std::unique_ptr<CMemBuf> ds_buf;
 	std::unique_ptr<CMemBuf> ot_buf;
@@ -31,7 +46,7 @@ private:
 	std::unique_ptr<std::multimap<int, int>> label_reference_table; // キーであるラベル(otindex)を参照しているcs位置の表。otindexの重複除去に使う。
 	std::unique_ptr<std::map<int, int>> otindex_table; //csindex -> new otindex (or -1)
 
-	int cg_lastcs;
+	int cg_varhpi;  // hpi が宣言した変数型の数
 
 	// for Struct
 	int	cg_stnum;
@@ -41,12 +56,20 @@ private:
 public:
 	AxCode(CToken* tk);
 
+	HSPHED const& GetHeader() const;
+	STRUCTDAT* GetFIBuffer() const;
+	size_t GetFICount() const;
+	STRUCTPRM* GetMIBuffer() const;
+
+	//		for Code Generator
 	int GetCS();
-	void PutCS(short);
+	void PutCS(int type, double value, int exflg);
 	void PutCS(int type, int value, int exflg);
 	void PutCSSymbol(int label_id, int exflag);
-	void PutCS(int type, double value, int exflg);
+	int PutCSJumpOffsetPlaceholder();
 	void SetCS(int csindex, int type, int value);
+	void SetCSJumpOffset(int csindex, short offset);
+	void SetCSAddExflag(int csindex, int exflag);
 
 	int PutOT(int value);
 	void PutOTBuf();
@@ -58,13 +81,15 @@ public:
 	int GetOT(int id); int GetOTCount();
 	int GetNewOTFromOldOT(int old_otindex);
 
-	void PutDI();
 	void PutDI(int dbg_code, int value, int subid);
-	void PutDIVars(CLabel& lb);
-	void PutDILabels(CLabel& lb);
-	void PutDIParams(CLabel& lb);
-
-	void PutHPI(short flag, short option, char *libname, char *funcname);
+	void PutDIOffset(int offset);
+	void PutDIFinal(CLabel& lb, bool is_debug_compile, bool includes_varnames);
+private:
+	void PutDIVars(CLabel* lb);
+	void PutDILabels(CLabel* lb);
+	void PutDIParams(CLabel* lb);
+public:
+	void PutHPI(short flag, short option, char *libname, char *funcname, int var_type_cnt);
 	int PutLIB(int flag, char *name);
 	void SetLIBIID(int id, char *clsid);
 
@@ -74,21 +99,14 @@ public:
 	int PutStructEnd(char *name, int libindex, int otindex, int funcflag);
 	int PutStructEnd(int i, char *name, int libindex, int otindex, int funcflag);
 	int PutStructEndDll(char *name, int libindex, int subid, int otindex);
+	int PutStructDummy(int label_id);
 
-	// finalizers
-	void WriteToBuf(CMemBuf& axbuf, HSPHED& hsphed,
-		CToken::HeaderInfo& hi, int mode, int cg_valcnt, int cg_varhpi);
+	void WriteToBuf(CMemBuf& axbuf,
+		CToken::HeaderInfo& hi, int mode, int cg_valcnt);
 
-	//codegenから触るためのもの
-	//todo:目的ごとに最適なインターフェースに変更
-	unsigned short* GetCSBuffer() const;  // codegen側からcsに書き込むため; 後でそういう関数に置き換えるべし
-	STRUCTDAT* GetFIBuffer() const;
-	STRUCTPRM* GetMIBuffer() const;
-	size_t GetFICount() const;
-	void AllocFI();
-	void PutFI(STRUCTDAT const& st);
+private:
+	unsigned short* GetCSBuffer() const;  // codegen側からcsに書き込むため
 	int* GetOTBuffer() const;
-
 
 };
 

@@ -244,7 +244,7 @@ void CToken::CalcCG_putCSCalcElem(CToken::ConstCode const& self)
 	calccount++;
 }
 
-// 変数が出現したか、式の終端に達したので、定数式畳み込みをやめる
+// 動的な式が出現したか、式の終端に達したので、定数式畳み込みをやめる
 // 積み込んでいた定数をコードに書き出す
 void CToken::CalcCG_ceaseConstFolding()
 {
@@ -1041,12 +1041,8 @@ void CToken::GenerateCodePRM( void )
 				case TK_NUM:
 				case TK_DNUM:
 				case TK_STRING:
-					{
-					unsigned short *cstmp;
-					cstmp = &axcode->GetCSBuffer()[cs_lastptr];
-					*cstmp |= EXFLG_0;					// 単一項目フラグを立てる
+					axcode->SetCSAddExflag(cs_lastptr, EXFLG_0);  // 単一項目フラグを立てる
 					break;
-					}
 				default:
 					break;
 				}
@@ -1319,7 +1315,7 @@ void CToken::GenerateCodePRMN( void )
 		case TK_OBJ:
 			i = lb->Search( cg_str );
 			if ( i < 0 ) {
-				lb->Regist( cg_str, TYPE_VAR, cg_valcnt );
+				RegistIdentCG( cg_str, TYPE_VAR, cg_valcnt );
 				PutCS( TYPE_VAR, cg_valcnt, ex );
 				cg_valcnt++;
 			} else {
@@ -1367,7 +1363,7 @@ int CToken::GenerateOTIndex(char* keyname)
 	id = lb->Search(name);
 	if ( id < 0 ) {									// 仮のラベル
 		i = PutOT(-1);
-		id = lb->Regist(name, TYPE_XLABEL, i);
+		id = RegistIdentCG(name, TYPE_XLABEL, i);
 	} else {
 		t = lb->GetType(id);
 		if ( (t != TYPE_XLABEL) && (t != TYPE_LABEL) ) throw CGERROR_LABELEXIST;
@@ -1409,7 +1405,7 @@ void CToken::CheckCMDIF_Set( int mode )
 	iftype[iflev] = mode;
 	ifptr[iflev] = GetCS();
 
-	axcode->PutCS( (short)0 );
+	axcode->PutCSJumpOffsetPlaceholder();
 
 	ifmode[iflev] = GetCS();
 	ifscope[iflev] = CGIfScope::Line;
@@ -1425,19 +1421,18 @@ void CToken::CheckCMDIF_Fin( int mode )
 	//		finish 'if'&'else' command
 	//			mode/ 0=if 1=else
 	//
-	int a;
-	if (iflev==0) return;
+	assert(iflev > 0);
 finag:
 	iflev--;
 
-	a = GetCS() - ifmode[iflev];
-	if (mode) {							// when 'else'
-		a++;
-	}
+	int const offset
+		= (GetCS() - ifmode[iflev])
+		+ (mode ? 1 : 0);      // if 'else'
 
+	//if ( offset > 0xFFFF ) { Mesf("#if/else block is too wide.", offset); throw CGERROR_FATAL; }
 	if ( ifterm[iflev] == 0 ) {
 		ifterm[iflev] = 1;
-		axcode->GetCSBuffer()[ ifptr[iflev] ] = (short)a;
+		axcode->SetCSJumpOffset(ifptr[iflev], static_cast<short>(offset));
 	}
 
 	//sprintf(tmp,"#IF FINISH [L=%d(%d)] [skip%d]\n",cline,iflev,a);
@@ -1657,6 +1652,79 @@ void CToken::GenerateCodeLET( int id )
 }
 
 
+static int GetParameterTypeCG(char const *name)
+{
+	//		パラメーター名を認識する(deffunc)
+	//
+	if ( !strcmp(name, "int") ) return MPTYPE_INUM;
+	if ( !strcmp(name, "var") || !strcmp(name, "val") ) return MPTYPE_SINGLEVAR;
+	if ( !strcmp(name, "str") ) return MPTYPE_LOCALSTRING;
+	if ( !strcmp(name, "double") ) return MPTYPE_DNUM;
+	if ( !strcmp(name, "label") ) return MPTYPE_LABEL;
+	if ( !strcmp(name, "local") ) return MPTYPE_LOCALVAR;
+	if ( !strcmp(name, "array") ) return MPTYPE_ARRAYVAR;
+	if ( !strcmp(name, "modvar") ) return MPTYPE_MODULEVAR;
+	if ( !strcmp(name, "modinit") ) return MPTYPE_IMODULEVAR;
+	if ( !strcmp(name, "modterm") ) return MPTYPE_TMODULEVAR;
+
+	return MPTYPE_NONE;
+}
+
+static int GetParameterStructTypeCG(char const *name)
+{
+	//		パラメーター名を認識する(struct)
+	//
+	if ( !strcmp(name, "int") ) return MPTYPE_INUM;
+	if ( !strcmp(name, "var") ) return MPTYPE_LOCALVAR;
+	if ( !strcmp(name, "str") ) return MPTYPE_LOCALSTRING;
+	if ( !strcmp(name, "double") ) return MPTYPE_DNUM;
+	if ( !strcmp(name, "label") ) return MPTYPE_LABEL;
+	if ( !strcmp(name, "float") ) return MPTYPE_FLOAT;
+	return MPTYPE_NONE;
+}
+
+static int GetParameterFuncTypeCG(char const *name)
+{
+	//		パラメーター名を認識する(func)
+	//
+	if ( !strcmp(name, "int") ) return MPTYPE_INUM;
+	if ( !strcmp(name, "var") ) return MPTYPE_PVARPTR;
+	if ( !strcmp(name, "str") ) return MPTYPE_LOCALSTRING;
+	if ( !strcmp(name, "double") ) return MPTYPE_DNUM;
+	//	if ( !strcmp( name, "label" ) ) return MPTYPE_LABEL;
+	if ( !strcmp(name, "float") ) return MPTYPE_FLOAT;
+	if ( !strcmp(name, "pval") ) return MPTYPE_PPVAL;
+	if ( !strcmp(name, "bmscr") ) return MPTYPE_PBMSCR;
+
+	if ( !strcmp(name, "comobj") ) return MPTYPE_IOBJECTVAR;
+	if ( !strcmp(name, "wstr") ) return MPTYPE_LOCALWSTR;
+
+	if ( !strcmp(name, "sptr") ) return MPTYPE_FLEXSPTR;
+	if ( !strcmp(name, "wptr") ) return MPTYPE_FLEXWPTR;
+
+	if ( !strcmp(name, "prefstr") ) return MPTYPE_PTR_REFSTR;
+	if ( !strcmp(name, "pexinfo") ) return MPTYPE_PTR_EXINFO;
+	if ( !strcmp(name, "nullptr") ) return MPTYPE_NULLPTR;
+
+	//	if ( !strcmp( name, "hwnd" ) ) return MPTYPE_PTR_HWND;
+	//	if ( !strcmp( name, "hdc" ) ) return MPTYPE_PTR_HDC;
+	//	if ( !strcmp( name, "hinst" ) ) return MPTYPE_PTR_HINST;
+
+	return MPTYPE_NONE;
+}
+
+static int GetParameterResTypeCG(char const *name)
+{
+	//		戻り値のパラメーター名を認識する(defcfunc)
+	//
+	if ( !strcmp(name, "int") ) return MPTYPE_INUM;
+	if ( !strcmp(name, "str") ) return MPTYPE_STRING;
+	if ( !strcmp(name, "double") ) return MPTYPE_DNUM;
+	if ( !strcmp(name, "label") ) return MPTYPE_LABEL;
+	if ( !strcmp(name, "float") ) return MPTYPE_FLOAT;
+	return MPTYPE_NONE;
+}
+
 void CToken::GenerateCodePP_regcmd( void )
 {
 	//		HSP3Codeを展開する(regcmd)
@@ -1668,7 +1736,7 @@ void CToken::GenerateCodePP_regcmd( void )
 
 	GetTokenCG( GETTOKEN_DEFAULT );
 	switch( ttype ) {
-	case TK_STRING:
+	case TK_STRING: {
 		strcpy( cmd, cg_str );
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype != TK_NONE ) throw CGERROR_PP_NO_REGCMD;
@@ -1677,19 +1745,21 @@ void CToken::GenerateCodePP_regcmd( void )
 		if ( ttype != TK_STRING ) throw CGERROR_PP_NO_REGCMD;
 		strcpy( cmd2, cg_str );
 
+		int var_type_cnt = 0;
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_NONE ) {
 			if ( val != ',' ) throw CGERROR_PP_NO_REGCMD;
 			GetTokenCG( GETTOKEN_DEFAULT );
 			if ( ttype != TK_NUM ) throw CGERROR_PP_NO_REGCMD;
-			cg_varhpi+=val;
+			var_type_cnt = val;
 		}
 
-		axcode->PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
+		axcode->PutHPI(HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd, var_type_cnt);
 		cg_typecnt++;
 		break;
+		}
 	case TK_NUM:
-		axcode->PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
+		axcode->PutHPI(HPIDAT_FLAG_SELFFUNC, 0, "", "", 0);
 		cg_pptype = val;
 		break;
 	default:
@@ -1718,8 +1788,7 @@ void CToken::GenerateCodePP_cmd( void )
 	if ( ttype != TK_NUM ) throw CGERROR_PP_NO_REGCMD;
 	id = val;
 
-	int const label_id = lb->Regist(cmd, cg_pptype, id);
-	if ( cg_debug ) { lb->SetDefinition(label_id, cg_orgfile, cg_orgline); }
+	int const label_id = RegistIdentCG(cmd, cg_pptype, id);
 	//Mesf( "#%x:%d [%s]",cg_pptype, id, cmd );
 }
 
@@ -1731,7 +1800,7 @@ void CToken::GenerateCodePP_uselib( void )
 	GetTokenCG( GETTOKEN_DEFAULT );
 	cg_libname[0] = 0;
 	if ( ttype == TK_STRING ) {
-		strncpy( cg_libname, cg_str, 1023 );
+		strncpy( cg_libname, cg_str, sizeof(cg_libname) - 1 );
 	} else if ( ttype < TK_VOID ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
@@ -1779,7 +1848,7 @@ void CToken::GenerateCodePP_usecom( void )
 
 	axcode->PutStructStart();
 	prmid = axcode->PutStructEndDll(nullptr, cg_libindex, STRUCTPRM_SUBID_COMOBJ, -1 );
-	lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ );
+	RegistIdentCG(libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ);
 
 	//Mesf( "#usecom %s [%s][%s]",libname,clsname,iidname );
 }
@@ -1909,8 +1978,7 @@ void CToken::GenerateCodePP_func( int deftype )
 		//Mesf( "Warning:Old func expression [%s]", fbase );
 	}
 	i = axcode->PutStructEndDll( fname, cg_libindex, subid, otflag );
-	int const label_id = lb->Regist( fbase, TYPE_DLLFUNC, i );
-	if ( cg_debug ) { lb->SetDefinition(label_id, cg_orgfile, cg_orgline); }
+	RegistIdentCG(fbase, TYPE_DLLFUNC, i);
 
 	//Mesf( "#func [%s][%s][%d]",fbase, fname, i );
 }
@@ -1961,134 +2029,39 @@ void CToken::GenerateCodePP_comfunc( void )
 	}
 	subid = STRUCTPRM_SUBID_COMOBJ;
 	i = axcode->PutStructEndDll( nullptr, cg_libindex, subid, imp_index );
-	int const label_id = lb->Regist(fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ);
-	if ( cg_debug ) { lb->SetDefinition(label_id, cg_orgfile, cg_orgline); }
-
+	RegistIdentCG(fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ);
+	
 	//Mesf( "#comfunc [%s][%d][%d]",fbase, imp_index, i );
 }
 
 
-int CToken::GetParameterTypeCG( char *name )
-{
-	//		パラメーター名を認識する(deffunc)
-	//
-	if ( !strcmp( cg_str,"int" ) ) return MPTYPE_INUM;
-	if ( !strcmp( cg_str,"var" ) ) return MPTYPE_SINGLEVAR;
-	if ( !strcmp( cg_str,"val" ) ) { 
-#ifdef JPNMSG
-		Mesf("警告:古いdeffunc表記(%s) %s", cg_orgline, name, CG_scriptPositionString());
-#else
-		Mesf( "Warning:Old deffunc expression at %d.[%s]", cg_orgline, name );
-#endif
-		return MPTYPE_SINGLEVAR;
-	}
-	if ( !strcmp( cg_str,"str" ) ) return MPTYPE_LOCALSTRING;
-	if ( !strcmp( cg_str,"double" ) ) return MPTYPE_DNUM;
-	if ( !strcmp( cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( !strcmp( cg_str,"local" ) ) return MPTYPE_LOCALVAR;
-	if ( !strcmp( cg_str,"array" ) ) return MPTYPE_ARRAYVAR;
-	if ( !strcmp( cg_str,"modvar" ) ) return MPTYPE_MODULEVAR;
-	if ( !strcmp( cg_str,"modinit" ) ) return MPTYPE_IMODULEVAR;
-	if ( !strcmp( cg_str,"modterm" ) ) return MPTYPE_TMODULEVAR;
-
-	return MPTYPE_NONE;
-}
-
-
-int CToken::GetParameterStructTypeCG( char *name )
-{
-	//		パラメーター名を認識する(struct)
-	//
-	if ( !strcmp( cg_str,"int" ) ) return MPTYPE_INUM;
-	if ( !strcmp( cg_str,"var" ) ) return MPTYPE_LOCALVAR;
-	if ( !strcmp( cg_str,"str" ) ) return MPTYPE_LOCALSTRING;
-	if ( !strcmp( cg_str,"double" ) ) return MPTYPE_DNUM;
-	if ( !strcmp( cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( !strcmp( cg_str,"float" ) ) return MPTYPE_FLOAT;
-	return MPTYPE_NONE;
-}
-
-
-int CToken::GetParameterFuncTypeCG( char *name )
-{
-	//		パラメーター名を認識する(func)
-	//
-	if ( !strcmp( cg_str,"int" ) ) return MPTYPE_INUM;
-	if ( !strcmp( cg_str,"var" ) ) return MPTYPE_PVARPTR;
-	if ( !strcmp( cg_str,"str" ) ) return MPTYPE_LOCALSTRING;
-	if ( !strcmp( cg_str,"double" ) ) return MPTYPE_DNUM;
-//	if ( !strcmp( cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( !strcmp( cg_str,"float" ) ) return MPTYPE_FLOAT;
-	if ( !strcmp( cg_str,"pval" ) ) return MPTYPE_PPVAL;
-	if ( !strcmp( cg_str,"bmscr" ) ) return MPTYPE_PBMSCR;
-
-	if ( !strcmp( cg_str,"comobj" ) ) return MPTYPE_IOBJECTVAR;
-	if ( !strcmp( cg_str,"wstr" ) ) return MPTYPE_LOCALWSTR;
-
-	if ( !strcmp( cg_str,"sptr" ) ) return MPTYPE_FLEXSPTR;
-	if ( !strcmp( cg_str,"wptr" ) ) return MPTYPE_FLEXWPTR;
-
-	if ( !strcmp( cg_str,"prefstr" ) ) return MPTYPE_PTR_REFSTR;
-	if ( !strcmp( cg_str,"pexinfo" ) ) return MPTYPE_PTR_EXINFO;
-	if ( !strcmp( cg_str,"nullptr" ) ) return MPTYPE_NULLPTR;
-
-//	if ( !strcmp( cg_str,"hwnd" ) ) return MPTYPE_PTR_HWND;
-//	if ( !strcmp( cg_str,"hdc" ) ) return MPTYPE_PTR_HDC;
-//	if ( !strcmp( cg_str,"hinst" ) ) return MPTYPE_PTR_HINST;
-
-	return MPTYPE_NONE;
-}
-
-
-int CToken::GetParameterResTypeCG( char *name )
-{
-	//		戻り値のパラメーター名を認識する(defcfunc)
-	//
-	if ( !strcmp( cg_str,"int" ) ) return MPTYPE_INUM;
-	if ( !strcmp( cg_str,"str" ) ) return MPTYPE_STRING;
-	if ( !strcmp( cg_str,"double" ) ) return MPTYPE_DNUM;
-	if ( !strcmp( cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( !strcmp( cg_str,"float" ) ) return MPTYPE_FLOAT;
-	return MPTYPE_NONE;
-}
-
-
-#define GET_FI_SIZE() ((int)(fi_buf->GetSize() / sizeof(STRUCTDAT)))
 #define GET_FI(n) (&axcode->GetFIBuffer()[(n)])
-#define STRUCTDAT_INDEX_DUMMY ((short)0x8000)
-
 
 void CToken::GenerateCodePP_deffunc0(bool is_command)
 {
 	//		HSP3Codeを展開する(deffunc / defcfunc)
 	//
-	int i,t,ot,prmid,subid;
-	int index;
-	int funcflag;
-	int regflag;
-	int prep;
-	char funcname[1024];
+	
 
-	prep = 0;
 	GetTokenCG( GETTOKEN_DEFAULT );
 	if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
 
-	if ( is_command && !strcmp( cg_str,"prep" ) ) {				// プロトタイプ宣言
-		prep = 1;
+	bool is_prep = false;	// プロトタイプ宣言
+	if ( is_command && !strcmp( cg_str,"prep" ) ) {
+		is_prep = true;
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
 	}
 
-	strncpy( funcname, cg_str, 1023 );
+	char funcname[1024];
+	strncpy_s( funcname, cg_str, sizeof(funcname) - 1 );
 
-	for(i=0;i<cg_localcur;i++) {
+	for(int i = 0; i < cg_localcur; ++ i) {
 		lb->SetFlag( cg_localstruct[i], -1 );		// 以前に指定されたパラメーター名を削除する
 	}
 	cg_localcur = 0;
-	funcflag = 0;
-	regflag = 1;
 
-	index = -1;
+	int index = -1;
 	int label_id = lb->Search( funcname );
 	if ( label_id >= 0 ) {
 		if ( lb->GetType(label_id) != TYPE_MODCMD ) { CG_MesLabelDefinition(label_id); throw CGERROR_PP_ALREADY_USE_FUNC; }
@@ -2099,6 +2072,8 @@ void CToken::GenerateCodePP_deffunc0(bool is_command)
 		}
 	}
 
+	bool is_ctor_or_dtor = false;
+	int funcflag = 0;
 	axcode->PutStructStart();
 	while(1) {
 		GetTokenCG( GETTOKEN_DEFAULT );
@@ -2110,40 +2085,40 @@ void CToken::GenerateCodePP_deffunc0(bool is_command)
 			break;
 		}
 
-		t = GetParameterTypeCG( cg_str );
+		int const t = GetParameterTypeCG( cg_str );
 		if ( t == MPTYPE_NONE ) throw CGERROR_PP_WRONG_PARAM_NAME;
 		if (( t == MPTYPE_MODULEVAR )||( t == MPTYPE_IMODULEVAR )||( t == MPTYPE_TMODULEVAR )) {
 			//	モジュール名指定
 			GetTokenCG( GETTOKEN_DEFAULT );
 			if ( ttype != TK_OBJ ) throw CGERROR_PP_WRONG_PARAM_NAME;
-			i = lb->Search( cg_str );
+			int const i = lb->Search( cg_str );
 			if ( i < 0 ) throw CGERROR_PP_BAD_STRUCT;
 			if ( lb->GetType(i) != TYPE_STRUCT ) throw CGERROR_PP_BAD_STRUCT;
 			auto const prm = axcode->GetMIBuffer();
-			subid = prm[ lb->GetOpt(i) ].subid;
+			int const subid = prm[ lb->GetOpt(i) ].subid;
 			//Mesf( "%s:struct%d",cg_str,subid );
 			if ( t == MPTYPE_IMODULEVAR ) {
 				if ( prm[ lb->GetOpt(i) ].offset != -1 ) throw CGERROR_PP_MODINIT_USED;
 				prm[ lb->GetOpt(i) ].offset = axcode->GetFICount();
-				regflag = 0;
+				is_ctor_or_dtor = true;
 			}
 			if ( t == MPTYPE_TMODULEVAR ) {
 				auto const st = axcode->GetFIBuffer();
 				if ( st[ subid ].otindex != 0 ) throw CGERROR_PP_MODTERM_USED;
 				st[subid].otindex = axcode->GetFICount();
-				regflag = 0;
+				is_ctor_or_dtor = true;
 			}
-			prmid = axcode->PutStructParam( t, subid );
+			int const prmid = axcode->PutStructParam( t, subid );
 			GetTokenCG( GETTOKEN_DEFAULT );
 
 		} else {
-			prmid = axcode->PutStructParam( t, STRUCTPRM_SUBID_STACK );
+			int const prmid = axcode->PutStructParam( t, STRUCTPRM_SUBID_STACK );
 			//Mesf( "%d:type%d",prmid,t );
 
 			GetTokenCG( GETTOKEN_DEFAULT );
 			if ( ttype == TK_OBJ ) {
 				//	引数のエイリアス
-				i = lb->Search( cg_str );
+				int i = lb->Search( cg_str );
 				if ( i >= 0 ) {
 					CG_MesLabelDefinition(i);
 					throw CGERROR_PP_ALREADY_USE_PARAM;
@@ -2160,20 +2135,15 @@ void CToken::GenerateCodePP_deffunc0(bool is_command)
 		if ( val != ',' ) throw CGERROR_PP_WRONG_PARAM_NAME;
 	}
 
-	ot = PutOT( GetCS() );
-	if ( index == -1 ) {
-		index = axcode->GetFICount();
-		axcode->AllocFI();
-		if ( regflag ) {
-			int const label_id = lb->Regist(funcname, TYPE_MODCMD, index);
-			if ( cg_debug ) { lb->SetDefinition(label_id, cg_orgfile, cg_orgline); }
-		}
-	}
-	if ( label_id >= 0 ) {
+	int const ot = PutOT( GetCS() );
+	int const dat_index = is_command ? STRUCTDAT_INDEX_FUNC : STRUCTDAT_INDEX_CFUNC;
+	index = axcode->PutStructEnd( index, funcname, dat_index, ot, funcflag );
+
+	if ( label_id >= 0 ) {   // ダミーとして登録済み
 		lb->SetOpt( label_id, index );
+	} else if ( !is_ctor_or_dtor ) {
+		RegistIdentCG(funcname, TYPE_MODCMD, index);
 	}
-	int dat_index = is_command ? STRUCTDAT_INDEX_FUNC : STRUCTDAT_INDEX_CFUNC;
-	axcode->PutStructEnd( index, funcname, dat_index, ot, funcflag );
 }
 
 
@@ -2237,8 +2207,7 @@ void CToken::GenerateCodePP_struct( void )
 
 	axcode->PutStructStart();
 	prmid = axcode->PutStructParamTag();			// modinit用のTAG
-	int const modname_label_id = lb->Regist(funcname, TYPE_STRUCT, prmid);
-	if ( cg_debug ) { lb->SetDefinition(modname_label_id, cg_orgfile, cg_orgline); }
+	RegistIdentCG(funcname, TYPE_STRUCT, prmid);
 	//Mesf( "%d:%s",prmid, funcname );
 
 	while(1) {
@@ -2258,8 +2227,7 @@ void CToken::GenerateCodePP_struct( void )
 			CG_MesLabelDefinition(i);
 			throw CGERROR_PP_ALREADY_USE_PARAM;
 		}
-		int const member_label_id = lb->Regist(cg_str, TYPE_STRUCT, prmid);
-		if ( cg_debug ) { lb->SetDefinition(member_label_id, cg_orgfile, cg_orgline); }
+		RegistIdentCG(cg_str, TYPE_STRUCT, prmid);
 
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype >= TK_EOL ) break;
@@ -2308,12 +2276,18 @@ int CToken::SetVarsFixed( char *varname, int fixedvalue )
 	int id;
 	id = lb->Search( varname );
 	if ( id < 0 ) {
-		id = lb->Regist( varname, TYPE_VAR, cg_valcnt );
-		if ( cg_debug ) { lb->SetDefinition(id, cg_orgfile, cg_orgline); }
+		id = RegistIdentCG(varname, TYPE_VAR, cg_valcnt);
 		cg_valcnt++;
 	}
 	lb->SetForceType( id, fixedvalue );
 	return id;
+}
+
+int CToken::RegistIdentCG(char const* name, int type, int opt)
+{
+	int const label_id = lb->Regist(name, type, opt);
+	if ( cg_debug ) { lb->SetDefinition(label_id, cg_orgfile, cg_orgline); }
+	return label_id;
 }
 
 
@@ -2457,8 +2431,7 @@ int CToken::GenerateCodeSub( void )
 				axcode->SetOT( lb->GetOpt(i), GetCS() );
 				lab->type = TYPE_LABEL; 
 			} else {
-				i = lb->Regist( cg_str, TYPE_LABEL, GetOTCount() );
-				if ( cg_debug ) { lb->SetDefinition(i, cg_orgfile, cg_orgline); }
+				RegistIdentCG(cg_str, TYPE_LABEL, axcode->GetOTCount());
 				PutOT(GetCS());
 			}
 			GetTokenCG( GETTOKEN_DEFAULT );
@@ -2513,54 +2486,51 @@ int CToken::GenerateCodeBlock( void )
 	//		プロック単位でHSP3Codeを展開する
 	//		(エラー発生時は例外が発生します)
 	//
-	int res,id,ff;
-	char a1;
-	char *p;
-	res = GenerateCodeSub();
+	int const res = GenerateCodeSub();
 	if ( res == TK_EOF ) return res;
 	if ( res == TK_EOL ) {
 		cg_ptr = GetLineCG();
 		if ( iflev ) {
 			if ( ifscope[iflev-1] == CGIfScope::Line ) CheckCMDIF_Fin(0);			// 'if' jump support
 		}
-		if ( cg_debug ) axcode->PutDI();
+		if ( cg_debug ) PutDIOffset();
 		cg_orgline++;
 	}
 	if ( res == TK_SEPARATE ) {
-		a1 = cg_str[0];
+		char const a1 = cg_str[0];
 		if (a1=='{') {					// when '{'
-			if ( iflev == 0 ) throw CGERROR_BLOCKEXP;
-			if ( ifscope[iflev-1] == CGIfScope::Block ) throw CGERROR_BLOCKEXP;
+			if ( iflev == 0 
+				|| ifscope[iflev-1] == CGIfScope::Block ) throw CGERROR_BLOCKEXP;
 			ifscope[iflev-1] = CGIfScope::Block;
 		} else if (a1=='}') {			// when '}'
-			if ( iflev == 0 ) throw CGERROR_BLOCKEXP;
-			if ( ifscope[iflev-1] != CGIfScope::Block ) throw CGERROR_BLOCKEXP;
+			if ( iflev == 0 
+				|| ifscope[iflev-1] != CGIfScope::Block ) throw CGERROR_BLOCKEXP;
 
-			ff = 0;
-			p = GetTokenCG( cg_ptr, GETTOKEN_DEFAULT );
+			char* p = GetTokenCG( cg_ptr, GETTOKEN_DEFAULT );
 
+			bool follows_else_clause = false;
 			if ( ttype == TK_EOL ) {										// 次行のコマンドがelseかどうか調べる
 				if ( cg_wp != NULL ) {
 					p = GetSymbolCG( (char *)cg_wp );
 					if ( p != NULL ) {
-						id = lb->Search( p );
+						int const id = lb->Search( p );
 						if ( id >= 0 ) {
 							if (( lb->GetType(id)==TYPE_CMPCMD )&&( lb->GetOpt(id)==1 )) {
-								ff = 1;
+								follows_else_clause = true;
 							}
 						}
 					}
 				}
 			} else if ( ttype == TK_OBJ ) {									// 次のコマンドがelseかどうか調べる
-				id = lb->Search( cg_str );
+				int const id = lb->Search( cg_str );
 				if ( id >= 0 ) {
 					if (( lb->GetType(id)==TYPE_CMPCMD )&&( lb->GetOpt(id)==1 )) {
 						//ifscope[iflev-1] = CGIfScope::Line;					// line scope on	
-						ff = 1;
+						follows_else_clause = true;
 					}
 				}
 			}
-			if ( ff == 0 ) CheckCMDIF_Fin(0);
+			if ( !follows_else_clause ) CheckCMDIF_Fin(0);
 		}
 	}
 	return res;
@@ -2579,7 +2549,7 @@ void CToken::RegisterFuncLabels( void )
 			if ( lb->Search(name) >= 0 ) {
 				throw CGERROR_PP_ALREADY_USE_FUNC;
 			}
-			int id = lb->Regist( name, TYPE_MODCMD, -1 );
+			int const id = lb->Regist( name, TYPE_MODCMD, -1 );
 			lb->SetData2( id, (char *)&i, sizeof i );
 		}
 	}
@@ -2606,7 +2576,6 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 	cg_lastcmd = CGLastCmd::None;
 	cg_localcur = 0;
 	cg_locallabel = 0;
-	cg_varhpi = 0;
 	cg_defvarfix = LAB_TYPEFIX_NONE;
 
 	iflev=0;
@@ -2682,13 +2651,16 @@ int CToken::PutDSBuf(char *str, int size)
 char* CToken::GetDS(int ptr)
 { return axcode->GetDS(ptr); }
 
-int CToken::GetOT(int id)
-{ return axcode->GetOT(id); }
-int CToken::GetOTCount()
-{ return axcode->GetOTCount(); }
-
 void CToken::PutDI(int dbgcode, int value, int subid)
 { axcode->PutDI(dbgcode, value, subid); }
+
+void CToken::PutDIOffset()
+{
+	int const cur_cs_index = GetCS();
+	int const offset = static_cast<int>(cur_cs_index - cg_lastcs);
+	axcode->PutDIOffset(offset);
+	cg_lastcs = cur_cs_index;
+}
 
 void CToken::PutCSSymbol(int label_id, int exflag)
 {
@@ -2700,10 +2672,7 @@ void CToken::PutCSSymbol(int label_id, int exflag)
 		int id = *(int *)lb->GetData2(label_id);
 		tmp_lb->AddReference(id);
 
-		STRUCTDAT st = { STRUCTDAT_INDEX_DUMMY };
-		st.otindex = label_id;
-		value = axcode->GetFICount();
-		axcode->PutFI(st);
+		value = axcode->PutStructDummy(label_id);
 		lb->SetOpt(label_id, value);
 	}
 	if ( exflag & EXFLG_1 && type != TYPE_VAR && type != TYPE_STRUCT ) {
@@ -2754,6 +2723,7 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		}
 	} else {
 		//		正常終了
+
 		//終端命令
 		{
 			//Mesf("lastcode<%d>(%d,%d), cssize=%d", cg_lastcmd, cg_lasttype, cg_lastval, GetCS());
@@ -2761,8 +2731,8 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 			if ( CG_optCode() && (cg_lastcmd  == CGLastCmd::Cmd) && IsTerminateCode(cg_lasttype, cg_lastval) ) {
 				putTerminateCode = false;
 				//最後のコードより後にラベルがないこと
-				for ( int i = 0; i < GetOTCount(); ++i ) {
-					if ( GetOT(i) >= GetCS() ) { putTerminateCode = true; break; }
+				for ( int i = 0; i < axcode->GetOTCount(); ++i ) {
+					if ( axcode->GetOT(i) >= GetCS() ) { putTerminateCode = true; break; }
 				}
 			}
 			if ( putTerminateCode ) {
@@ -2778,20 +2748,12 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 
 		axcode->PutOTBuf();
 		if ( cg_debug ) {
-			axcode->PutDI();
+			PutDIOffset();
 		}
-		if ( cg_debug || (hed_info.cmpmode & CMPMODE_PUTVARS) ) {
-			axcode->PutDIVars(*lb);
-		}
-		if ( cg_debug ) {
-			axcode->PutDILabels(*lb);
-			axcode->PutDIParams(*lb);
-		}
-		PutDI( -1, 0, 0 );								// デバッグ情報終端
+		axcode->PutDIFinal(*lb, cg_debug, ((hed_info.cmpmode & CMPMODE_PUTVARS) != 0));
 
 		CMemBuf axbuf;
-		HSPHED hsphed {};
-		axcode->WriteToBuf(axbuf, hsphed, hed_info, mode, cg_valcnt, cg_varhpi);
+		axcode->WriteToBuf(axbuf, hed_info, mode, cg_valcnt);
 		res = axbuf.SaveFile( oname );
 		if ( res<0 ) {
 #ifdef JPNMSG
@@ -2800,6 +2762,7 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 			Mes( "#Can't write output file." );
 #endif
 		} else {
+			HSPHED const& hsphed = axcode->GetHeader();
 			Mesf( "#Code size (%d) String data size (%d) param size (%d)", hsphed.max_cs, hsphed.max_ds, hsphed.max_minfo );
 			Mesf( "#Vars (%d) Labels (%d) Modules (%d) Libs (%d) Plugins (%d)",
 				cg_valcnt, hsphed.max_ot / sizeof(int), hsphed.max_finfo / sizeof(STRUCTDAT), hsphed.max_linfo, hsphed.max_hpi / sizeof(HPIDAT) );

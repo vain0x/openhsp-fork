@@ -77,7 +77,7 @@ public:
 	CLabel();
 	~CLabel();
 	void Reset( void );
-	int Regist( char *name, int type, int opt );
+	int Regist( char const *name, int type, int opt );
 	void SetEternal( int id );
 	int GetEternal( int id );
 	void SetOpt( int id, int val );
@@ -123,8 +123,8 @@ private:
 	void DisposeSymbolBuffer( void );
 	void MakeSymbolBuffer( void );
 
-	char *RegistSymbol( char *str );
-	char *RegistTable( char *str, int size );
+	char *RegistSymbol( char const *str );
+	char *RegistTable( char const *str, int size );
 
 	//	data
 	char *symbol;						// Symbol Table

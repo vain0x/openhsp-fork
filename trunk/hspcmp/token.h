@@ -137,7 +137,8 @@ class AxCode;
 #define SCNV_OPT_SJISUTF8 1
 
 //  token analysis class
-class CToken {
+class CToken
+{
 public:
 	CToken();
 	~CToken();
@@ -205,8 +206,8 @@ public:
 	int PutDSBuf(char *str);
 	int PutDSBuf(char *str, int size);
 	char *GetDS(int ptr);
-	int GetOT(int id); int GetOTCount();
 	void PutDI(int dbgcode, int value, int subid);
+	void PutDIOffset();
 	
 	void CalcCG( int ex );
 
@@ -328,11 +329,6 @@ private:
 	void GenerateCodePP_comfunc( void );
 	void GenerateCodePP_defvars( int fixedvalue );
 
-	int GetParameterTypeCG( char *name );
-	int GetParameterStructTypeCG( char *name );
-	int GetParameterFuncTypeCG( char *name );
-	int GetParameterResTypeCG( char *name );
-
 	char *GetTokenCG( char *str, int option );
 	char *GetTokenCG( int option );
 	char *GetSymbolCG( char *str );
@@ -348,6 +344,7 @@ private:
 	void CheckCMDIF_Fin( int mode );
 
 	int SetVarsFixed( char *varname, int fixedvalue );
+	int RegistIdentCG(char const* name, int type, int opt);
 
 	void CalcCG_token( void );
 	void CalcCG_token_exprbeg( void );
@@ -436,8 +433,6 @@ private:
 	int cg_typecnt;
 	int cg_pptype;
 	int cg_locallabel;
-	int cg_varhpi;
-	//int cg_putvars;
 	int cg_defvarfix;
 	bool cg_utf8out;
 	char *cg_ptr;
@@ -455,7 +450,7 @@ private:
 	int ifptr[CGIfLevelMax];
 	int ifterm[CGIfLevelMax];
 
-	CGLastCmd cg_lastcmd;  // 直前に書き込んだコマンド; cmdif等は未実装
+	CGLastCmd cg_lastcmd;  // 前行のコマンド; cmdif等は未実装
 	int cg_lasttype;
 	int cg_lastval;
 	int cg_lastcs;

@@ -23,6 +23,7 @@
 
 AxCode::AxCode(CToken* tk)
 	: tk_(tk)
+	, hed_buf(new HSPHED)
 	, cs_buf(new CMemBuf)
 	, ds_buf(new CMemBuf)
 	, ot_buf(new CMemBuf)
@@ -33,9 +34,10 @@ AxCode::AxCode(CToken* tk)
 	, fi2_buf(new CMemBuf)
 	, hpi_buf(new CMemBuf)
 	, working_ot_buf(new std::decay_t<decltype(*working_ot_buf)>())
-	//, cg_stnum(0)
-	//, cg_stsize(0)
-	//, cg_stptr(0)
+	, cg_varhpi(0)
+	, cg_stnum(0)
+	, cg_stsize(0)
+	, cg_stptr(0)
 {
 	if ( tk->CG_optShort() ) {
 		string_literal_table.reset(new std::map<std::string, int>());
@@ -61,14 +63,11 @@ STRUCTPRM* AxCode::GetMIBuffer() const
 size_t AxCode::GetFICount() const {
 	return fi_buf->GetSize() / sizeof(STRUCTDAT);
 }
-void AxCode::AllocFI() { fi_buf->PreparePtr(sizeof(STRUCTDAT)); }
 int* AxCode::GetOTBuffer() const {
 	return reinterpret_cast<int*>(ot_buf->GetBuffer());
 }
-
-void AxCode::PutCS(short value)
-{
-	cs_buf->Put(value);
+HSPHED const& AxCode::GetHeader() const {
+	return *hed_buf;
 }
 
 void AxCode::PutCS(int type, int value, int exflg)
@@ -123,6 +122,13 @@ void AxCode::PutCS(int type, double value, int exflg)
 	PutCS(type, i, exflg);
 }
 
+int AxCode::PutCSJumpOffsetPlaceholder()
+{
+	int const cs_index = GetCS();
+	cs_buf->Put(static_cast<short>(0));
+	return cs_index;
+}
+
 int AxCode::GetCS(void)
 {
 	//		Get current CS index
@@ -147,6 +153,17 @@ void AxCode::SetCS(int csindex, int type, int value)
 		assert(static_cast<unsigned int>(value) < 0x10000);  // when 16 bit encode
 		cscode[1] = value;
 	}
+}
+
+void AxCode::SetCSJumpOffset(int csindex, short offset)
+{
+	GetCSBuffer()[csindex] = offset;
+}
+
+void AxCode::SetCSAddExflag(int csindex, int exflag)
+{
+	auto const p = &GetCSBuffer()[csindex];
+	*p |= exflag & ~CSTYPE;
 }
 
 int AxCode::PutDS(char *str)
@@ -288,7 +305,7 @@ int AxCode::GetNewOTFromOldOT(int old_otindex)
 	return (iter != otindex_table->end()) ? iter->second : -1;
 };
 
-void AxCode::PutDI()
+void AxCode::PutDIOffset(int offset)
 {
 	//		Debug code register
 	//
@@ -299,16 +316,13 @@ void AxCode::PutDI()
 	//			254,x(24),y(16) = new filename accepted (x=mds ptr.)
 	//			255             = end of debug data
 	//
-	int ofs;
-	ofs = (int)(GetCS() - cg_lastcs);
-	if ( ofs <= 250 ) {
-		di_buf->Put((unsigned char)ofs);
+	if ( offset < DInfoCode::CodeMin ) {
+		di_buf->Put((unsigned char)offset);
 	} else {
-		di_buf->Put((unsigned char)252);
-		di_buf->Put((unsigned char)(ofs));
-		di_buf->Put((unsigned char)(ofs >> 8));
+		di_buf->Put((unsigned char)DInfoCode::WideOffset);
+		di_buf->Put(static_cast<unsigned char>((offset >> 0) & 0xFF));
+		di_buf->Put(static_cast<unsigned char>((offset >> 8) & 0xFF));
 	}
-	cg_lastcs = GetCS();
 }
 
 void AxCode::PutDI(int dbg_code, int value, int subid)
@@ -318,25 +332,38 @@ void AxCode::PutDI(int dbg_code, int value, int subid)
 	//				254=(a=file ds ptr./subid=line num.)
 	//
 	if ( dbg_code < 0 ) {
-		ds_buf->Put(static_cast<unsigned char>(255));
-		ds_buf->Put(static_cast<unsigned char>(255));
+		ds_buf->Put(DInfoCode::ChangeContext);
+		ds_buf->Put(DInfoCode::ChangeContext);
 	} else {
-		di_buf->Put((unsigned char)dbg_code);
-		di_buf->Put((unsigned char)((value >>  0) & 0xFF));
-		di_buf->Put((unsigned char)((value >>  8) & 0xFF));
-		di_buf->Put((unsigned char)((value >> 16) & 0xFF));
-		di_buf->Put((unsigned char)(subid));
-		di_buf->Put((unsigned char)(subid >> 8));
+		di_buf->Put(static_cast<unsigned char>(dbg_code));
+		di_buf->Put(static_cast<unsigned char>((value >>  0) & 0xFF));
+		di_buf->Put(static_cast<unsigned char>((value >>  8) & 0xFF));
+		di_buf->Put(static_cast<unsigned char>((value >> 16) & 0xFF));
+		di_buf->Put(static_cast<unsigned char>(subid));
+		di_buf->Put(static_cast<unsigned char>(subid >> 8));
 	}
 }
 
-void AxCode::PutDIVars(CLabel& lb_ref)
+void AxCode::PutDIFinal(CLabel& lb_ref, bool is_debug_compile, bool includes_varnames)
+{
+	CLabel* const lb = &lb_ref;
+
+	if ( is_debug_compile || includes_varnames ) {
+		PutDIVars(lb);
+	}
+	if ( is_debug_compile ) {
+		PutDILabels(lb);
+		PutDIParams(lb);
+	}
+	PutDI(-1, 0, 0);   // デバッグ情報終端
+	return;
+}
+
+void AxCode::PutDIVars(CLabel* lb)
 {
 	//		Debug info register for vals
 	//
-	auto const lb = &lb_ref;
-
-	char vtmpname[256];
+	char vtmpname[256]; // [OBJNAME_MAX + 4]
 	char *p;
 
 	strcpy(vtmpname, "I_");
@@ -360,17 +387,15 @@ void AxCode::PutDIVars(CLabel& lb_ref)
 					break;
 			}
 			int const ds_index = PutDSBuf(p);
-			PutDI(253, ds_index, lab->opt);
+			PutDI(DInfoCode::VarName, ds_index, lab->opt);
 		}
 	}
 }
 
 // ラベル名の情報を出力する
 // 識別子表(lb)は古い ot_index を用いて書かれているので注意
-void AxCode::PutDILabels(CLabel& lb_ref)
+void AxCode::PutDILabels(CLabel* lb)
 {
-	auto const lb = &lb_ref;
-
 	int const num = GetOTCount();  // old ot_index の数
 	std::vector<int> table;
 	table.resize(num, -1);  // 無効値で初期化
@@ -384,29 +409,27 @@ void AxCode::PutDILabels(CLabel& lb_ref)
 	}
 
 	//ラベル名のリストを書き出す
-	ds_buf->Put(static_cast<unsigned char>(255));
+	ds_buf->Put(DInfoCode::ChangeContext);
 	for ( int i = 0; i < num; i++ ) {
 		if ( table[i] == -1 ) continue;
 		char *name = lb->GetName(table[i]);
 		int dsPos = PutDSBuf(name);
-		PutDI(251, dsPos, GetNewOTFromOldOT(i));
+		PutDI(DInfoCode::DebugIdent, dsPos, GetNewOTFromOldOT(i));
 	}
 }
 
 
 // 引数名の情報を出力する
-void AxCode::PutDIParams(CLabel& lb_ref)
+void AxCode::PutDIParams(CLabel* lb)
 {
-	auto const lb = &lb_ref;
-
-	ds_buf->Put(static_cast<unsigned char>(255));
+	ds_buf->Put(DInfoCode::ChangeContext);
 	for ( int i = 0; i < lb->GetNumEntry(); i++ ) {
 		if ( lb->GetType(i) == TYPE_STRUCT ) {
 			int id = lb->GetOpt(i);
 			if ( id < 0 ) continue;
 			char *name = lb->GetName(i);
 			int dsPos = PutDSBuf(name);
-			PutDI(251, dsPos, id);
+			PutDI(DInfoCode::DebugIdent, dsPos, id);
 		}
 	}
 }
@@ -536,7 +559,7 @@ int AxCode::PutStructParam(short mptype, int extype)
 }
 
 
-int AxCode::PutStructParamTag(void)
+int AxCode::PutStructParamTag()
 {
 	int i;
 	STRUCTPRM prm;
@@ -553,7 +576,7 @@ int AxCode::PutStructParamTag(void)
 }
 
 
-void AxCode::PutStructStart(void)
+void AxCode::PutStructStart()
 {
 	cg_stnum = 0;
 	cg_stsize = 0;
@@ -565,6 +588,12 @@ int AxCode::PutStructEnd(int i, char *name, int libindex, int otindex, int funcf
 {
 	//		STRUCTDATを登録する(モジュール用)
 	//
+
+	if ( i < 0 ) {
+		i = GetFICount();
+		fi_buf->PreparePtr(sizeof(STRUCTDAT));
+	}
+
 	STRUCTDAT st;
 	st.index = libindex;
 	st.nameidx = PutDSBuf(name);
@@ -587,9 +616,7 @@ int AxCode::PutStructEnd(int i, char *name, int libindex, int otindex, int funcf
 
 int AxCode::PutStructEnd(char *name, int libindex, int otindex, int funcflag)
 {
-	int i = GetFICount();
-	fi_buf->PreparePtr(sizeof(STRUCTDAT));
-	return PutStructEnd(i, name, libindex, otindex, funcflag);
+	return PutStructEnd(-1, name, libindex, otindex, funcflag);
 }
 
 int AxCode::PutStructEndDll(char *name, int libindex, int subid, int otindex)
@@ -607,18 +634,21 @@ int AxCode::PutStructEndDll(char *name, int libindex, int subid, int otindex)
 	st.proc = NULL;
 	st.size = cg_stsize;
 	st.otindex = otindex;
-	PutFI(st);
+	fi_buf->PutData(&st, sizeof(STRUCTDAT));
 	//Mesf( "#%d : %s(LIB%d) prm%d size%d ot%d", i, name, libindex, cg_stnum, cg_stsize, otindex );
 	return i;
 }
 
-void AxCode::PutFI(STRUCTDAT const& stdat)
+int AxCode::PutStructDummy(int label_id)
 {
-	fi_buf->PutData(&stdat, sizeof(STRUCTDAT));
+	int const subid = GetFICount();
+	STRUCTDAT st = { STRUCTDAT_INDEX_DUMMY };
+	st.otindex = label_id;
+	fi_buf->PutData(&st, sizeof(STRUCTDAT));
+	return subid;
 }
 
-
-void AxCode::PutHPI(short flag, short option, char *libname, char *funcname)
+void AxCode::PutHPI(short flag, short option, char *libname, char *funcname, int var_type_cnt)
 {
 	HPIDAT hpi;
 	hpi.flag = flag;
@@ -627,10 +657,13 @@ void AxCode::PutHPI(short flag, short option, char *libname, char *funcname)
 	hpi.funcname = PutDSBuf(funcname);
 	hpi.libptr = NULL;
 	hpi_buf->PutData(&hpi, sizeof(HPIDAT));
+
+	cg_varhpi += var_type_cnt;
 }
 
-void AxCode::WriteToBuf(CMemBuf& axbuf, HSPHED& hsphed, CToken::HeaderInfo& hed_info, int mode, int cg_valcnt, int cg_varhpi)
+void AxCode::WriteToBuf(CMemBuf& axbuf, CToken::HeaderInfo& hed_info, int mode, int cg_valcnt)
 {
+	HSPHED& hsphed = *hed_buf;
 	size_t hed_size = sizeof(HSPHED);
 	size_t const cs_size = cs_buf->GetSize();
 	size_t const ds_size = ds_buf->GetSize();

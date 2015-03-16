@@ -340,18 +340,18 @@ void AxCodeInspector::AnalyzeDInfo()
 	int dictx = DInfoCtx_Default;
 	for ( int i = 0; i < max_di; ) {
 		switch ( dinfo[i] ) {
-			case 0xFF:
+			case DInfoDirectiveChar::ChangeContext:
 				++dictx;  // enum を ++ する業
 				++i;
 				if ( dictx == DInfoCtx_Max ) goto break_loop;
 				break;
 
 			// ソースファイル指定
-			case 0xFE: i += 6; break;
+			case DInfoDirectiveChar::SourceFile: i += 6; break;
 
 			// 識別子指定
-			case 0xFD:
-			case 0xFB:
+			case DInfoDirectiveChar::VarName:
+			case DInfoDirectiveChar::DebugIdentName:
 				if ( auto* tbl = getIdentTableFromCtx(dictx) ) {
 					char* const ident = &ds_buf->GetBuffer()[tripeek(&dinfo[i + 1])];
 					int const iparam = wpeek(&dinfo[i + 4]);
@@ -361,7 +361,7 @@ void AxCodeInspector::AnalyzeDInfo()
 				break;
 
 			// 次の命令までのCSオフセット値
-			case 0xFC: i += 3; break;
+			case DInfoDirectiveChar::WideOffset: i += 3; break;
 			default: ++i; break;
 		}
 	}
