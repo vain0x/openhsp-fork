@@ -698,3 +698,131 @@ int ConvSJis2Utf8( char *pSource, char *pDist, int buffersize )
    return size;
 }
 
+
+/*----------------------------------------------------------*/
+//		Lexical Analyze Support
+
+unsigned char* skip_blanks(unsigned char* p, bool skips_multibyte_space)
+{
+	for ( ;; ) {
+		auto const c = *p;
+		if ( c == ' ' || c == '\t' ) {
+			p++;
+		} else if ( skips_multibyte_space && c == 0x81 && p[1] == 0x40 ) {
+			p += 2;
+		} else {
+			break;
+		}
+	}
+	return p;
+}
+
+#if 0
+#include "../../hsp3/hspvar_core.h"
+#include "../token.h"
+template<int radix, char radix_char, char prefix_mark>
+static int* read_nondigit_int_literal(unsigned char const* src, size_t& len)
+{
+	if ( src[0] == '0' && src[1] == radix_char ) { // 0x or 0b
+		len = 2;
+	} else if ( src[0] == prefix_mark ) {  // $ or %
+		len = 1;
+	} else {
+		return nullptr;
+	}
+
+	int val = 0;
+	for (;;) {
+		unsigned char const a1 = toupper(src[len]);
+		if ( a1 == '\0' ) break;
+		if ( a1 == '_' ) continue;
+
+		int const bit =
+			( isdigit(a1) ) ? (a1 - '0') :
+			( isupper(a1) ) ? (a1 - 'A') : (radix);
+		if ( !(0 <= bit && bit < radix) ) break;  // リテラルに含まれない値
+		len ++;
+		val = (val * radix) + bit;
+	}
+	static int stt_result;
+	stt_result = val;
+	return &stt_result;
+}
+int* read_hex_literal(unsigned char const* src, size_t& len)
+{ return read_nondigit_int_literal<16, 'x', '$'>(src, len); }
+int* read_bin_literal(unsigned char const* src, size_t& len)
+{ return read_nondigit_int_literal<2, 'b', '%'>(src, len); }
+
+int* read_digit_literal(unsigned char const* src, size_t& len)
+{
+	return nullptr;
+}
+
+int read_operator(unsigned char const* src, size_t& len)
+{
+	len = 1;
+	switch ( src[0] ) {
+		case '!':
+			if ( src[1] == '=' ) { ++ len; }
+			return CALCCODE_NE;
+		case '+':
+			return CALCCODE_ADD;
+		case '-':
+			if ( src[1] == '>' ) {
+				++ len; return 0x65;
+			}
+			return CALCCODE_SUB;
+		case '*': return CALCCODE_MUL;
+		case '/': return CALCCODE_DIV;
+		case '\\':
+			return CALCCODE_MOD;
+
+		case '=':
+			if ( src[1] == '=' ) { ++ len; }
+			return CALCCODE_EQ;
+		case '<':
+			switch ( src[1] ) {
+				case '<' : ++ len; return CALCCODE_LR;
+				case '=': ++ len;  return CALCCODE_LTEQ;
+				default: return CALCCODE_LT;
+			}
+		case '>':
+			switch ( src[1] ) {
+				case '>' : ++ len; return CALCCODE_RR;
+				case '=': ++ len;  return CALCCODE_GTEQ;
+				default: return CALCCODE_GT;
+			}
+		case '|': if ( src[1] == '|' ) ++ len;
+			return CALCCODE_OR;
+		case '&': if ( src[1] == '&' ) ++ len;
+			return CALCCODE_AND;
+		default:
+			return CALCCODE_MAX; // not accepted
+	}
+}
+
+void read_ident(unsigned char* dst, unsigned char const* src, size_t& len)
+{
+	for ( ;; ) {
+		auto const a1 = src[len];
+		if ( a1 == '\0'
+			|| is_mark_char(a1)
+			|| (a1 == 0x81 && src[len + 1] == 0x40) ) { // 全角空白
+			break;
+		}
+
+		if ( a1 >= 129 && ((a1 <= 159) || (a1 >= 224)) ) {  // 全角文字チェック
+			if ( len < OBJNAME_MAX ) {
+				dst[len] = a1;
+				dst[len + 1] = src[len + 1];
+			}
+			len += 2;
+		} else {
+			if ( len < OBJNAME_MAX ) { dst[len] = a1; }
+			len++;
+		}
+	}
+	return;
+}
+#endif
+

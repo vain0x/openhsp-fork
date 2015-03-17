@@ -149,7 +149,7 @@ CToken::~CToken( void )
 {
 	if ( scnvbuf!=NULL ) InitSCNV(-1);
 
-	if ( s3 != NULL ) { free( s3 );s3 = NULL; }
+	free( s3 ); s3 = NULL;
 //	buffer = NULL;
 }
 
@@ -338,16 +338,14 @@ char *CToken::Pickstr2( char *str )
 int CToken::CheckModuleName( char *name )
 {
 	int a;
-	unsigned char *p;
 	unsigned char a1;
 
 	a = 0;
-	p = (unsigned char *)name;
+	auto p = (unsigned char *)name;
 	while(1) {								// normal object name
 		a1=*p;
 		if (a1==0) { return 0; }
-		if (a1<0x30) break;
-		if (is_symbol_char(a1)) break;
+		if (is_mark_char(a1)) break;
 		if (a1>=129) {						// 全角文字チェック
 			if (a1<=159) { p++;a1=*p; }
 			else if (a1>=224) { p++;a1=*p; }
@@ -379,22 +377,8 @@ int CToken::GetToken( void )
 	minmode = 0;
 	rval=TK_OBJ;
 
-	while(1) {
-		a1=*wp;
-
-#ifdef HSPWIN
-		if ( a1 == 0x81 ) {
-			if ( wp[1] == 0x40 ) {	// 全角スペースは無視
-				if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
-					wp+=2; continue;
-				}
-			}
-		}
-#endif
-
-		if ((a1!=32)&&(a1!=9)) break;	// Skip Space & Tab
-		wp++;
-	}
+	wp = skip_blanks(wp, skipsJaSpaces());
+	a1 = *wp;
 
 	if (a1==0) { wp=NULL;return TK_NONE; }		// End of Source
 	if (a1==13) {					// Line Break
@@ -409,8 +393,7 @@ int CToken::GetToken( void )
 	}
 
 	//	Check Extra Character
-	if (a1<0x30) rval=TK_NONE;
-	if (is_symbol_char(a1)) rval=TK_NONE;
+	if (is_mark_char(a1)) rval=TK_NONE;
 
 	if (a1==':' || a1 == '{' || a1 == '}') {   // multi statement
 		wp++;
@@ -580,9 +563,7 @@ int CToken::GetToken( void )
 	while(1) {								// normal object name
 		a1=*wp;
 		if (a1==0) { wp=NULL;break; }
-		if (a1<0x30) break;
-		if (is_symbol_char(a1)) break;
-
+		if (is_mark_char(a1)) break;
 		if ( a>=OBJNAME_MAX ) break;
 
 		if (a1>=129) {						// 全角文字チェック
@@ -820,6 +801,14 @@ int CToken::Calc( CALCVAR &val )
 
 //-----------------------------------------------------------------------------
 
+bool CToken::skipsJaSpaces() const {
+#ifdef HSPWIN
+	return (hed_info.cmpmode & CMPMODE_SKIPJPSPC) != 0;
+#else
+	return false;
+#endif
+}
+
 char *CToken::ExpandStr( char *str, int opt )
 {
 	//		指定文字列をmembufへ展開する
@@ -1026,7 +1015,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	//		stringデータをmembufへ展開する
 	//			ppmode : 0=通常、1=プリプロセッサ時
 	//
-	int a,chk,id,ltype,opt;
+	int a,id,ltype;
 	int flcnt;
 	unsigned char *vs;
 	unsigned char *vs_bak;
@@ -1124,7 +1113,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	}
 
 #ifdef HSPWIN
-	if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
+	if ( skipsJaSpaces() ) {
 		if ( a1 == 0x81 && vs[1] == 0x40 ) {	// 全角スペースを半角スペースに変換する
 			*type = TK_CODE;
 			vs+=2;
@@ -1136,10 +1125,8 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	}
 #endif
 
-	chk=0;
-	if (is_symbol_char(a1)) chk++;
-
-	if (chk) {
+	bool const is_mark = is_mark_char(a1);
+	if (is_mark) {
 		vs++;
 		if (wrtbuf!=NULL) wrtbuf->Put( (char)a1 );		// 記号
 		*type = a1;
@@ -1190,7 +1177,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 	//		半角スペースの検出
 	//
 #ifdef HSPWIN
-	if ( (hed_info.cmpmode & CMPMODE_SKIPJPSPC) == 0 ) {
+	if ( !skipsJaSpaces() ) {
 		if ( strncmp( (char *)s2,"　",2 )==0 ) {
 			SetError("SJIS space code error");
 			*type = TK_ERROR; return (char *)vs;
@@ -1207,10 +1194,8 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 
 		if (a1>=129) {				// 全角文字チェック
 #ifdef HSPWIN
-			if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
-				if ( a1 == 0x81 && vs[1] == 0x40 ) {	// 全角スペースは終端と判断
-					break;
-				}
+			if ( skipsJaSpaces() && a1 == 0x81 && vs[1] == 0x40 ) {	// 全角スペースは終端と判断
+				break;
 			}
 #endif
 			if ((a1<=159)||(a1>=224)) {
@@ -1227,10 +1212,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 			}
 		}
 
-		chk=0;
-		if (a1<0x30) chk++;
-		if (is_symbol_char(a1)) chk++;
-		if ( chk ) break;
+		if (is_mark_char(a1)) break;
 		vs++;
 
 //		if ( a1=='@' ) if ( *vs==0 ) {
@@ -1279,7 +1261,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 				sprintf( cnvstr, "%f", *(CALCVAR *)ptr_dval );
 #endif
 			}
-			chk = ReplaceLineBuf( str, (char *)vs, cnvstr, 0, NULL );
+			ReplaceLineBuf( str, (char *)vs, cnvstr, 0, NULL );
 			break;
 			}
 		case LAB_TYPE_PPINTMAC:
@@ -1295,24 +1277,22 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 				return (char *)vs;
 			}
 
-		case LAB_TYPE_PPMAC:
+		case LAB_TYPE_PPMAC: {
 			//		マクロ展開
 			//
-			vs_bak = vs;
-			while(1) {		// 直後のspace/tabを除去
-				a1=*vs_bak;if ((a1!=32)&&(a1!=9)) break;
-				vs_bak++;
-			}
-			opt = lb->GetOpt(id);
-			if (( a1 == '=' )&&( opt & PRM_MASK ) ) {	// マクロに代入しようとした場合のエラー
+			vs_bak = skip_blanks(vs, false);
+			a1 = *vs_bak;
+			int const opt = lb->GetOpt(id);
+			if ( (a1 == '=') && (opt & PRM_MASK) ) {	// マクロに代入しようとした場合のエラー
 				SetError("Reserved word syntax error");
 				*type = TK_ERROR; return (char *)vs;
 			}
 			//	
 			macptr = lb->GetData(id);
-			if ( macptr == NULL ) { *cnvstr=0; macptr=cnvstr; }
-			chk = ReplaceLineBuf( str, (char *)vs, macptr, opt, (MACDEF *)lb->GetData2(id) );
+			if ( macptr == NULL ) { *cnvstr = 0; macptr = cnvstr; }
+			ReplaceLineBuf(str, (char *)vs, macptr, opt, (MACDEF *)lb->GetData2(id));
 			break;
+		}
 		case LAB_TYPE_PPDLLFUNC:
 			//		モジュール名付き展開キーワード
 			if (wrtbuf!=NULL) {
@@ -1361,7 +1341,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 			lb->AddReference( id );
 			return (char *)vs;
 		}
-		if ( chk ) { *type = TK_ERROR; return str; }
+		if ( is_mark ) { *type = TK_ERROR; return str; }
 		*type = TK_OBJ;
 		return str;
 	}
@@ -1589,10 +1569,7 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 						if ( ctype==1 ) {
 							wp = (unsigned char *)p;
 							prme[i++]=(char *)wp;
-							while(1) {
-								if ((*wp!=32)&&(*wp!=9)) break;
-								wp++;
-							}
+							wp = skip_blanks(wp, false);
 							*wp = 32;		// ')'をspaceに
 							break;
 						}
@@ -1991,7 +1968,7 @@ char *CToken::CheckValidWord( void )
 					p2 = ExpandStrComment( (char *)p+2, 1 );
 					while(1) {
 						if ( p>=p2 ) break;
-						*p++=32;			// コメント部分をspaceに
+						*p++=' ';			// コメント部分をspaceに
 					}
 					continue;
 				}
@@ -2177,11 +2154,8 @@ ppresult_t CToken::PP_Define( void )
 
 	//		skip space,tab code
 	if ( wp==NULL ) a1=0; else {
-		while(1) {
-			a1=*wp;if (a1==0) break;
-			if ( (a1!=9)&&(a1!=32) ) break;
-			wp++;
-		}
+		wp = skip_blanks(wp, false);
+		a1 = *wp;
 	}
 	if ( a1 == 0 ) { SetError("macro contains no data"); return PPRESULT_ERROR; }
 	if ( ctype ) prms|=PRM_FLAG_CTYPE;
@@ -3193,7 +3167,7 @@ int CToken::ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preproces
 		}
 		if ( vp_bak == vp ) {
 			macloop++;
-			if ( macloop > 999 ) {
+			if ( macloop > MACRO_LOOP_MAX ) {
 				SetError("Endless macro loop");
 				return -1;
 			}
@@ -3201,7 +3175,6 @@ int CToken::ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preproces
 	}
 	return 0;
 }
-
 
 int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 {
@@ -3212,25 +3185,11 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 	enumgc = 0;
 	mulstr = LineMode::On;
 	*errtmp = 0;
-	unsigned char a1;
 
 	while(1) {
 		RegistExtMacro( "__line__", pline );			// 行番号マクロを更新
 
-		while(1) {
-			a1 = *(unsigned char *)p;
-			if ( a1 == ' ' || a1 == '\t' ) {
-				p++; continue;
-			}
-#ifdef HSPWIN
-			if ( hed_info.cmpmode & CMPMODE_SKIPJPSPC ) {
-				if ( a1 == 0x81 && p[1] == 0x40 ) {		// 全角スペースチェック
-					p+=2; continue;
-				}
-			}
-#endif
-			break;
-		}
+		p = reinterpret_cast<char*>(skip_blanks(reinterpret_cast<unsigned char*>(p), skipsJaSpaces() ));
 
 		if ( *p==0 ) break;					// 終了(EOF)
 		ahtkeyword = NULL;					// AHTキーワードをリセットする
@@ -3294,12 +3253,11 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 			if ( res == PPRESULT_INCLUDED ) {			// include後の処理
 				pline += 1+mline;
 
-				char *fname_literal = to_hsp_string_literal( refname );
-				RegistExtMacro( "__file__", fname_literal );			// ファイル名マクロを更新
+				std::shared_ptr<char> fname_literal { to_hsp_string_literal(refname), free };
+				RegistExtMacro( "__file__", fname_literal.get() );			// ファイル名マクロを更新
 
 				wrtbuf = buf;
 				wrtbuf->PutStrf( "##%d %s\r\n", pline-1, fname_literal );
-				free( fname_literal );
 				continue;
 			}
 			if ( res == PPRESULT_WROTE_LINES ) {			// プリプロセスで行が増えた後の処理
@@ -3367,11 +3325,10 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char const *refname )
 		Mesf( "#Use file [%s]",purename );
 	}
 
-	char *fname_literal = to_hsp_string_literal( refname );
-	RegistExtMacro( "__file__", fname_literal );			// ファイル名マクロを更新
+	std::shared_ptr<char> fname_literal { to_hsp_string_literal(refname), free };
+	RegistExtMacro( "__file__", fname_literal.get() );			// ファイル名マクロを更新
 
-	buf->PutStrf( "##0 %s\r\n", fname_literal );
-	free( fname_literal );
+	buf->PutStrf( "##0 %s\r\n", fname_literal.get() );
 
 	strcpy(refname_copy, refname);
 	res = ExpandLine( buf, &fbuf, refname_copy );

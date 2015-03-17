@@ -20,6 +20,7 @@
 #define TK_LABEL 7
 #define TK_VOID 0x1000
 #define TK_SEPARATE 0x1001
+#define TK_OPERATOR 0x1002    // code operator (元は '=' とかだった)
 #define TK_EOL 0x1002
 #define TK_EOF 0x1003
 #define TK_ERROR -1
@@ -85,6 +86,7 @@ using CALCVAR = double;
 
 #define LINEBUF_MAX 0x10000
 #define INCLUDE_LEVEL_MAX 64
+#define MACRO_LOOP_MAX 999   // 一行に対してマクロ展開を行う限界の回数
 
 // line mode type
 enum class LineMode : unsigned char {
@@ -224,6 +226,7 @@ public:
 	int GetCmpOption(void) { return hed_info.cmpmode; }
 	void SetCmpOption(int cmpmode) { hed_info.cmpmode = cmpmode; }
 	
+	bool skipsJaSpaces() const;
 	bool CG_optCode() const { return (hed_info.cmpmode & CMPMODE_OPTCODE) != 0; }
 	bool CG_optInfo() const { return (hed_info.cmpmode & CMPMODE_OPTINFO) != 0; }
 	bool CG_optShort() const { return CG_optCode() && (hed_info.cmpmode & CMPMODE_OPTSHORT) != 0; }
@@ -391,8 +394,8 @@ private:
 	double val_d;
 	double fpbit;
 	unsigned char *wp;
-	unsigned char s2[1024];
-	unsigned char *s3;
+	unsigned char s2[1024];         // ExpandToken, GetTokenCG で使われる一時バッファ？
+	unsigned char *s3;              // GetTokenで使われる一時バッファ？
 	char linebuf[LINEBUF_MAX];		// Line expand buffer
 	char linetmp[LINEBUF_MAX];		// Line expand temp
 	char errtmp[128];				// temp for error message
@@ -423,7 +426,7 @@ private:
 
 	int cs_lastptr;					// パラメーターの初期CS位置
 	int cs_lasttype;				// パラメーターのタイプ(単一時)
-	int calccount;					// パラメーター個数
+	int calccount;					// パラメーター個数 (正確ではないが、ちょうど1個かどうかの判断にしか使われない)
 
 	//		for CodeGenerator
 	//
@@ -513,17 +516,12 @@ private:
 
 extern char const* stringFromCalcCode(int op);
 
-static bool is_symbol_char(unsigned char c)
+static bool is_mark_char(unsigned char c)
 {
 	return((c < 0x30)
 		|| (0x3a <= c && c <= 0x3f)
 		|| (0x5b <= c && c <= 0x5e)
 		|| (0x7b <= c && c <= 0x7f));
-}
-static unsigned char* skip_blanks(unsigned char* p)
-{
-	while ( *p == ' ' || *p == '\t' ) { ++p; }
-	return p;
 }
 template<int N>
 static void strcpy_safe(char dst[N], char const* src)
@@ -532,5 +530,12 @@ static void strcpy_safe(char dst[N], char const* src)
 	dst[N - 1] = '\0';
 	return;
 }
+
+extern unsigned char* skip_blanks(unsigned char* p, bool skips_multibyte_space);
+extern int* read_hex_literal(unsigned char const* src, size_t& len);
+extern int* read_bin_literal(unsigned char const* src, size_t& len);
+extern int* read_digit_literal(unsigned char const* src, size_t& len);
+extern int read_operator(unsigned char const* src, size_t& len);
+extern void read_ident(unsigned char const* src, size_t& len);
 
 #endif
