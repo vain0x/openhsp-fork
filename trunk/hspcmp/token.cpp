@@ -2166,10 +2166,10 @@ ppresult_t CToken::PP_DeffuncImpl( int mode, bool is_ctype, bool is_modfunc )
 				glmode = 1;
 				t = GetToken();
 			}
-		} else { SetError("invalid func name"); return PPRESULT_ERROR; }
-
+		} 
+		if ( t != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
 		strcase2( word, fixname );
-		
+
 		int const label_id = lb->Search( fixname );
 		if ( label_id != -1 ) {
 			if ( lb->GetFlag(label_id) != LAB_TYPE_PP_PREMODFUNC ) {
@@ -2192,7 +2192,7 @@ ppresult_t CToken::PP_DeffuncImpl( int mode, bool is_ctype, bool is_modfunc )
 		}
 
 		if ( is_modfunc ) {
-			implicit_modvar_type = "modvar ";
+			implicit_modvar_type = "modvar";
 		}
 	} else { // ctor or dtor
 		assert(mode == 1 || mode == 2);
@@ -2218,23 +2218,22 @@ ppresult_t CToken::PP_DeffuncImpl( int mode, bool is_ctype, bool is_modfunc )
 	for(;;) {
 		// 仮引数タイプ
 		int t = GetToken();
-		if ( wp == NULL ) break;
 		if ( t == TK_OBJ ) {
+			strcase(word);
 			wrtbuf->PutStr( word );
 
-			if ( mode == 0 && !is_ctype ) {
-				strcase(word);
+			if ( mode == 0 && !is_ctype && !is_modfunc ) { // only #deffunc
 				if ( tstrcmp(word, "onexit") ) { // onexitは参照済みにする
 					lb->AddReference(id);
+					break;
 				}
 			}
-		} else {
-			goto deffunc_funcparam_error;
 		}
+		if ( wp == NULL ) break;
+		if ( t != TK_OBJ ) goto deffunc_funcparam_error;
 
 		// エイリアス識別子
 		t = GetToken();
-		if ( wp == NULL ) break;
 		if ( t == TK_OBJ ) {
 			strcase2( word, fixname );
 			AddModuleName( fixname );
@@ -2243,7 +2242,8 @@ ppresult_t CToken::PP_DeffuncImpl( int mode, bool is_ctype, bool is_modfunc )
 
 			t = GetToken();
 		}
-		if ( t != ',' ) { goto deffunc_funcparam_error; }
+		if ( wp == NULL ) break;
+		if ( t != ',' ) goto deffunc_funcparam_error;
 
 		wrtbuf->Put( ',' );
 	}
@@ -2879,14 +2879,14 @@ ppresult_t CToken::Preprocess( char *str )
 		return (this->*(iter->second))();
 
 	} else {
-		//		登録キーワード以外はコンパイラに渡す
-		//
+	//		登録キーワード以外はコンパイラに渡す
+	//
 		//Mesf("#not preprocessed directive (%s)", word);
 		wrtbuf->Put((char)'#');
 		wrtbuf->PutStr(linebuf);
-		wrtbuf->PutCR();
-		return PPRESULT_WROTE_LINE;
-	}
+	wrtbuf->PutCR();
+	return PPRESULT_WROTE_LINE;
+}
 }
 
 
