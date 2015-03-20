@@ -259,14 +259,14 @@ private:
 	ppresult_t PP_SwitchStart( int sw );
 	ppresult_t PP_SwitchEnd();
 	ppresult_t PP_SwitchReverse();
-	ppresult_t PP_Include( bool is_addition );
+	ppresult_t PP_IncludeImpl( bool is_addition );
 	ppresult_t PP_Module();
 	ppresult_t PP_Global();
-	ppresult_t PP_Deffunc(int mode, bool is_ctype, bool is_modfunc);
+	ppresult_t PP_DeffuncImpl(int mode, bool is_ctype, bool is_modfunc);
 	ppresult_t PP_Struct();
-	ppresult_t PP_Func( char *name );
-	ppresult_t PP_Cmd( char *name );
-	ppresult_t PP_Pack( int mode );
+	ppresult_t PP_FuncImpl( char const* ppname ); // func, cfunc, or comfunc
+	ppresult_t PP_Cmd();
+	ppresult_t PP_PackImpl( bool encrypts ); // pack or epack
 	ppresult_t PP_PackOpt();
 	ppresult_t PP_RuntimeOpt();
 	ppresult_t PP_CmpOpt();
@@ -275,6 +275,21 @@ private:
 	ppresult_t PP_Ahtout();
 	ppresult_t PP_Ahtmes();
 	ppresult_t PP_BootOpt();
+
+	ppresult_t PP_Include()  { return PP_IncludeImpl(false); }
+	ppresult_t PP_Addition() { return PP_IncludeImpl(true); }
+	ppresult_t PP_Deffunc()	 { return PP_DeffuncImpl(0, false, false); }
+	ppresult_t PP_Modfunc()	 { return PP_DeffuncImpl(0, false, true); }
+	ppresult_t PP_Defcfunc() { return PP_DeffuncImpl(0, true, false); }
+	ppresult_t PP_Modcfunc() { return PP_DeffuncImpl(0, true, true); }
+	ppresult_t PP_Modinit()	 { return PP_DeffuncImpl(1, false, true); }
+	ppresult_t PP_Modterm()	 { return PP_DeffuncImpl(2, false, true); }
+	ppresult_t PP_Func()	 { return PP_FuncImpl("func"); }
+	ppresult_t PP_CFunc()	 { return PP_FuncImpl("cfunc"); }
+	ppresult_t PP_Comfunc()	 { return PP_FuncImpl("comfunc"); }
+	ppresult_t PP_Pack()     { return PP_PackImpl(false); }
+	ppresult_t PP_EPack()	 { return PP_PackImpl(true); }
+	std::unique_ptr<std::map<std::string, ppresult_t(CToken::*)()>> pp_functable;
 
 	void SetModuleName( char *name );
 	char *GetModuleName( void );

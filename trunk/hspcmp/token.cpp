@@ -1742,7 +1742,7 @@ ppresult_t CToken::PP_SwitchReverse( void )
 }
 
 
-ppresult_t CToken::PP_Include( bool is_addition )
+ppresult_t CToken::PP_IncludeImpl( bool is_addition )
 {
 	char* const word = (char *)s3;
 	int add_bak;
@@ -2144,7 +2144,7 @@ bad_macro_param_expr:
 
 
 
-ppresult_t CToken::PP_Deffunc( int mode, bool is_ctype, bool is_modfunc )
+ppresult_t CToken::PP_DeffuncImpl( int mode, bool is_ctype, bool is_modfunc )
 {
 	//		#deffunc解析
 	// mode (1: modinit, 2: modterm, 0: deffunc/defcfunc/modfunc/modcfunc)
@@ -2326,7 +2326,7 @@ ppresult_t CToken::PP_Struct( void )
 }
 
 
-ppresult_t CToken::PP_Func( char *name )
+ppresult_t CToken::PP_FuncImpl( char const *name )
 {
 	//		#func解析
 	//
@@ -2356,7 +2356,7 @@ ppresult_t CToken::PP_Func( char *name )
 }
 
 
-ppresult_t CToken::PP_Cmd( char *name )
+ppresult_t CToken::PP_Cmd()
 {
 	//		#cmd解析
 	//
@@ -2374,7 +2374,7 @@ ppresult_t CToken::PP_Cmd( char *name )
 	//id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 	//lb->SetEternal( id );
 	//
-	wrtbuf->PutStrf( "#%s %s%s",name, word, (char *)wp );
+	wrtbuf->PutStrf( "#cmd %s%s", word, (char *)wp );
 	wrtbuf->PutCR();
 	//
 	return PPRESULT_WROTE_LINE;
@@ -2564,7 +2564,7 @@ ppresult_t CToken::PP_Ahtmes( void )
 }
 
 
-ppresult_t CToken::PP_Pack( int mode )
+ppresult_t CToken::PP_PackImpl( bool encrypts )
 {
 	//		#pack,#epack解析
 	//			(mode:0=normal/1=encrypt)
@@ -2573,7 +2573,7 @@ ppresult_t CToken::PP_Pack( int mode )
 		if ( i != TK_STRING ) {
 			SetError("invalid pack name"); return PPRESULT_ERROR;
 		}
-		AddPackfile( (char *)s3, mode );
+		AddPackfile( (char *)s3, (encrypts ? 1 : 0) );
 	}
 	return PPRESULT_SUCCESS;
 }
@@ -2852,106 +2852,41 @@ ppresult_t CToken::Preprocess( char *str )
 
 	//		コード生成コントロール
 	//
-	if (tstrcmp(word,"include")) {		// text include
-		return PP_Include( 0 );
+	if ( !pp_functable ) {
+		pp_functable.reset(new std::decay_t<decltype(*pp_functable)> {
+			{ "include",  &CToken::PP_Include },
+			{ "addition", &CToken::PP_Addition },
+			{ "const",    &CToken::PP_Const },
+			{ "enum",     &CToken::PP_Enum },
+			{ "module",   &CToken::PP_Module },
+			{ "global",   &CToken::PP_Global },
+			{ "deffunc",  &CToken::PP_Deffunc },
+			{ "defcfunc", &CToken::PP_Defcfunc },
+			{ "modfunc",  &CToken::PP_Modfunc },
+			{ "modcfunc", &CToken::PP_Modcfunc },
+			{ "modinit",  &CToken::PP_Modinit },
+			{ "modterm",  &CToken::PP_Modterm },
+			{ "struct",   &CToken::PP_Struct },
+			{ "func",     &CToken::PP_Func },
+			{ "cfunc",    &CToken::PP_CFunc },
+			{ "cmd",      &CToken::PP_Cmd },
+			{ "comfunc",  &CToken::PP_Comfunc },
+			{ "aht",      &CToken::PP_Aht },
+		});
 	}
-	if (tstrcmp(word,"addition")) {		// text include
-		return PP_Include( 1 );
-	}
-	if (tstrcmp(word,"const")) {		// constant define
-		return PP_Const();
-	}
-	if (tstrcmp(word,"enum")) {			// constant enum define
-		return PP_Enum();
-	}
-/*
-	if (tstrcmp(word,"define")) {		// keyword define
-		return PP_Define();
-		if ( res==6 ) SetError("bad macro parameter expression");
-	}
-*/
-	if (tstrcmp(word,"module")) {		// module define
-		return PP_Module();
-	}
-	if (tstrcmp(word,"global")) {		// module exit
-		return PP_Global();
-	}
-	if (tstrcmp(word,"deffunc")) {		// module function
-		return PP_Deffunc(0, false, false);
-	}
-	if (tstrcmp(word,"defcfunc")) {		// module function (1)
-		return PP_Deffunc(0, true, false);
-	}
-	if (tstrcmp(word,"modfunc")) {		// module function (2)
-		return PP_Deffunc(0, false, true);
-	}
-	if (tstrcmp(word,"modcfunc")) {		// module function (2+)
-		return PP_Deffunc(0, true, true);
-	}
-	if (tstrcmp(word,"modinit")) {		// module function (3)
-		return PP_Deffunc(1, false, true);
-	}
-	if (tstrcmp(word,"modterm")) {		// module function (4)
-		return PP_Deffunc(2, false, true);
-	}
-	if (tstrcmp(word,"struct")) {		// struct define
-		return PP_Struct();
-	}
-	if (tstrcmp(word,"func")) {			// DLL function
-		return PP_Func( "func" );
-	}
-	if (tstrcmp(word,"cfunc")) {		// DLL function
-		return PP_Func( "cfunc" );
-	}
-	if (tstrcmp(word,"cmd")) {			// DLL function (3.0)
-		return PP_Cmd( "cmd" );
-	}
-/*
-	if (tstrcmp(word,"func2")) {		// DLL function (2)
-		return PP_Func( "func2" );
-	}
-*/
-	if (tstrcmp(word,"comfunc")) {		// COM Object function
-		return PP_Func( "comfunc" );
-	}
-	if (tstrcmp(word,"aht")) {			// AHT definition
-		return PP_Aht();
-	}
-	if (tstrcmp(word,"ahtout")) {		// AHT command line output
-		return PP_Ahtout();
-	}
-	if (tstrcmp(word,"ahtmes")) {		// AHT command line output (mes)
-		return PP_Ahtmes();
-	}
-	if (tstrcmp(word,"pack")) {			// packfile process
-		return PP_Pack( 0 );
-	}
-	if (tstrcmp(word,"epack")) {		// packfile process
-		return PP_Pack( 1 );
-	}
-	if (tstrcmp(word,"packopt")) {		// packfile process
-		return PP_PackOpt();
-	}
-	if (tstrcmp(word,"runtime")) {		// runtime process
-		return PP_RuntimeOpt();
-	}
-	if (tstrcmp(word, "bootopt")) {		// boot option process
-		return PP_BootOpt();
-	}
-	if (tstrcmp(word, "cmpopt")) {		// compile option process
-		return PP_CmpOpt();
-	}
-	if (tstrcmp(word,"usecom")) {		// COM definition
-		return PP_Usecom();
-	}
+	auto iter = pp_functable->find(word);
+	if ( iter != pp_functable->end() ) {
+		return (this->*(iter->second))();
 
-	//		登録キーワード以外はコンパイラに渡す
-	//
-	wrtbuf->Put( (char)'#' );
-	wrtbuf->PutStr( linebuf );
-	wrtbuf->PutCR();
-	//wrtbuf->PutStr( (char *)s3 );
-	return PPRESULT_WROTE_LINE;
+	} else {
+		//		登録キーワード以外はコンパイラに渡す
+		//
+		//Mesf("#not preprocessed directive (%s)", word);
+		wrtbuf->Put((char)'#');
+		wrtbuf->PutStr(linebuf);
+		wrtbuf->PutCR();
+		return PPRESULT_WROTE_LINE;
+	}
 }
 
 

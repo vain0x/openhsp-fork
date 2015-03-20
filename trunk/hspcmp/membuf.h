@@ -7,18 +7,12 @@
 
 //  growmem class
 
-/*
-	rev 53
-	mingw : warning : クラスは仮想関数を持つのに仮想デストラクタでない。
-	に対処。
-*/
-
 class CMemBuf {
 public:
 	CMemBuf();
 	CMemBuf( int sz );
 	virtual ~CMemBuf();
-	void AddIndexBuffer( void );
+	void AddIndexBuffer();
 	void AddIndexBuffer( int sz );
 
 	char *GetBuffer( void );
@@ -30,23 +24,23 @@ public:
 	int SearchIndexValue( int val );
 
 	void RegistIndex( int val );
-	void Index( void );
+	void Index();
 	void Put( int data );
 	void Put( short data );
 	void Put( char data );
 	void Put( unsigned char data );
 	void Put( float data );
 	void Put( double data );
-	void PutStr( char *data );
-	void PutStrDQ( char *data );
-	void PutStrBlock( char *data );
-	void PutCR( void );
+	void PutStr( char const *data );
+	void PutStrDQ( char const*data );
+	void PutStrBlock( char const *data );
+	void PutCR();
 	void PutData( void const *data, int sz );
-	void PutStrf( char *format, ... );
-	int PutFile( char *fname );
-	int SaveFile( char *fname );
-	char *GetFileName( void );
-	int GetSize( void ) { return cur; }
+	void PutStrf( char const *format, ... );
+	int PutFile( char const *fname );
+	int SaveFile( char const *fname );
+	char *GetFileName();
+	int GetSize() { return cur; }
 	void ReduceSize( int new_cur );
 	char *PreparePtr( int sz );
 

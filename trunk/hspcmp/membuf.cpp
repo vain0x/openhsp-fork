@@ -145,7 +145,7 @@ void CMemBuf::Put( double data )
 }
 
 
-void CMemBuf::PutStr( char *data )
+void CMemBuf::PutStr( char const *data )
 {
 	char *p;
 	p = PreparePtr( strlen(data) );
@@ -153,7 +153,7 @@ void CMemBuf::PutStr( char *data )
 }
 
 
-void CMemBuf::PutStrDQ( char *data )
+void CMemBuf::PutStrDQ( char const *data )
 {
 	//		ダブルクォート内専用str
 	//
@@ -195,7 +195,7 @@ void CMemBuf::PutStrDQ( char *data )
 }
 
 
-void CMemBuf::PutStrBlock( char *data )
+void CMemBuf::PutStrBlock( char const *data )
 {
 	char *p;
 	p = PreparePtr( strlen(data)+1 );
@@ -225,7 +225,7 @@ void CMemBuf::PutData( void const *data, int sz )
 # define VSNPRINTF vsnprintf
 #endif
 
-void CMemBuf::PutStrf( char *format, ... )
+void CMemBuf::PutStrf( char const *format, ... )
 {
 	va_list args;
 	int c = cur;
@@ -251,7 +251,7 @@ void CMemBuf::PutStrf( char *format, ... )
 }
 
 
-int CMemBuf::PutFile( char *fname )
+int CMemBuf::PutFile( char const *fname )
 {
 	//		バッファに指定ファイルの内容を追加
 	//		(return:ファイルサイズ(-1=error))
@@ -381,7 +381,7 @@ int CMemBuf::SearchIndexValue( int val )
 }
 
 
-int CMemBuf::SaveFile( char *fname )
+int CMemBuf::SaveFile( char const *fname )
 {
 	//		バッファをファイルにセーブ
 	//		(return:ファイルサイズ(-1=error))
