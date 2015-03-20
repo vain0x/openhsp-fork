@@ -2107,8 +2107,8 @@ ppresult_t CToken::PP_Define(void)
 					default: SetError("bad default value"); return PPRESULT_ERROR;
 				}
 
-				char* const macbuf = (macdef->data) + macptr;
 				{
+					char* const macbuf = (macdef->data) + macptr;
 					size_t const len = strlen(word);
 					strcpy(macbuf, word);
 					macptr += len + 1;
@@ -2143,241 +2143,118 @@ bad_macro_param_expr:
 }
 
 
-ppresult_t CToken::PP_Defcfunc( int mode )
-{
-	//		#defcfunc解析
-	//			mode : 0 = 通常cfunc
-	//			       1 = modcfunc
-	//
-	int i,id;
-	char *word;
-	char *mod;
-	char fixname[OBJNAME_MAX + 2];
-	int glmode, premode;
 
-	word = (char *)s3;
-	mod = GetModuleName();
-	id = -1; glmode = 0; premode = LAB_TYPE_PPMODFUNC;
-
-	i = GetToken();
-	if ( i == TK_OBJ ) {
-		strcase( word );
-		if (tstrcmp(word,"local")) {		// local option
-			if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
-			glmode = 1;
-			i = GetToken();
-		}
-		if (tstrcmp(word,"prep")) {			// prepare option
-			premode = LAB_TYPE_PP_PREMODFUNC;
-			i = GetToken();
-		}
-	}
-
-	strcase2( word, fixname );
-	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-	i = lb->Search( fixname );
-	if ( i != -1 ) {
-		if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-			return SetErrorSymbolOverloading(fixname, i);
-		}
-		id = i;
-	}
-
-	if ( glmode ) AddModuleName( fixname );
-
-	if ( premode == LAB_TYPE_PP_PREMODFUNC ) {
-		wrtbuf->PutStrf( "#defcfunc prep %s ",fixname );
-	} else {
-		wrtbuf->PutStrf( "#defcfunc %s ",fixname );
-	}
-
-	if ( id == -1 ) {
-		id = lb->Regist( fixname, premode, 0 );
-		if ( glmode == 0 ) lb->SetEternal( id );
-		if ( *mod != 0 ) { lb->AddRelation( mod, id ); }		// モジュールラベルに依存を追加
-	} else {
-		lb->SetFlag( id, premode );
-	}
-
-	if ( mode ) {
-		if ( mode == 1 ) {
-			wrtbuf->PutStr( "modvar " );
-		} else {
-			wrtbuf->PutStr( "modinit " );
-		}
-		if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
-		wrtbuf->PutStr( mod );
-		if ( wp != NULL ) wrtbuf->Put( ',' );
-	}
-	{
-		char ident_quoted[OBJNAME_MAX] = "\"";
-		sprintf_s(ident_quoted, "\"%s\"", fixname);
-		RegistExtMacro("__func__", ident_quoted);
-	}
-
-	/*
-	char resname[512];
-	i = GetToken();
-	if ( i != TK_OBJ ) { SetError("invalid result name"); return PPRESULT_ERROR; }
-	strcpy( resname, word );
-	*/
-
-	while(1) {
-
-		i = GetToken();
-		if ( i == TK_OBJ ) {
-			wrtbuf->PutStr( word );
-		}
-		if ( wp == NULL ) break;
-		if ( i != TK_OBJ ) {
-			SetError("invalid func param"); return PPRESULT_ERROR;
-		}
-
-		i = GetToken();
-		if ( i == TK_OBJ ) {
-			strcase2( word, fixname );
-			AddModuleName( fixname );
-			wrtbuf->Put( ' ' );
-			wrtbuf->PutStr( fixname );
-			i = GetToken();
-		}
-		if ( wp == NULL ) break;
-		if ( i != ',' ) {
-			SetError("invalid func param"); return PPRESULT_ERROR;
-		}
-		wrtbuf->Put( ',' );
-
-	}
-
-	//wrtbuf->PutStr( linebuf );
-	wrtbuf->PutCR();
-	//
-	return PPRESULT_WROTE_LINE;
-}
-
-
-ppresult_t CToken::PP_Deffunc( int mode )
+ppresult_t CToken::PP_Deffunc( int mode, bool is_ctype, bool is_modfunc )
 {
 	//		#deffunc解析
-	//			mode : 0 = 通常func
-	//			       1 = modfunc
-	//			       2 = modinit
-	//			       3 = modterm
-	int i,id;
-	char *word;
-	char *mod;
+	// mode (1: modinit, 2: modterm, 0: deffunc/defcfunc/modfunc/modcfunc)
+	// mode != 0 のとき is_ctype, is_modfunc は使わない。
 	char fixname[OBJNAME_MAX + 2];
-	int glmode, premode;
 
-	word = (char *)s3;
-	mod = GetModuleName();
-	id = -1; glmode = 0; premode = LAB_TYPE_PPMODFUNC;
+	char* word = (char *)s3;
+	char* mod = GetModuleName();
+	char* implicit_modvar_type = nullptr; // モジュール変数を受け取る暗黙の引数タイプ
+	int id = -1; // 定義されるコマンドの識別子のラベルID
+	int glmode = 0;
 
-	if ( mode < 2 ) {
-		i = GetToken();
-		if ( i == TK_OBJ ) {
+	if ( mode == 0 ) { // normal command
+		int t = GetToken();
+		if ( t == TK_OBJ ) {
 			strcase( word );
 			if (tstrcmp(word,"local")) {		// local option
 				if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
 				glmode = 1;
-				i = GetToken();
+				t = GetToken();
 			}
-			if (tstrcmp(word,"prep")) {			// prepare option
-				premode = LAB_TYPE_PP_PREMODFUNC;
-				i = GetToken();
-			}
-		}
+		} else { SetError("invalid func name"); return PPRESULT_ERROR; }
 
 		strcase2( word, fixname );
-		if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-		i = lb->Search( fixname );
-		if ( i != -1 ) {
-			if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-				return SetErrorSymbolOverloading(fixname, i);
+		
+		int const label_id = lb->Search( fixname );
+		if ( label_id != -1 ) {
+			if ( lb->GetFlag(label_id) != LAB_TYPE_PP_PREMODFUNC ) {
+				return SetErrorSymbolOverloading(fixname, label_id);
 			}
-			id = i;
+			id = label_id;
 		}
 
 		if ( glmode ) AddModuleName( fixname );
 
-		if ( premode == LAB_TYPE_PP_PREMODFUNC ) {
-			wrtbuf->PutStrf( "#deffunc prep %s ",fixname );
-		} else {
-			wrtbuf->PutStrf( "#deffunc %s ",fixname );
-		}
+		auto const directive_name = is_ctype ? "defcfunc" : "deffunc"; // #modfunc も #deffunc で出力
+		wrtbuf->PutStrf("#%s %s ", directive_name, fixname);
 
 		if ( id == -1 ) {
-			id = lb->Regist( fixname, premode, 0 );
+			id = lb->Regist(fixname, LAB_TYPE_PPMODFUNC, 0);
 			if ( glmode == 0 ) lb->SetEternal( id );
 			if ( *mod != 0 ) { lb->AddRelation( mod, id ); }		// モジュールラベルに依存を追加
 		} else {
-			lb->SetFlag( id, premode );
+			lb->SetFlag(id, LAB_TYPE_PPMODFUNC);
 		}
 
-		if ( mode ) {
-			wrtbuf->PutStr( "modvar " );
-			if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
-			wrtbuf->PutStr( mod );
-			if ( wp != NULL ) wrtbuf->Put( ',' );
+		if ( is_modfunc ) {
+			implicit_modvar_type = "modvar ";
 		}
-
-	} else {
-		if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
-		if ( mode == 2 ) {
-			wrtbuf->PutStr( "#deffunc __init modinit " );
-			strcpy_s(fixname, "modinit");
-		} else {
-			wrtbuf->PutStr( "#deffunc __term modterm " );
-			strcpy_s(fixname, "modterm");
-		}
+	} else { // ctor or dtor
+		assert(mode == 1 || mode == 2);
+		implicit_modvar_type = (mode == 1 ? "modinit" : "modterm");
+		wrtbuf->PutStrf( "#deffunc %s ", (mode == 1 ? "__init" : "__term")  );
+		strcpy_s(fixname, implicit_modvar_type);
 		AddModuleName(fixname);
-
-		wrtbuf->PutStr( mod );
-		if ( wp != NULL ) wrtbuf->Put( ',' );
 	}
 
 	{
-		char ident_quoted[OBJNAME_MAX] = "\"";
-		sprintf_s(ident_quoted, "\"%s\"", fixname);
-		RegistExtMacro("__func__", ident_quoted);
+		std::shared_ptr<char> funcname_literal { to_hsp_string_literal(fixname), free };
+		RegistExtMacro("__func__", funcname_literal.get());
 	}
 
-	while(1) {
+	if ( implicit_modvar_type != nullptr ) {
+		if ( *mod == 0 ) { SetError("module name not found"); return PPRESULT_ERROR; }
+		wrtbuf->PutStr(implicit_modvar_type);
+		wrtbuf->Put(' ');
+		wrtbuf->PutStr(mod);
+		if ( wp != NULL ) wrtbuf->Put(',');
+	}
 
-		i = GetToken();
-		if ( i == TK_OBJ ) {
-			wrtbuf->PutStr( word );
-			strcase( word );
-			if (tstrcmp(word,"onexit")) {							// onexitは参照済みにする
-				lb->AddReference( id );
-			}
-		}
-
+	for(;;) {
+		// 仮引数タイプ
+		int t = GetToken();
 		if ( wp == NULL ) break;
-		if ( i != TK_OBJ ) {
-			SetError("invalid func param"); return PPRESULT_ERROR;
+		if ( t == TK_OBJ ) {
+			wrtbuf->PutStr( word );
+
+			if ( mode == 0 && !is_ctype ) {
+				strcase(word);
+				if ( tstrcmp(word, "onexit") ) { // onexitは参照済みにする
+					lb->AddReference(id);
+				}
+			}
+		} else {
+			goto deffunc_funcparam_error;
 		}
 
-		i = GetToken();
-		if ( i == TK_OBJ ) {
+		// エイリアス識別子
+		t = GetToken();
+		if ( wp == NULL ) break;
+		if ( t == TK_OBJ ) {
 			strcase2( word, fixname );
 			AddModuleName( fixname );
 			wrtbuf->Put( ' ' );
 			wrtbuf->PutStr( fixname );
-			i = GetToken();
-		}
-		if ( wp == NULL ) break;
-		if ( i != ',' ) {
-			SetError("invalid func param"); return PPRESULT_ERROR;
-		}
-		wrtbuf->Put( ',' );
 
+			t = GetToken();
+		}
+		if ( t != ',' ) { goto deffunc_funcparam_error; }
+
+		wrtbuf->Put( ',' );
 	}
 
 	//wrtbuf->PutStr( linebuf );
 	wrtbuf->PutCR();
-	//
 	return PPRESULT_WROTE_LINE;
+
+deffunc_funcparam_error:
+	SetError("invalid func param");
+	return PPRESULT_ERROR;
 }
 
 
@@ -2566,9 +2443,8 @@ ppresult_t CToken::PP_Module( void )
 	wrtbuf->PutStrf( "goto@hsp *_%s_exit",tagname );
 	wrtbuf->PutCR();
 	{
-		char tagname_quoted[MODNAME_MAX + 4];
-		sprintf_s(tagname_quoted, "\"%s\"", tagname);
-		RegistExtMacro("__module__", tagname_quoted);
+		std::shared_ptr<char> tagname_literal { to_hsp_string_literal(tagname), free };
+		RegistExtMacro("__module__", tagname_literal.get());
 	}
 
 	if ( PeekToken() != TK_NONE ) {
@@ -3001,22 +2877,22 @@ ppresult_t CToken::Preprocess( char *str )
 		return PP_Global();
 	}
 	if (tstrcmp(word,"deffunc")) {		// module function
-		return PP_Deffunc(0);
+		return PP_Deffunc(0, false, false);
 	}
 	if (tstrcmp(word,"defcfunc")) {		// module function (1)
-		return PP_Defcfunc(0);
+		return PP_Deffunc(0, true, false);
 	}
 	if (tstrcmp(word,"modfunc")) {		// module function (2)
-		return PP_Deffunc(1);
+		return PP_Deffunc(0, false, true);
 	}
 	if (tstrcmp(word,"modcfunc")) {		// module function (2+)
-		return PP_Defcfunc(1);
+		return PP_Deffunc(0, true, true);
 	}
 	if (tstrcmp(word,"modinit")) {		// module function (3)
-		return PP_Deffunc(2);
+		return PP_Deffunc(1, false, true);
 	}
 	if (tstrcmp(word,"modterm")) {		// module function (4)
-		return PP_Deffunc(3);
+		return PP_Deffunc(2, false, true);
 	}
 	if (tstrcmp(word,"struct")) {		// struct define
 		return PP_Struct();
