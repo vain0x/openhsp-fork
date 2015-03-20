@@ -702,7 +702,7 @@ int ConvSJis2Utf8( char *pSource, char *pDist, int buffersize )
 /*----------------------------------------------------------*/
 //		Lexical Analyze Support
 
-unsigned char* skip_blanks(unsigned char* p, bool skips_multibyte_space)
+unsigned char const* skip_blanks(unsigned char const* p, bool skips_multibyte_space)
 {
 	for ( ;; ) {
 		auto const c = *p;

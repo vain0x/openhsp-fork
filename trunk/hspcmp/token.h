@@ -20,7 +20,7 @@
 #define TK_LABEL 7
 #define TK_VOID 0x1000
 #define TK_SEPARATE 0x1001
-#define TK_OPERATOR 0x1002    // code operator (元は '=' とかだった)
+//#define TK_OPERATOR 0x1002
 #define TK_EOL 0x1002
 #define TK_EOF 0x1003
 #define TK_ERROR -1
@@ -111,6 +111,7 @@ typedef struct MACDEF {
 #define COMP_MODE_UTF8 4
 
 static size_t const SWSTACK_MAX = 32;
+static int const MacroArityMax = 32;
 
 #define HEDINFO_RUNTIME 0x1000		// 動的ランタイムを有効にする
 #define HEDINFO_NOMMTIMER 0x2000	// マルチメディアタイマーを無効にする
@@ -258,7 +259,7 @@ private:
 	ppresult_t PP_SwitchStart( int sw );
 	ppresult_t PP_SwitchEnd( void );
 	ppresult_t PP_SwitchReverse( void );
-	ppresult_t PP_Include( int is_addition );
+	ppresult_t PP_Include( bool is_addition );
 	ppresult_t PP_Module( void );
 	ppresult_t PP_Global( void );
 	ppresult_t PP_Deffunc( int mode );
@@ -295,7 +296,7 @@ private:
 	int ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preprocess_line );
 	char *SendLineBuf( char *str );
 	char *SendLineBufPP( char *str, int *lines );
-	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
+	int ReplaceLineBuf( char *str1, char *str2, char const *repl, int macopt, MACDEF *macdef );
 
 	ppresult_t SetErrorSymbolOverloading(char* keyword, int labelId);
 
@@ -393,7 +394,7 @@ private:
 	float val_f;
 	double val_d;
 	double fpbit;
-	unsigned char *wp;
+	unsigned char const *wp;
 	unsigned char s2[1024];         // ExpandToken, GetTokenCG で使われる一時バッファ？
 	unsigned char *s3;              // GetTokenで使われる一時バッファ？
 	char linebuf[LINEBUF_MAX];		// Line expand buffer
@@ -516,13 +517,9 @@ private:
 
 extern char const* stringFromCalcCode(int op);
 
-static bool is_mark_char(unsigned char c)
-{
-	return((c < 0x30)
-		|| (0x3a <= c && c <= 0x3f)
-		|| (0x5b <= c && c <= 0x5e)
-		|| (0x7b <= c && c <= 0x7f));
-}
+/*----------------------------------------------------------*/
+//		Lexical Analyze Support
+
 template<int N>
 static void strcpy_safe(char dst[N], char const* src)
 {
@@ -531,7 +528,41 @@ static void strcpy_safe(char dst[N], char const* src)
 	return;
 }
 
-extern unsigned char* skip_blanks(unsigned char* p, bool skips_multibyte_space);
+static bool is_mark_char(unsigned char c)
+{
+	return((c < 0x30)
+		|| (0x3a <= c && c <= 0x3f)
+		|| (0x5b <= c && c <= 0x5e)
+		|| (0x7b <= c && c <= 0x7f));
+}
+
+template<typename T>
+T* skip_blanks(T* p, bool skips_multibyte_space)
+{
+	static_assert
+		(  std::is_same<std::decay_t<T>, unsigned char>::value
+		|| std::is_same<std::decay_t<T>, char>::value, "" );
+	for ( ;; ) {
+		auto const c = *p;
+		if ( c == ' ' || c == '\t' ) {
+			p++;
+		} else if ( skips_multibyte_space && c == 0x81 && p[1] == 0x40 ) {
+			p += 2;
+		} else {
+			return p;
+		}
+	}
+}
+template<typename T, typename U>
+static void strcpy_moving(T*& dst, U*& src, U* src_end = nullptr)
+{
+	while ( src != src_end ) {
+		T c = static_cast<T>(*(src ++));
+		if ( c == '\0' ) return;
+		*(dst ++) = c;
+	}
+}
+
 extern int* read_hex_literal(unsigned char const* src, size_t& len);
 extern int* read_bin_literal(unsigned char const* src, size_t& len);
 extern int* read_digit_literal(unsigned char const* src, size_t& len);
