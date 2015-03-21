@@ -265,12 +265,12 @@ private:
 	ppresult_t PP_DeffuncImpl(int mode, bool is_ctype, bool is_modfunc);
 	ppresult_t PP_Struct();
 	ppresult_t PP_FuncImpl( char const* ppname ); // func, cfunc, or comfunc
+	ppresult_t PP_Usecom();
 	ppresult_t PP_Cmd();
 	ppresult_t PP_PackImpl( bool encrypts ); // pack or epack
 	ppresult_t PP_PackOpt();
 	ppresult_t PP_RuntimeOpt();
 	ppresult_t PP_CmpOpt();
-	ppresult_t PP_Usecom();
 	ppresult_t PP_Aht();
 	ppresult_t PP_Ahtout();
 	ppresult_t PP_Ahtmes();
@@ -528,8 +528,6 @@ private:
 	std::shared_ptr<CMemBuf> axi_buf;
 #endif
 };
-
-extern char const* stringFromCalcCode(int op);
 
 /*----------------------------------------------------------*/
 //		Lexical Analyze Support

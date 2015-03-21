@@ -175,8 +175,10 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 	if ( cmpopt & CMPMODE_PPOUT	 ) {
 		res = outbuf->SaveFile( outname );
 		if ( res<0 ) {
-			tk.Mes( "#Can't write output file." );
+			tk.Mes( "#Can't write PP file." );
 			return -2;
+		} else {
+			tk.Mes( "#PP file generated." );
 		}
 	}
 	outbuf->Put( (int)0 );
@@ -254,8 +256,10 @@ int CHsc3::Compile( char *fname, char *outname, char *outname_axi, int mode )
 #ifdef HSPINSPECT
 		int const res = tk.SaveAxInspection(outname_axi);
 		if ( res < 0 ) {
-			tk.Mesf("#Can't write output file. %s", outname_axi);
+			tk.Mesf("#Can't write axi file. %s", outname_axi);
 			return -2;
+		} else {
+			tk.Mes("#axi file generated.");
 		}
 #else
 		tk.Mes("#Inspection is not supported.");

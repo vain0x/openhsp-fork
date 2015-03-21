@@ -38,49 +38,52 @@ extern char *hsp_prepp[];
 #define MEMBUF_END(_TYPE, _SELF)  (&MEMBUF_BEGIN(_TYPE, _SELF)[MEMBUF_COUNT(_TYPE, _SELF)])
 #define MEMBUF_RANGE(_TYPE, _SELF) MEMBUF_BEGIN(_TYPE, _SELF), MEMBUF_END(_TYPE, _SELF)
 
+static char const* inspectInternalType(int type);
+static char const* inspectLibDatFlag(int flag);
+static char const* inspectMPType(int mptype);
+
 int CToken::SaveAxInspection(char* fname)
 {
-	return axi_buf ? axi_buf->SaveFile(fname) : -1;
+	return (axi_buf ? axi_buf->SaveFile(fname) : -1);
 }
 
 void CToken::InspectAxCode()
 {
 	assert(!axi_buf);
-	AxCodeInspector inspector { *axcode };
-	axi_buf = inspector.GetBuffer();
+	axi_buf.reset(new CMemBuf());
+	AxCodeInspector inspector { *axcode, axi_buf };
 	return;
 }
 
-AxCodeInspector::AxCodeInspector(AxCode& ax)
+AxCodeInspector::AxCodeInspector(AxCode& ax, std::shared_ptr<CMemBuf> buf)
 	: ax_(ax)
-	, axi_buf(new CMemBuf())
+	, axi_buf(buf)
 {
-	AnalyzeDInfo();
-	CodeSegment();
-	FInfoSegment();
-	//LInfoSegment();
-	//HpiSegment();
+	PutCodeSegment();
+	PutFInfoSegment();
+	PutLInfoSegment();
+	PutHpiSegment();
 }
 
-void AxCodeInspector::BeginSegment(char const* segment_title)
+void AxCodeInspector::PutSegmentTitle(char const* segment_title)
 {
 	axi_buf->PutStrf("[%s]", segment_title);
 	axi_buf->PutCR();
 }
 
-void AxCodeInspector::CodeSegment()
+void AxCodeInspector::PutCodeSegment()
 {
 	//todo: タブ文字ではなく桁数指定で揃えたい
-	BeginSegment("CodeSegment");
+	PutSegmentTitle("CodeSegment");
 	axi_buf->PutStr("位置\tタイプ\t\t値\t単項\t文頭\tカンマ\t分岐先\t値の意味");
 	axi_buf->PutCR();
 	for ( int i = 0; i < ax_.GetCS(); ) {
-		i += CSElem(i);
+		i += PutCSElemInspection(i);
 	}
 	axi_buf->PutCR();
 }
 
-int AxCodeInspector::CSElem(int csindex)
+size_t AxCodeInspector::PutCSElemInspection(int csindex)
 {
 	auto const cur_cs = &ax_.GetCSBuffer()[csindex];
 	//analyze single code
@@ -90,7 +93,7 @@ int AxCodeInspector::CSElem(int csindex)
 		{ (c & EXFLG_0) != 0, (c & EXFLG_1) != 0, (c & EXFLG_2) != 0, (c & EXFLG_3) != 0 };
 	int const value =
 		exflags[3] ? *reinterpret_cast<int*>(&cur_cs[1]) : cur_cs[1];
-	int code_size =
+	size_t code_size =
 		exflags[3] ? 3 : 2;
 
 	//Mesf("inspect cs elem #%d (c = %X, type = %d, value = %d)", csindex, c, type, value);
@@ -107,7 +110,7 @@ int AxCodeInspector::CSElem(int csindex)
 	std::ostringstream output;
 	output
 		<< csindex << '\t'
-		<< TypeName(type) << '\t'
+		<< InspectType(type) << '\t'
 		<< value << '\t';
 	for ( int i = 0; i < 3; ++ i) {
 		output << (exflags[i] ? "yes" : "-") << '\t';
@@ -121,7 +124,7 @@ int AxCodeInspector::CSElem(int csindex)
 	switch ( type ) {
 		case TYPE_MARK: {
 			if ( value < CALCCODE_MAX ) {
-				output << stringFromCalcCode(value);
+				output << inspectCalcCode(value);
 			} else {
 				assert(value == '(' || value == ')' || value == '[' || value == ']' || value == '?');
 				output << static_cast<char>(value);
@@ -134,114 +137,270 @@ int AxCodeInspector::CSElem(int csindex)
 		case TYPE_DNUM:
 			output << *reinterpret_cast<double*>(ax_.GetDS(value));
 			break;
-		case TYPE_INUM:
-			output << value;
-			break;
-		case TYPE_VAR: {
-			auto it = inspect_var_names->find(value);
-			if ( it != inspect_var_names->end() ) {
-				output << it->second;
+		case TYPE_INUM: output << value; break;
+		case TYPE_VAR:  InspectVar(output, value); break;
+		case TYPE_LABEL: InspectLabel(output, value); break;
+		case TYPE_MODCMD: InspectModcmd(output, value); break;
+		case TYPE_STRUCT: InspectParam(output, value); break;
+		default: {
+			assert(type >= TYPE_INTCMD);
+			char const* const registered_command = TryFindIdentName(type, value);
+			if ( registered_command ) {
+				output << registered_command;
 			} else {
-				output << "(var#" << value << ")";
+				output << "unknown";
 			}
 			break;
 		}
-		case TYPE_LABEL: {
-			auto it = inspect_lab_names->find(value);
-			if ( it != inspect_lab_names->end() ) {
-				output << '*' << it->second;
-			} else {
-				int const csindex = ax_.GetOTBuffer()[value];
-				output << "*(lb#" << value << ": " << csindex << ")";
-			}
-			break;
-		}
-		case TYPE_MODCMD: {
-			auto it = inspect_prm_names->find(value);
-			if ( it != inspect_prm_names->end() ) {
-				output << it->second;
-			} else {
-				//todo: STRUCTDAT::prmindex を調べて、元の関数名の第N引数、と表示したほうがよい
-				output << "(modcmd#" << value << ")";
-			}
-			break;
-		}
-		case TYPE_STRUCT: {
-			if ( value < 0 ) { output << "thismod"; break; }
-			auto const stprm = &ax_.GetMIBuffer()[value];
-			auto stdat = (stprm->subid >= 0)
-				? &ax_.GetFIBuffer()[stprm->subid]
-				: nullptr;
-
-			// moduletag (newmod の第2引数)
-			if ( stdat && stprm->mptype == MPTYPE_STRUCTTAG ) {
-				output << ax_.GetDS(stdat->nameidx);
-				break;
-			}
-
-			// パラメータエイリアス、またはローカル変数(メンバ変数)
-			assert(stprm->mptype == MPTYPE_LOCALVAR || stprm->subid == STRUCTPRM_SUBID_STACK);
-			auto it = inspect_prm_names->find(value);
-			if ( it != inspect_prm_names->end() ) {
-				output << it->second;
-			} else {
-				//どの関数のパラメータかを検索
-				if ( !stdat ) {
-					auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *ax_.fi_buf), [&](STRUCTDAT& it) {
-						return ((value - it.prmindex) < it.prmmax);
-					});
-					stdat = (found != MEMBUF_END(STRUCTDAT, *ax_.fi_buf)) ? found : nullptr;
-				}
-				if ( stdat ) {
-					char const* const funcname = ax_.GetDS(stdat->nameidx);
-					output << "(prm#" << value << ": " << funcname << "#" << (value - stdat->prmindex) << ")";
-				} else {
-					output << "(prm#" << value << ")";
-				}
-			}
-			break;
-		}
-		default: assert(type >= TYPE_INTCMD);
-			//(type, value)に対応するコマンドの名前を検索する
-			// button, onexit などのgoto/gosubと連鎖する命令は opt に 0x10000 がついているので注意
-			// #cmd で定義されるプラグインコマンドも一緒にみつかるはず
-			if ( type == TYPE_PROGCMD && value == 0x00C ) { //隠しコマンド
-				output << "_foreach_check@hsp";
-				break;
-			}
-
-			auto const lb = ax_.tk_->GetLabelInfo();
-			int id = 0;
-			for ( ; id < lb->GetNumEntry(); ++id ) {
-				if ( lb->GetType(id) == type && (lb->GetOpt(id) & 0xFFFF) == value ) break;
-			}
-
-			assert(id < lb->GetNumEntry());
-			output << (id < lb->GetNumEntry() ? lb->GetName(id) : "unknown");
-			break;
 	}
 
-	axi_buf->PutStr(const_cast<char*>(output.str().c_str()));
+	axi_buf->PutStr(output.str().c_str());
 	axi_buf->PutCR();
 	return code_size;
 }
 
-char const* AxCodeInspector::TypeName(int type) {
+char const* AxCodeInspector::TryFindIdentName(int type, int opt) const
+{
+	// コンパイラがもつ識別子表からの検索を行うヘルパ関数
+	// button, onexit などのgoto/gosubと連鎖する命令は opt に 0x10000 がついているので注意
+	// #cmd で定義されるプラグインコマンドも一緒にみつかるはず
+
+	if ( type == TYPE_PROGCMD && opt == 0x00C ) { //識別子未定義の隠しコマンド
+		return "_foreach_check@hsp";
+	}
+
+	auto const lb = ax_.tk_->GetLabelInfo();
+	int id = 0;
+	for ( ; id < lb->GetNumEntry(); ++id ) {
+		if ( lb->GetType(id) == type && (lb->GetOpt(id) & 0xFFFF) == opt ) {
+			return lb->GetName(id);
+		}
+	}
+	return nullptr;
+}
+
+char const* AxCodeInspector::TryFindLabelName(int ot_index) const
+{
+	int const old_ot_index = ax_.GetOldOTIndex(ot_index);
+	return TryFindIdentName(TYPE_LABEL, old_ot_index);
+}
+char const* AxCodeInspector::TryFindParamName(int mi_index) const
+{
+	return TryFindIdentName(TYPE_STRUCT, mi_index);
+}
+char const* AxCodeInspector::TryFindVarName(int var_index) const
+{
+	return TryFindIdentName(TYPE_VAR, var_index);
+}
+
+void AxCodeInspector::InspectVar(std::ostringstream& os, int var_index) const
+{
+	char const* const name = TryFindVarName(var_index);
+	if ( name ) {
+		os << name;
+	} else {
+		os << "(var#" << var_index << ')';
+	}
+}
+
+void AxCodeInspector::InspectLabel(std::ostringstream& os, int ot_index) const
+{
+	os << '*';
+
+	char const* const name = TryFindLabelName(ot_index);
+	if ( name ) {
+		os << name;
+	} else {
+		os << "(lb#" << ot_index << ')';
+	}
+
+	int const cs_index = ax_.GetOTBuffer()[ot_index];
+	os << "->" << cs_index;
+}
+
+void AxCodeInspector::InspectParam(std::ostringstream& os, int mi_index) const
+{
+	if ( mi_index < 0 ) {
+		os << "thismod";
+		return;
+	}
+
+	auto const stprm = &ax_.GetMIBuffer()[mi_index];
+	auto stdat = (stprm->subid >= 0)
+		? &ax_.GetFIBuffer()[stprm->subid]
+		: nullptr;
+
+	// module tag (newmod の第2引数)
+	if ( stdat && stprm->mptype == MPTYPE_STRUCTTAG ) {
+		os << ax_.GetDS(stdat->nameidx);
+		return;
+	}
+
+	// パラメータエイリアス、またはローカル変数(メンバ変数)
+	if (stprm->mptype == MPTYPE_LOCALVAR || stprm->subid == STRUCTPRM_SUBID_STACK) {
+		//識別子表から検索
+		char const* const registered_param_name = TryFindParamName(mi_index);
+		if ( registered_param_name ) {
+			os << registered_param_name;
+			return;
+		}
+
+		//どの関数のパラメータかを検索
+		if ( !stdat ) {
+			auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *ax_.fi_buf), [&](STRUCTDAT& it) {
+				return ((mi_index - it.prmindex) < it.prmmax);
+			});
+			stdat = (found != MEMBUF_END(STRUCTDAT, *ax_.fi_buf)) ? found : nullptr;
+		}
+		if ( stdat ) {
+			char const* const funcname = ax_.GetDS(stdat->nameidx);
+			os << "(prm#" << mi_index << ": " << funcname << "#" << (mi_index - stdat->prmindex) << ")";
+		} else {
+			os << "(prm#" << mi_index << ")";
+		}
+	}
+}
+
+void AxCodeInspector::InspectModcmd(std::ostringstream& os, int fi_index) const
+{
+	assert(0 <= fi_index && static_cast<size_t>(fi_index) < ax_.GetFICount());
+	auto const stdat = &ax_.GetFIBuffer()[fi_index];
+	os << ax_.GetDS(stdat->nameidx);
+}
+
+char const* AxCodeInspector::InspectType(int type) const
+{
+	//todo:プラグインの個数を超えていないことをassertしたい
 	assert(type >= 0);
+	return ( type < TYPE_USERDEF )
+		? inspectInternalType(type)
+		: "TYPE_USERDEF";
+}
+
+void AxCodeInspector::PutFInfoSegment()
+{
+	size_t const fi_count = ax_.GetFICount();
+	if ( fi_count == 0 ) return;
+
+	PutSegmentTitle("FInfo");
+	axi_buf->PutStr("番号\t種類\t名前\tパラメータ");
+	axi_buf->PutCR();
+
+	for ( size_t i = 0; i < fi_count; ++i ) {
+		auto const& stdat = ax_.GetFIBuffer()[i];
+		char const* const name = ax_.GetDS(stdat.nameidx);
+		bool const isCType = (stdat.index == STRUCTDAT_INDEX_CFUNC);
+
+		std::ostringstream output;
+		switch ( stdat.index ) {
+			case STRUCTDAT_INDEX_FUNC:
+			case STRUCTDAT_INDEX_CFUNC:
+				output << "deffunc"; break;
+			case STRUCTDAT_INDEX_STRUCT:
+				output << "modcls"; break;
+			default:
+				assert(0 <= stdat.index && static_cast<size_t>(stdat.index) < MEMBUF_COUNT(LIBDAT, *ax_.li_buf));
+				output << "lib#" << stdat.index; break;
+		}
+
+		output << '\t' << name << '\t';
+
+		if ( stdat.index < 0 && stdat.funcflag & STRUCTDAT_FUNCFLAG_CLEANUP ) {
+			output << " onexit";
+		} else {
+			//parameter list
+			if ( isCType ) { output << '('; }
+			for ( int i = 0; i < stdat.prmmax; ++i ) {
+				if ( i != 0 ) { output << ", "; }
+				int const mi_index = stdat.prmindex + i;
+				auto& stprm = MEMBUF_BEGIN(STRUCTPRM, *ax_.mi_buf)[mi_index];
+
+				output << inspectMPType(stprm.mptype);
+
+				if ( stdat.index < 0 ) { // 外部関数でなければエイリアス識別子をつける
+					output << ' ';
+					InspectParam(output, mi_index);
+				}
+			}
+			if ( isCType ) { output << ')'; }
+		}
+		axi_buf->PutStrf("%2d\t%s", i, output.str().c_str());
+		axi_buf->PutCR();
+	}
+
+	axi_buf->PutCR();
+}
+
+void AxCodeInspector::PutLInfoSegment()
+{
+	size_t const li_count = MEMBUF_COUNT(LIBDAT, *ax_.li_buf);
+	if ( li_count == 0 ) return;
+
+	PutSegmentTitle("LInfo");
+	axi_buf->PutStr("番号\t名称\tフラグ\tクラス");
+	axi_buf->PutCR();
+
+	for ( size_t i = 0; i < li_count; ++ i ) {
+		auto const& libdat = MEMBUF_BEGIN(LIBDAT, *ax_.li_buf)[i];
+		axi_buf->PutStrf("%2d\t%s\t%s\t%s",
+			i,
+			ax_.GetDS(libdat.nameidx),
+			inspectLibDatFlag(libdat.flag),
+			(libdat.clsid >= 0 ? ax_.GetDS(libdat.clsid) : "-"));
+		axi_buf->PutCR();
+	}
+	axi_buf->PutCR();
+}
+
+void AxCodeInspector::PutHpiSegment()
+{
+	size_t const hpi_count = MEMBUF_COUNT(LIBDAT, *ax_.hpi_buf);
+	if ( hpi_count == 0 ) return;
+
+	PutSegmentTitle("HpiInfo");
+	axi_buf->PutStr("番号\t名称\t初期化関数\t新規タイプ");
+	axi_buf->PutCR();
+
+	int i = 0;
+	for ( size_t i = 0; i < hpi_count; ++i ) {
+		auto const& hpidat = MEMBUF_BEGIN(HPIDAT, *ax_.hpi_buf)[i];
+		axi_buf->PutStrf("%2d\t%s\t%s\t%s",
+			i,
+			ax_.GetDS(hpidat.libname),
+			ax_.GetDS(hpidat.funcname),
+			(hpidat.flag == HPIDAT_FLAG_TYPEFUNC ? "yes" : "-"));
+		axi_buf->PutCR();
+	}
+
+	axi_buf->PutCR();
+}
+
+#endif
+
+char const* inspectInternalType(int type)
+{
 	static char const* internalTypeNames[] = {
 		"TYPE_MARK", "TYPE_VAR", "TYPE_STRING", "TYPE_DNUM", "TYPE_INUM", "TYPE_STRUCT",
 		"TYPE_XLABEL", "TYPE_LABEL", "TYPE_INTCMD", "TYPE_EXTCMD", "TYPE_EXTSYSVAR", "TYPE_CMPCMD", "TYPE_MODCMD",
 		"TYPE_INTFUNC", "TYPE_SYSVAR", "TYPE_PROGCMD", "TYPE_DLLFUNC", "TYPE_DLLCTRL",
-		"TYPE_USERDEF" };
-	if ( type < TYPE_USERDEF ) {
-		return internalTypeNames[type];
-	} else {
-		//todo:プラグインの個数を超えていないことをassertしたい
-		return "TYPE_USERDEF";
+		"TYPE_USERDEF"
+	};
+	assert(0 <= type && type < TYPE_USERDEF);
+	return internalTypeNames[type];
+}
+
+char const* inspectLibDatFlag(int flag)
+{
+	switch ( flag ) {
+		case LIBDAT_FLAG_DLL: return "Dll";
+		case LIBDAT_FLAG_COMOBJ: return "COM";
+		//case LIBDAT_FLAG_DLLINIT:
+		//case LIBDAT_FLAG_MODULE:
+		default: return "unknown";
 	}
 }
 
-static char const* stringFromMPType(int mptype)
+char const* inspectMPType(int mptype)
 {
 	switch ( mptype ) {
 		case MPTYPE_VAR: return "var";
@@ -275,104 +434,7 @@ static char const* stringFromMPType(int mptype)
 	}
 }
 
-void AxCodeInspector::FInfoSegment()
-{
-	BeginSegment("FInfo");
-	std::for_each(MEMBUF_RANGE(STRUCTDAT, *ax_.fi_buf), [this](STRUCTDAT& stdat) {
-		char const* const name = ax_.GetDS(stdat.nameidx);
-		bool const isCType = (stdat.index == STRUCTDAT_INDEX_CFUNC);
-
-		std::ostringstream output;
-		output << name;
-		if ( isCType ) { output << '('; }
-		if ( stdat.funcflag & STRUCTDAT_FUNCFLAG_CLEANUP ) {
-			output << "onexit";
-		} else {
-			//parameters
-			for ( int i = 0; i < stdat.prmmax; ++i ) {
-				if ( i != 0 ) { output << ", "; }
-				auto& stprm = MEMBUF_BEGIN(STRUCTPRM, *ax_.mi_buf)[stdat.prmindex];
-				output << stringFromMPType(stprm.mptype);
-			}
-		}
-		if ( isCType ) { output << ')'; }
-
-
-	});
-}
-//void AxCodeInspector::LInfoSegment() {}
-//void AxCodeInspector::HpiSegment() {}
-
-
-static unsigned short wpeek(unsigned char const* p) { return *reinterpret_cast<unsigned short const*>(p); }
-static unsigned int tripeek(unsigned char const* p) { return (p[0] | p[1] << 8 | p[2] << 16); }
-
-void AxCodeInspector::AnalyzeDInfo()
-{
-	assert(!inspect_var_names);
-	assert(!inspect_lab_names);
-	assert(!inspect_prm_names);
-	inspect_var_names.reset(new std::decay_t<decltype(*inspect_var_names)>());
-	inspect_lab_names.reset(new std::decay_t<decltype(*inspect_lab_names)>());
-	inspect_prm_names.reset(new std::decay_t<decltype(*inspect_prm_names)>());
-
-	return;
-	//
-	/*
-	enum DInfoCtx {	// ++ したいので enum class にしない
-		DInfoCtx_Default = 0,
-		DInfoCtx_LabelNames,
-		DInfoCtx_PrmNames,
-		DInfoCtx_Max
-	};
-	auto getIdentTableFromCtx = [&](int dictx) -> identTable_t* {
-		switch ( dictx ) {
-			case DInfoCtx_Default:    return inspect_var_names.get();
-			case DInfoCtx_LabelNames: return inspect_lab_names.get();
-			case DInfoCtx_PrmNames:   return inspect_prm_names.get();
-			default: throw;
-		}
-	};
-
-	auto const dinfo = reinterpret_cast<unsigned char const*>(di_buf->GetBuffer());
-	int const max_di = di_buf->GetSize() / sizeof(unsigned char);
-
-	int dictx = DInfoCtx_Default;
-	for ( int i = 0; i < max_di; ) {
-		switch ( dinfo[i] ) {
-			case DInfoDirectiveChar::ChangeContext:
-				++dictx;  // enum を ++ する業
-				++i;
-				if ( dictx == DInfoCtx_Max ) goto break_loop;
-				break;
-
-			// ソースファイル指定
-			case DInfoDirectiveChar::SourceFile: i += 6; break;
-
-			// 識別子指定
-			case DInfoDirectiveChar::VarName:
-			case DInfoDirectiveChar::DebugIdentName:
-				if ( auto* tbl = getIdentTableFromCtx(dictx) ) {
-					char* const ident = &ds_buf->GetBuffer()[tripeek(&dinfo[i + 1])];
-					int const iparam = wpeek(&dinfo[i + 4]);
-					tbl->insert({ iparam, ident });
-				}
-				i += 6;
-				break;
-
-			// 次の命令までのCSオフセット値
-			case DInfoDirectiveChar::WideOffset: i += 3; break;
-			default: ++i; break;
-		}
-	}
-break_loop:
-	return;
-	//*/
-}
-
-#endif
-
-char const* stringFromCalcCode(int op)
+char const* inspectCalcCode(int op)
 {
 	static char const* table[] = {
 		"+", "-", "*", "/", "\\", "&", "|", "^",

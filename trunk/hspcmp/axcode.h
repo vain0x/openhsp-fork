@@ -1,9 +1,15 @@
 #pragma once
 
+// hsp3ll ÇÃ CHsp3Parser ÉNÉâÉXÇ∆èdï°
+
 #include <memory>
 #include <map>
 #include <vector>
 #include <string>
+
+#ifdef HSPINSPECT
+# include <sstream>
+#endif
 
 struct HSPHED;
 class CLabel;
@@ -61,6 +67,7 @@ public:
 	size_t GetFICount() const;
 	STRUCTPRM* GetMIBuffer() const;
 
+
 	//		for Code Generator
 	int GetCS();
 	void PutCS(int type, double value, int exflg);
@@ -78,8 +85,10 @@ public:
 	int PutDSBuf(char *str, int size);
 	char *GetDS(int ptr);
 	void SetOT(int id, int value);
-	int GetOT(int id); int GetOTCount();
-	int GetNewOTFromOldOT(int old_otindex);
+	int GetOT(int id) const;
+	int GetOTCount() const;
+	int GetNewOTIndex(int old_otindex) const;
+	int GetOldOTIndex(int ot_index) const;
 
 	void PutDI(int dbg_code, int value, int subid);
 	void PutDIOffset(int offset);
@@ -90,8 +99,7 @@ private:
 	void PutDIParams(CLabel* lb);
 public:
 	void PutHPI(short flag, short option, char *libname, char *funcname, int var_type_cnt);
-	int PutLIB(int flag, char *name);
-	void SetLIBIID(int id, char *clsid);
+	int PutLIB(int flag, char *name, char* clsname);
 
 	int PutStructParam(short mptype, int extype);
 	int PutStructParamTag();
@@ -107,37 +115,41 @@ public:
 private:
 	unsigned short* GetCSBuffer() const;  // codegenë§Ç©ÇÁcsÇ…èëÇ´çûÇﬁÇΩÇﬂ
 	int* GetOTBuffer() const;
-
 };
 
 class AxCodeInspector
 {
-	//		For inspection
 public:
-	AxCodeInspector(AxCode& owner);
+	AxCodeInspector(AxCode& owner, std::shared_ptr<CMemBuf> buf);
 
 #ifdef HSPINSPECT
-	std::shared_ptr<CMemBuf> GetBuffer() { return axi_buf; }
 private:
-	void CodeSegment();
-	int  CSElem(int csindex);
-	void FInfoSegment();
-	void LInfoSegment();
-	void HpiSegment();
+	void PutCodeSegment();
+	void PutFInfoSegment();
+	void PutLInfoSegment();
+	void PutHpiSegment();
 
-	void AnalyzeDInfo();
-	void BeginSegment(char const* segment_title);
+	void PutSegmentTitle(char const* segment_title);
 
-	char const* TypeName(int type);
+	size_t PutCSElemInspection(int csindex);
+	void InspectVar(std::ostringstream& os, int var_index) const;
+	void InspectLabel(std::ostringstream& os, int ot_index) const;
+	void InspectModcmd(std::ostringstream& os, int fi_index) const;
+	void InspectParam(std::ostringstream& os, int mi_index) const;
+	void InspectGeneralCommand(std::ostringstream& os, int type, int code) const;
+
+	char const* InspectType(int type) const;
+
+	char const* TryFindIdentName(int type, int opt) const;
+	char const* TryFindLabelName(int ot_index) const;
+	char const* TryFindParamName(int mi_index) const;
+	char const* TryFindVarName(int var_index) const;
 
 private:
 	AxCode& ax_;
 
 	std::shared_ptr<CMemBuf> axi_buf;
-
-	using identTable_t = std::map<int, char const*>;
-	std::unique_ptr<identTable_t> inspect_var_names;
-	std::unique_ptr<identTable_t> inspect_lab_names;
-	std::unique_ptr<identTable_t> inspect_prm_names;
 #endif
 };
+
+extern char const* inspectCalcCode(int op);

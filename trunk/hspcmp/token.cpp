@@ -2854,10 +2854,10 @@ ppresult_t CToken::Preprocess( char *str )
 	//
 	if ( !pp_functable ) {
 		pp_functable.reset(new std::decay_t<decltype(*pp_functable)> {
-			{ "include",  &CToken::PP_Include },
-			{ "addition", &CToken::PP_Addition },
 			{ "const",    &CToken::PP_Const },
 			{ "enum",     &CToken::PP_Enum },
+			{ "include",  &CToken::PP_Include },
+			{ "addition", &CToken::PP_Addition },
 			{ "module",   &CToken::PP_Module },
 			{ "global",   &CToken::PP_Global },
 			{ "deffunc",  &CToken::PP_Deffunc },
@@ -2869,9 +2869,18 @@ ppresult_t CToken::Preprocess( char *str )
 			{ "struct",   &CToken::PP_Struct },
 			{ "func",     &CToken::PP_Func },
 			{ "cfunc",    &CToken::PP_CFunc },
-			{ "cmd",      &CToken::PP_Cmd },
 			{ "comfunc",  &CToken::PP_Comfunc },
+			{ "usecom",   &CToken::PP_Usecom },
+			{ "cmd",      &CToken::PP_Cmd },
+			{ "pack",     &CToken::PP_Pack },
+			{ "epack",    &CToken::PP_EPack },
+			{ "packopt",  &CToken::PP_PackOpt },
+			{ "cmpopt",   &CToken::PP_CmpOpt },
+			{ "bootopt",  &CToken::PP_BootOpt },
+			{ "runtime",  &CToken::PP_RuntimeOpt },
 			{ "aht",      &CToken::PP_Aht },
+			{ "ahtout",   &CToken::PP_Ahtout },
+			{ "ahtmes",   &CToken::PP_Ahtmes },
 		});
 	}
 	auto iter = pp_functable->find(word);
@@ -2884,9 +2893,9 @@ ppresult_t CToken::Preprocess( char *str )
 		//Mesf("#not preprocessed directive (%s)", word);
 		wrtbuf->Put((char)'#');
 		wrtbuf->PutStr(linebuf);
-	wrtbuf->PutCR();
-	return PPRESULT_WROTE_LINE;
-}
+		wrtbuf->PutCR();
+		return PPRESULT_WROTE_LINE;
+	}
 }
 
 

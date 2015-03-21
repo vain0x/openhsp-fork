@@ -1762,10 +1762,8 @@ void CToken::GenerateCodePP_usecom( void )
 		strncpy( clsname, cg_str, sizeof(clsname) - 1 );
 	}
 
-	cg_libindex = axcode->PutLIB( LIBDAT_FLAG_COMOBJ, iidname );
+	cg_libindex = axcode->PutLIB( LIBDAT_FLAG_COMOBJ, iidname, clsname );
 	if ( cg_libindex < 0 ) throw CGERROR_PP_BAD_IMPORT_IID;
-
-	axcode->SetLIBIID( cg_libindex, clsname );
 	cg_libmode = CGLibMode::Com;
 
 	axcode->PutStructStart();
@@ -1818,7 +1816,7 @@ void CToken::GenerateCodePP_func( int deftype )
 	}
 
 	if ( cg_libmode == CGLibMode::DllNew ) {							// ‰‰ñ‚ÍDLL–¼‚ð“o˜^‚·‚é
-		cg_libindex = axcode->PutLIB( LIBDAT_FLAG_DLL, cg_libname );
+		cg_libindex = axcode->PutLIB( LIBDAT_FLAG_DLL, cg_libname, nullptr );
 		cg_libmode = CGLibMode::Dll;
 	}
 	if ( cg_libmode != CGLibMode::Dll ) throw CGERROR_PP_NO_USELIB;

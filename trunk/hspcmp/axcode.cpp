@@ -242,12 +242,15 @@ void AxCode::SetOT(int id, int value)
 	ref = value;
 }
 
-int AxCode::GetOT(int id)
+int AxCode::GetOT(int id) const
 {
 	assert(0 <= id && id < (int)working_ot_buf->size());
 	return working_ot_buf->at(id);
 }
-int AxCode::GetOTCount() { return working_ot_buf->size(); }
+int AxCode::GetOTCount() const
+{
+	return working_ot_buf->size();
+}
 
 void AxCode::PutOTBuf()
 {
@@ -263,7 +266,7 @@ void AxCode::PutOTBuf()
 
 		if ( tk_->CG_optShort() ) {
 			//同じ参照先をもつ既存ラベルをみつける
-			int const new_ot_index = GetNewOTFromOldOT(i);
+			int const new_ot_index = GetNewOTIndex(i);
 			if ( new_ot_index >= 0 ) {
 				//Mesf("#重複ラベルを発見 (otindex = %d -> %d; csindex = %d)", i, new_ot_index, csindex);
 				continue;  // skip output
@@ -277,18 +280,19 @@ void AxCode::PutOTBuf()
 	if ( tk_->CG_optShort() ) {
 		// cs からの参照を書き換える
 		for ( auto kv : *label_reference_table ) {
-			int const new_ot_index = GetNewOTFromOldOT(kv.first);
+			int const new_ot_index = GetNewOTIndex(kv.first);
 			assert(new_ot_index >= 0);
 			if ( kv.second != new_ot_index ) {
 				//Mesf("#ラベル参照の書き換え (cs#%d, ot#%d -> %d)", kv.second, kv.first, new_ot_index);
 				SetCS(kv.second, TYPE_LABEL, new_ot_index);
 			}
 		}
+
 		// deffunc/defcfunc の呼び出し先を書き換える
 		for ( size_t i = 0; i < GetFICount(); ++i ) {
 			auto const stdat = &GetFIBuffer()[i];
 			if ( stdat->index == STRUCTDAT_INDEX_FUNC || stdat->index == STRUCTDAT_INDEX_CFUNC ) {
-				int const new_ot_index = GetNewOTFromOldOT(stdat->otindex);
+				int const new_ot_index = GetNewOTIndex(stdat->otindex);
 				//Mesf("#ラベル参照の書き換え (stdat#%d, ot#%d -> %d)", i, stdat->otindex, new_ot_index);
 				stdat->otindex = new_ot_index;
 			}
@@ -296,14 +300,24 @@ void AxCode::PutOTBuf()
 	}
 }
 
-int AxCode::GetNewOTFromOldOT(int old_otindex)
+int AxCode::GetNewOTIndex(int old_ot_index) const
 {
-	if ( !tk_->CG_optShort() ) return old_otindex;
+	if ( !tk_->CG_optShort() ) return old_ot_index;
 
-	assert(0 <= old_otindex && old_otindex < (int)working_ot_buf->size());
-	auto iter = otindex_table->find(working_ot_buf->at(old_otindex));
+	assert(0 <= old_ot_index && old_ot_index < (int)working_ot_buf->size());
+	auto iter = otindex_table->find(working_ot_buf->at(old_ot_index));
 	return (iter != otindex_table->end()) ? iter->second : -1;
 };
+
+int AxCode::GetOldOTIndex(int ot_index) const
+{
+	if ( !tk_->CG_optShort() ) return ot_index;
+	int const target_cs_index = GetOTBuffer()[ot_index];
+
+	auto const it = std::find(working_ot_buf->begin(), working_ot_buf->end(), target_cs_index);
+	assert(it != working_ot_buf->end());
+	return *it;
+}
 
 void AxCode::PutDIOffset(int offset)
 {
@@ -414,7 +428,7 @@ void AxCode::PutDILabels(CLabel* lb)
 		if ( table[i] == -1 ) continue;
 		char *name = lb->GetName(table[i]);
 		int dsPos = PutDSBuf(name);
-		PutDI(DInfoCode::DebugIdent, dsPos, GetNewOTFromOldOT(i));
+		PutDI(DInfoCode::DebugIdent, dsPos, GetNewOTIndex(i));
 	}
 }
 
@@ -440,56 +454,39 @@ char *AxCode::GetDS(int ptr)
 	return &ds_buf->GetBuffer()[ptr];
 }
 
-int AxCode::PutLIB(int flag, char *name)
+int AxCode::PutLIB(int flag, char *name, char* clsname)
 {
-	int a, i = -1, p;
-	LIBDAT lib;
-	LIBDAT *l;
-	p = li_buf->GetSize() / sizeof(LIBDAT);
-	l = (LIBDAT *)li_buf->GetBuffer();
+	int const li_count = li_buf->GetSize() / sizeof(LIBDAT);
+	int nameidx = -1;
 
 	if ( flag == LIBDAT_FLAG_DLL ) {
+		assert(!!name);
 		if ( *name != 0 ) {
-			for ( a = 0; a<p; a++ ) {
-				if ( l->flag == flag ) {
-					if ( strcmp(GetDS(l->nameidx), name) == 0 ) {
-						return a;
-					}
+			// 同名のLIBDATがあればそちらを使い回す
+			LIBDAT* const li = (LIBDAT *)li_buf->GetBuffer();
+			for ( int i = 0; i < li_count; i++ ) {
+				if ( li->flag == flag && strcmp(GetDS(li[i].nameidx), name) == 0 ) {
+					return i;
 				}
-				l++;
 			}
-			i = PutDSBuf(name);
+			nameidx = PutDSBuf(name);
 		} else {
-			i = -1;
+			nameidx = -1;
 		}
-	}
-	if ( flag == LIBDAT_FLAG_COMOBJ ) {
+	} else if ( flag == LIBDAT_FLAG_COMOBJ ) {
 		COM_GUID guid;
 		if ( ConvertIID(&guid, name) ) return -1;
-		i = PutDSBuf((char *)&guid, sizeof(COM_GUID));
+		nameidx = PutDSBuf((char *)&guid, sizeof(COM_GUID));
 	}
 
+	LIBDAT lib;
 	lib.flag = flag;
-	lib.nameidx = i;
+	lib.nameidx = nameidx;
 	lib.hlib = NULL;
-	lib.clsid = -1;
+	lib.clsid = (clsname ? PutDSBuf(clsname) : -1);
 	li_buf->PutData(&lib, sizeof(LIBDAT));
 	//Mesf( "LIB#%d:%s",flag,name );
-
-	return p;
-}
-
-
-void AxCode::SetLIBIID(int id, char *clsid)
-{
-	LIBDAT *l;
-	l = (LIBDAT *)li_buf->GetBuffer();
-	l += id;
-	if ( *clsid == 0 ) {
-		l->clsid = -1;
-	} else {
-		l->clsid = PutDSBuf(clsid);
-	}
+	return li_count;
 }
 
 
