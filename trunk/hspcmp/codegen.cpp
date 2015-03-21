@@ -83,7 +83,7 @@ CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& 
 					auto result = std::string(lhs.str) + rhs.str;
 					return ConstCode::makeStr(result.c_str(), exf);
 				}
-				default: Mesf("#文字列に対して演算子 %s は適用できません。", stringFromCalcCode(op));
+				default: Mesf("#文字列に対して演算子 %s は適用できません。", inspectCalcCode(op));
 					throw CGERROR_CALCEXP;
 			}
 		case TYPE_DNUM:
@@ -99,7 +99,7 @@ CToken::ConstCode CToken::CalcCG_evalConstExpr(int op, CToken::ConstCode const& 
 				case CALCCODE_GT:   return ConstCode::makeInt(lhs.dval >  rhs.dval, exf);
 				case CALCCODE_LTEQ: return ConstCode::makeInt(lhs.dval <= rhs.dval, exf);
 				case CALCCODE_GTEQ: return ConstCode::makeInt(lhs.dval >= rhs.dval, exf);
-				default: Mesf("#実数値に対して演算子 %s は適用できません。", stringFromCalcCode(op));
+				default: Mesf("#実数値に対して演算子 %s は適用できません。", inspectCalcCode(op));
 					throw CGERROR_CALCEXP;
 			}
 		case TYPE_INUM:
@@ -303,7 +303,7 @@ void CToken::CalcCG_regmark( int mark )
 		if ( CG_optInfo() ) {
 			auto const& result = stack_calculator->back();
 			Mesf("#定数式畳み込み (%s %s %s) → %s %s",
-				lhs.toString().c_str(), stringFromCalcCode(op),
+				lhs.toString().c_str(), inspectCalcCode(op),
 				rhs.toString().c_str(), result.toString().c_str(), CG_scriptPositionString());
 		}
 		return;
