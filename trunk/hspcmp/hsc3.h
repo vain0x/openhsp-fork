@@ -45,7 +45,7 @@ public:
 	int PreProcess( char *fname, char *outname, int option, char *rname, void *ahtoption=NULL );
 	int PreProcessAht( char *fname, void *ahtoption, int mode=0 );
 	void PreProcessEnd( void );
-	int Compile( char *fname, char *outname, int mode );
+	int Compile( char *fname, char *outname, char *axiname, int mode );
 	void SetCommonPath( char *path );
 
 	//		Service
