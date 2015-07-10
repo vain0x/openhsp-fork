@@ -27,6 +27,7 @@
 #endif
 
 #include "poppad.h"
+#include "hsp_compiler_api.h"
 #include "resource.h"
 
 #include "tabmanager.h"
@@ -42,95 +43,9 @@
 //extern int  flag_xpstyle;
 int getUnicodeOffset( char *text, int offset );
 
-
 /*
 		DLL support routines
 */
-
-typedef BOOL (CALLBACK *DLLFUNC)(int,int,int,int);
-
-DLLFUNC hsc_ini;
-DLLFUNC hsc_refname;
-DLLFUNC hsc_objname;
-DLLFUNC hsc_comp;
-DLLFUNC hsc_getmes;
-DLLFUNC hsc_clrmes;
-DLLFUNC hsc_ver;
-DLLFUNC hsc_bye;
-DLLFUNC pack_ini;
-DLLFUNC pack_make;
-DLLFUNC pack_exe;
-DLLFUNC pack_opt;
-DLLFUNC pack_rt;
-DLLFUNC hsc3_getsym;
-DLLFUNC hsc3_make;
-DLLFUNC hsc3_messize;
-DLLFUNC hsc3_getruntime;  // 3.0用の追加
-DLLFUNC hsc3_run;		  // 3.0用の追加
-
-static	int dllflg=0;			// DLL uses flag
-static	HINSTANCE hDLL;			// Handle to DLL
-
-static char *SetDllFunc( char *name )
-{
-	//		DLL関数を割り当てる
-	//
-	char *ent;
-	char fncname[128];
-	fncname[0]='_';
-	strcpy( fncname+1,name );
-	strcat( fncname,"@16" );
-	ent = (char *)GetProcAddress( hDLL, fncname );
-	if (ent==NULL) dllflg=-1;				// error flag
-	return ent;
-}
-
-int dll_ini( char *libname )
-{
-	//		Initalize DLL entry
-	//			(result:1=ok)
-	//
-	hDLL = LoadLibrary( libname );
-	if ( hDLL==NULL ) return 0;
-
-	dllflg=1;
-	hsc_ini = (DLLFUNC)SetDllFunc("hsc_ini");
-	hsc_refname = (DLLFUNC)SetDllFunc("hsc_refname");
-	hsc_objname = (DLLFUNC)SetDllFunc("hsc_objname");
-	hsc_comp = (DLLFUNC)SetDllFunc("hsc_comp");
-	hsc_getmes = (DLLFUNC)SetDllFunc("hsc_getmes");
-	hsc_clrmes = (DLLFUNC)SetDllFunc("hsc_clrmes");
-	hsc_ver = (DLLFUNC)SetDllFunc("hsc_ver");
-	hsc_bye = (DLLFUNC)SetDllFunc("hsc_bye");
-	pack_ini = (DLLFUNC)SetDllFunc("pack_ini");
-	pack_make = (DLLFUNC)SetDllFunc("pack_make");
-	pack_exe = (DLLFUNC)SetDllFunc("pack_exe");
-	pack_opt = (DLLFUNC)SetDllFunc("pack_opt");
-	pack_rt = (DLLFUNC)SetDllFunc("pack_rt");
-	hsc3_getsym = (DLLFUNC)SetDllFunc("hsc3_getsym");
-	hsc3_make = (DLLFUNC)SetDllFunc("hsc3_make");
-	hsc3_messize = (DLLFUNC)SetDllFunc("hsc3_messize");
-
-	if ( dllflg > 0 ) {
-		hsc3_getruntime = (DLLFUNC)SetDllFunc("hsc3_getruntime");  // 3.0用の追加
-		hsc3_run = (DLLFUNC)SetDllFunc("hsc3_run");				   // 3.0用の追加
-		return dllflg;
-	}
-	return dllflg;
-}
-
-void dll_bye( void )
-{
-	//		Release DLL entry
-	//
-	if (dllflg==0) return;
-	if (dllflg==1) {
-		hsc_bye(0,0,0,0);					// 後始末routine
-	}
-	FreeLibrary( hDLL );
-	dllflg=0;
-}
-
 
 /*
 		special dialog routines
@@ -482,11 +397,13 @@ static void packgo( void )
 		return;
 	}
 
-	pack_ini( 0,(int)"data",0,0 );	
-	a=pack_make( 1,0,0,0 );
-	//dpmc_ini(errbuf,"data");
-	//a=dpmc_pack();
-	if (a) { err_prt(hwbak);return; }
+	HspCompilerLoader hspcmp {};
+	if ( !hspcmp )  return;
+		hspcmp->pack_ini( 0,(int)"data",0,0 );
+		a=hspcmp->pack_make( 1,0,0,0 );
+		//dpmc_ini(errbuf,"data");
+		//a=dpmc_pack();
+		if (a) { err_prt(hwbak);return; }
 #ifdef JPNMSG
 	TMes("[DATA.DPM]ファイルを作成しました。");
 #else
@@ -502,10 +419,14 @@ static void expack( int mode, char *exname, char *finmes )
 	int a;
 	char hh[_MAX_PATH];
 	char ftmp[_MAX_PATH];
-
+	
+	HspCompilerLoader hspcmp {};
+	if ( !hspcmp ) return;
+	
 	strcpy(ftmp,exname);strcat(ftmp,".dpm");
-	pack_ini( 0,(int)exname,0,0 );	
-	a=pack_make( 0,0,0,0 );
+
+	hspcmp->pack_ini( 0,(int)exname,0,0 );	
+	a=hspcmp->pack_make( 0,0,0,0 );
 	//dpmc_ini(errbuf,exname);
 	//a=dpmc_pack();
 	if (a) { err_prt(hwbak);return; }
@@ -515,10 +436,10 @@ static void expack( int mode, char *exname, char *finmes )
 	} else {
 		wsprintf(hh,"%s\\runtime\\hspcl.hrt",szExeDir);
 	}
-
-	pack_rt( 0,(int)hh,0,0 );
-	pack_opt( hsp_wx,hsp_wy,(hsp_wd)|(hsp_orgpath<<1),0 );
-	a=pack_exe( mode,0,0,0 );
+	
+	hspcmp->pack_rt( 0,(int)hh,0,0 );
+	hspcmp->pack_opt( hsp_wx,hsp_wy,(hsp_wd)|(hsp_orgpath<<1),0 );
+	a=hspcmp->pack_exe( mode,0,0,0 );
 	//a=dpmc_mkexe( hsp_fullscr,hh,hsp_wx,hsp_wy,hsp_wd );
 	if (a) { err_prt(hwbak);return; }
 	TMes(finmes);
@@ -593,9 +514,12 @@ static void hsprun( char *objname )
 	int i;
 	char cfname[256];
 	*cfname = 0;
-	if ( hsc3_getruntime != NULL ) {
-		hsc3_getruntime( (int)cfname, (int)objname, 0, 0 );
-	}
+
+	HspCompilerLoader hspcmp {};
+	if (!hspcmp ) return;
+
+	hspcmp->hsc3_getruntime((int)cfname, (int)objname, 0, 0);
+	
 	if ( *cfname == 0 ) {
 		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, DEFAULT_RUNTIME );
 	} else {
@@ -608,17 +532,17 @@ static void hsprun( char *objname )
 		strcat( execmd,hsp_cmdopt );
 	}
 
-	i = hsc3_run( (int)execmd, hsp_debug, 0, 0 );
+	i = hspcmp->hsc3_run( (int)execmd, hsp_debug, 0, 0 );
 	if (i) {
 #ifdef JPNMSG
 		TMes("実行用ランタイムファイルが見つかりません。");
 #else
 		TMes("Runtime executable file missing.");
 #endif
-/*
-	MessageBox(0, execmd, 0, 0);
-	ShellExecute(NULL, "open", execmd, hsp_cmdopt, 
-	*/
+		/*
+			MessageBox(0, execmd, 0, 0);
+			ShellExecute(NULL, "open", execmd, hsp_cmdopt,
+			*/
 	}
 }
 
@@ -721,10 +645,13 @@ static int mkobjfile( char *fname )
 	}
 	tmpst[a]=0;strcat(tmpst,".ax");
 
-	hsc_ini( 0,(int)srcfn, 0,0 );
-	hsc_refname( 0,(int)myfile(), 0,0 );
-	hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hsc_comp( 0,0,0,0 );
+	HspCompilerLoader hspcmp {};
+	if ( !hspcmp ) return 1; //error
+
+	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
+	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
+	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
+	a=hspcmp->hsc_comp( 0,0,0,0 );
 	//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
 	return a;
 }
@@ -740,10 +667,13 @@ static int mkobjfile2( char *fname )
 	strcpy(srcfn,fname);
 	strcpy(tmpst,"start.ax");
 
-	hsc_ini( 0,(int)srcfn, 0,0 );
-	hsc_refname( 0,(int)myfile(), 0,0 );
-	hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hsc_comp( 0,0,0,0 );
+	HspCompilerLoader hspcmp {};
+	if ( !hspcmp ) return 1; // error
+	
+	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
+	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
+	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
+	a=hspcmp->hsc_comp( 0,0,0,0 );
 	//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
 	return a;
 }
@@ -760,14 +690,17 @@ static int mkexefile2( char *fname )
 	strcpy(srcfn,fname);
 	strcpy(tmpst,"start.ax");
 
-	hsc_ini( 0,(int)srcfn, 0,0 );
-	hsc_refname( 0,(int)myfile(), 0,0 );
-	hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hsc_comp( 0,4,0,0 );
+	HspCompilerLoader hspcmp {};
+	if ( !hspcmp ) return 1;
+
+	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
+	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
+	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
+	a=hspcmp->hsc_comp( 0,4,0,0 );
 	if ( a ) return a;
 
 	sprintf( ftmp, "%s\\%s.dpm", szExeDir, srcfn );
-	a=hsc3_make( 0,(int)ftmp,0,0 );
+	a=hspcmp->hsc3_make( 0,(int)ftmp,0,0 );
 	if ( a ) return a;
 	return 0;
 }
@@ -1195,12 +1128,17 @@ BOOL CALLBACK ErrDlgProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lPara
      {
      switch (message)
           {
-          case WM_INITDIALOG:
-				hsc_getmes( (int)errbuf,0,0,0 );
+          case WM_INITDIALOG: {
+				auto const hscapi = HspCompilerLoader::lastHspcmp();
+				if ( hscapi && hscapi->hsc_getmes ) {
+					hscapi->hsc_getmes( (int)errbuf,0,0,0 );
+				} else {
+					strcpy(errbuf, "コンパイラが認識できないため、メッセージを取得できません。");
+				}
 				SendMessage( GetDlgItem( hDlg, IDC_EDIT1 ), EM_LIMITTEXT, 0, 0L);
 				SetDlgItemText( hDlg,IDC_EDIT1,errbuf );
 				return TRUE ;
-
+			}
           case WM_COMMAND:
                switch (GET_WM_COMMAND_ID(wParam, lParam))
                     {
@@ -2362,15 +2300,18 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_COMP:
 				case IDM_COMP2:
-				case IDM_LOGCOMP:
+				case IDM_LOGCOMP: {
+					HspCompilerLoader hspcmp {};
+					if ( !hspcmp ) return 0;
+
 					PopFileWrite ( activeFootyID, "hsptmp" );
 					strcpy(tmpfn,"hsptmp");
-					hsc_ini( 0,(int)tmpfn, 0,0 );
+					hspcmp->hsc_ini( 0,(int)tmpfn, 0,0 );
 					myfile();
-					hsc_refname( 0,(int)compfile, 0,0 );
+					hspcmp->hsc_refname( 0,(int)compfile, 0,0 );
 					strcpy( objname,"obj" );
-					hsc_objname( 0,(int)objname, 0,0 );
-					a=hsc_comp( 1, 0, hsp_debug, 0 );
+					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
+					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
 					if (a) {
 						err_prt(hwnd);
 						return 0;
@@ -2385,12 +2326,15 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						if (hsp_clmode==0) { hsprun_log("obj"); } else { hsprun_log_cl("obj"); }
 						return 0;
 					}
-
+				}
 				case IDM_RUN:
 					if (hsp_clmode==0) { hsprun("obj"); } else { hsprun_cl("obj"); }
 					return 0;
 
-				case IDM_COMP3:
+				case IDM_COMP3: {
+					HspCompilerLoader hspcmp {};
+					if ( !hspcmp ) return 0;
+
 					exemode=0;
 					DialogBox (hInst, "ExtComp", hwnd, (DLGPROC)ExtcmpDlgProc);
 					if (hsp_fnstr==0) return 0;
@@ -2399,9 +2343,9 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						strcpy( objname,hsp_extstr );
 						strcat( objname,".ax" );
 						strcat( hsp_extstr,".hsp" );
-						hsc_ini( 0,(int)hsp_extstr, 0,0 );
-						hsc_objname( 0,(int)objname, 0,0 );
-						a=hsc_comp( 0,0,0,0 );
+						hspcmp->hsc_ini( 0,(int)hsp_extstr, 0,0 );
+						hspcmp->hsc_objname( 0,(int)objname, 0,0 );
+						a=hspcmp->hsc_comp( 0,0,0,0 );
 						//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,0 );
 						if (a) { err_prt(hwnd);return 0; }
 #ifdef JPNMSG
@@ -2413,26 +2357,29 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					}
 					strcpy( objname,"obj" );
 					strcat( hsp_extstr,".hsp" );
-					hsc_ini( 0,(int)hsp_extstr, 0,0 );
-					hsc_objname( 0,(int)objname, 0,0 );
-					a=hsc_comp( 1, 0, hsp_debug, 0 );
+					hspcmp->hsc_ini( 0,(int)hsp_extstr, 0,0 );
+					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
+					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
 					//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,1 );
 					if (a) { err_prt(hwnd);return 0; }
 					if (hsp_clmode==0) { hsprun(objname); } else { hsprun_cl(objname); }
 					return 0;
-
+				}
 				case IDM_HSPERR:
 					err_prt(hwnd);
 					return 0;
 
-				case IDM_HSPSYM:
+				case IDM_HSPSYM: {
+					HspCompilerLoader hspcmp;
+					if ( !hspcmp ) return 0;
+
 					strcpy(tmpfn,"hsptmp");
-					hsc_ini( 0,(int)tmpfn, 0,0 );
+					hspcmp->hsc_ini( 0,(int)tmpfn, 0,0 );
 					myfile();
-					hsc_refname( 0,(int)compfile, 0,0 );
+					hspcmp->hsc_refname( 0,(int)compfile, 0,0 );
 					strcpy( objname,"obj" );
-					hsc_objname( 0,(int)objname, 0,0 );
-					a=hsc3_getsym( 0,0,0,0 );
+					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
+					a=hspcmp->hsc3_getsym( 0,0,0,0 );
 					if (a) {
 #ifdef JPNMSG
 						TMes("キーワードの取得に失敗しました");
@@ -2443,7 +2390,7 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					}
 					err_prt(hwnd);
 					return 0;
-
+				}
 				case IDM_FULLSCR:
 					hsp_fullscr^=1;
 					return 0;

@@ -8,7 +8,7 @@
 #include "Footy2.h"
 #include "tabmanager.h"
 #include "classify.h"
-
+#include "hsp_compiler_api.h"
 #include "support.h"
 
 // Type table
@@ -64,25 +64,6 @@ static TYPE_TABLE TypeTable[] = {
 	NULL
 };
 
-// Function pointers in hspcmp.dll
-typedef BOOL (CALLBACK *DLLFUNC)(int,int,int,int);
-extern DLLFUNC hsc_ini;
-extern DLLFUNC hsc_refname;
-extern DLLFUNC hsc_objname;
-extern DLLFUNC hsc_comp;
-extern DLLFUNC hsc_getmes;
-extern DLLFUNC hsc_clrmes;
-extern DLLFUNC hsc_ver;
-extern DLLFUNC hsc_bye;
-extern DLLFUNC pack_ini;
-extern DLLFUNC pack_make;
-extern DLLFUNC pack_exe;
-extern DLLFUNC pack_opt;
-extern DLLFUNC pack_rt;
-extern DLLFUNC hsc3_getsym;
-extern DLLFUNC hsc3_make;
-extern DLLFUNC hsc3_messize;
-
 extern char szTitleName[_MAX_FNAME + _MAX_EXT] ;
 extern HWND hwndTab;
 extern int hsp_extmacro;
@@ -121,14 +102,20 @@ void InitClassify()
 	}
 	fclose(fp);
 */
-	hsc_ini( 0,(int)"hsptmp", 0,0 );
-	hsc_refname( 0,(int)(szTitleName[0] == '\0' ? "???" : szTitleName), 0,0 );
-	hsc_objname( 0,(int)"obj", 0,0 );
-	//hsc_comp( 1,1,0,0 );
-	hsc3_getsym(0, 0, 0, 0);
-	hsc3_messize((int)&bufsize, 0, 0, 0);
-	buf = (char *)malloc(bufsize+1);
-	hsc_getmes((int)buf, 0, 0, 0);
+	if ( HspCompilerLoader hspcmp {} ) {
+		hspcmp->hsc_ini( 0,(int)"hsptmp", 0,0 );
+		hspcmp->hsc_refname( 0,(int)(szTitleName[0] == '\0' ? "???" : szTitleName), 0,0 );
+		hspcmp->hsc_objname( 0,(int)"obj", 0,0 );
+		//hspcmp->hsc_comp( 1,1,0,0 );
+		hspcmp->hsc3_getsym(0, 0, 0, 0);
+		hspcmp->hsc3_messize((int)&bufsize, 0, 0, 0);
+		buf = (char *)malloc(bufsize+1);
+		hspcmp->hsc_getmes((int)buf, 0, 0, 0);
+	} else {
+		//bufが初期化されないのでここでやめる。
+		//TODO: 文字列リテラルなどの色分けだけでも行うべき。
+		return;
+	}
 
 	int tableCapacity = DefClassifyTableSize() + getStrLinesSize(buf) + 1;
 	if ( ClassifyTable != NULL ) { free(ClassifyTable); }
