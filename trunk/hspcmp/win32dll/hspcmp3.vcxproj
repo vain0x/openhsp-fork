@@ -41,11 +41,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>hspcmp</TargetName>
+    <TargetName>hspcmp_uedit</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>hspcmp</TargetName>
+    <TargetName>hspcmp_uedit</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -59,9 +59,10 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
+      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) "D:/Tool/hsp/hspcmp_debug.dll"</Command>
+      <Command>copy $(TargetPath) "D:/Tool/hsp/$(TargetFileName)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -80,8 +81,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <OutputFile>$(OutDir)hspcmp$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) "D:/Tool/hsp/$(TargetFileName)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ahtmodel.cpp" />
