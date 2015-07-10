@@ -84,8 +84,3 @@ LRESULT poppad_term( UINT iMsg );
 int poppad_setsb( int flag );
 void poppad_setsb_current( int FootyID );
 void PutLineNumber( void );
-
-// DLL functions
-
-int dll_ini( char *libname );
-void dll_bye( void );

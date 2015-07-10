@@ -8,10 +8,7 @@
 #include "interface.h"
 #include "tabmanager.h"
 #include "footy2.h"
-
-//
-// 型の定義
-typedef BOOL (CALLBACK *DLLFUNC)(int, int, int, int);
+#include "hsp_compiler_api.h"
 
 //
 // グローバル変数
@@ -24,7 +21,6 @@ extern HWND hwndTab;
 extern HWND hwndClient;
 extern HWND hwndToolBar;
 extern HWND hwndStatusBar;
-extern DLLFUNC hsc_ver;
 extern int activeID;
 extern int activeFootyID;
 
@@ -279,10 +275,12 @@ static inline LRESULT GetHspcmpVer(HANDLE hPipe)
 {
 	char szRefstr[4096];
 	DWORD dwNumberOfBytesWritten;
-	BOOL bRet;
+	BOOL bRet = FALSE;
 
-	hsc_ver(0, 0, 0, (int)szRefstr);
-	bRet = WriteFile(hPipe, szRefstr, lstrlen(szRefstr) + 1, &dwNumberOfBytesWritten, NULL);
+	if ( HspCompilerLoader hspcmp {} ) {
+		hspcmp->hsc_ver(0, 0, 0, (int)szRefstr);
+		bRet = WriteFile(hPipe, szRefstr, lstrlen(szRefstr) + 1, &dwNumberOfBytesWritten, NULL);
+	}
 	return bRet ? dwNumberOfBytesWritten : -1;
 }
 
