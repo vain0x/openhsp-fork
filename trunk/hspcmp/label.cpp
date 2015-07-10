@@ -123,8 +123,10 @@ int CLabel::Regist( char *name, int type, int opt )
 	lab->rel = NULL;
 	lab->init = LAB_INIT_NO;
 	lab->typefix = LAB_TYPEFIX_NONE;
-	labels.insert(std::make_pair(lab->name, a));
-	return a;
+	lab->definition_file = nullptr; //lab->definition_line = -1;
+
+	labels.insert(std::make_pair(lab->name, label_id));
+	return label_id;
 }
 
 
@@ -770,3 +772,9 @@ void CLabel::SetCaseMode( int flag )
 	casemode = flag;
 }
 
+void CLabel::SetDefinition(int id, char const* file, int line)
+{
+	LABOBJ* const it = GetLabel(id);
+	it->definition_file = file;
+	it->definition_line = line;
+}

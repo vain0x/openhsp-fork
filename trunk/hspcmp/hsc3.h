@@ -5,6 +5,8 @@
 #ifndef __hsc3_h
 #define __hsc3_h
 
+#include <memory>
+
 #define HSC3TITLE "HSP script preprocessor"
 #define HSC3TITLE2 "HSP code generator"
 

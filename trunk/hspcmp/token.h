@@ -5,9 +5,9 @@
 #ifndef __token_h
 #define __token_h
 
-#include <stack>
 #include <vector>
 #include <map>
+#include <set>
 #include <memory>
 
 // token type
@@ -286,6 +286,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
+	void SymbolOverloadingError(char* keyword, int labelId);
 
 	//		For Code Generate
 	//
@@ -360,6 +361,8 @@ private:
 	void CalcCG_putCSCalcElem(ConstCode const&);
 	void CalcCG_ceaseConstFolding();
 
+	void CG_MesLabelDefinition(int label_id);
+
 #ifdef HSPINSPECT
 	//		For inspection
 	void Inspect_CodeSegment();
@@ -389,6 +392,7 @@ private:
 	AHTMODEL *ahtmodel;				// AHT process data
 	char common_path[HSP_MAX_PATH];	// common path
 	char search_path[HSP_MAX_PATH];	// search path
+	std::unique_ptr<std::set<std::string>> filename_table;  // スクリプトファイルの名前のプール。CLabelより長い寿命をもつ。
 
 	int line;
 	int val;
@@ -523,7 +527,7 @@ private:
 	//
 	int cg_errline;
 	int cg_orgline;
-	char cg_orgfile[256];
+	char const* cg_orgfile;
 
 	//		for SCNV
 	//
