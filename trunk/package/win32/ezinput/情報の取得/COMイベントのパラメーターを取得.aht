@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "comevarg"
+
+#define 結果が代入される変数名	""	;;str
+#define 参照されるCOMオブジェクト型変数名	""	;;str
+#define パラメーターのインデックス	""	;;str
+#define 取得モード	""	;;str
+
+#ahtmes "comevarg "+結果が代入される変数名+" , "+参照されるCOMオブジェクト型変数名+" , "+パラメーターのインデックス+" , "+取得モード+

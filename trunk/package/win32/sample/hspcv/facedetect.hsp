@@ -1,0 +1,32 @@
+#include "hspcv.as"
+
+orgdir=dir_cur
+
+dialog "bmp;*.dib;*.sr;*.ras;*.jpeg;*.jpg;*.jpe;*.pbm;*.ppm;*.pgm;*.tiff;*.tif;*.png;*.exr;*.jp2",16,"‰æ‘œƒtƒ@ƒCƒ‹"
+if stat=0 : end
+fname=refstr
+
+cvload fname,0
+cvgetimg 0,1
+
+cvloadxml orgdir+"\\haarcascade_frontalface_alt2.xml"
+cvfacedetect 0
+num=stat
+
+color 255,0,0
+
+title "Face Detect ("+num+")"
+
+
+repeat num
+	cvgetface x,y,sx,sy
+	if stat : break
+	;title "( "+x+" , "+y+" ) ( "+sx+" x "+sy+" )"
+	boxf x,y,x+sx,y+1
+	boxf x,y+sy,x+sx,y+sy+1
+	boxf x,y,x+1,y+sy
+	boxf x+sx,y,x+sx+1,y+sy
+loop
+
+stop
+

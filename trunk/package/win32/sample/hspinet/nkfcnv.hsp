@@ -1,0 +1,16 @@
+
+;
+;	nkfによる文字コード変換を行ないます。
+;
+
+#include "hspinet.as"
+
+	notesel buf
+	noteload "UTF8ドキュメント.txt"
+
+	nkfcnv res,buf		; HSPの形式に変換
+	mes res
+
+	nkfguess res
+	mes "もとの文字コード="+res
+

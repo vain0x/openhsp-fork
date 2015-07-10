@@ -1,0 +1,38 @@
+
+
+
+
+#define IID_IImgCtx   "{3050f3d7-98b5-11cf-bb82-00aa00bdce0b}"
+#define CLSID_IImgCtx "{3050f3d6-98b5-11cf-bb82-00aa00bdce0b}"
+
+#usecom  ImgCtx IID_IImgCtx CLSID_IImgCtx
+#comfunc IImgCtx_Load 3 wstr,int
+#comfunc IImgCtx_GetStateInfo 8 var,var,int
+#comfunc IImgCtx_StretchBlt 12 int,int,int,int,int,int,int,int,int,int
+
+	title "ImgCtxÇ…ÇÊÇÈâÊëúì«Ç›çûÇ›"
+
+	newcom pImage,ImgCtx
+
+	dialog "BMP;*.JPG;*.PNG;*.GIF;*.ICO;*.TIFF",16
+	if stat = 0 : end
+	fname = refstr
+	IImgCtx_Load pImage,fname,0
+
+	dim size,4
+
+	repeat
+		IImgCtx_GetStateInfo pImage,flg,size,1
+		if ( flg & 0x00200000 )==0 : break
+		wait 4
+	loop
+
+
+	IImgCtx_GetStateInfo pImage,flg,size,0
+	IImgCtx_StretchBlt pImage,hdc,0,0,size(0),size(1),0,0,size(0),size(1),0xCC0020
+	redraw 1
+
+	title "ì«Ç›çûÇ›äÆóπ["+fname+"]"
+	stop
+
+

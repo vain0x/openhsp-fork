@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "dimtype"
+
+#define 配列を割り当てる変数名	""	;;str
+#define 変数の型タイプ	""	;;str
+#define 要素の最大	"0"	;;str
+
+#ahtmes "dimtype "+配列を割り当てる変数名+" , "+変数の型タイプ+" , "+要素の最大+

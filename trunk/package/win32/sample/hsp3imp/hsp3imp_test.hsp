@@ -1,0 +1,25 @@
+#include "hsp3imp.as"
+
+;
+;	hsp3imp.dllを使用したサンプル。
+;	HSPのウィンドウ内で別なHSPタスクを動かします。
+;	(ウィンドウ内で指定したスクリプトを実行します)
+;
+
+ofsx=0:ofsy=0
+sizex=640:sizey=480
+fname="test.ax"
+
+screen 0,sizex,sizey
+
+hspprm 0, ofsx, ofsy, 0			; 表示オフセット(左上からのドット数)
+hspprm $102, 0, 0, varptr(fname)	; HSPオブジェクトファイル名
+hspini $100, sizex, sizey, hwnd		; 表示サイズと親ウィンドウハンドル
+if stat : dialog "HSP3IMPの初期化に失敗しました。" : end
+
+hspexec					; HSP実行開始
+
+hspbye					; HSP終了処理
+
+mes "HSP3IMPの実行を終了しました。"
+stop

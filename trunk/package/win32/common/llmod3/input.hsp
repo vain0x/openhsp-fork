@@ -1,0 +1,208 @@
+	;================================================================================
+	;モジュール input
+	;ver 2.2
+	;	インプット
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; inputモジュール命令一覧
+	;
+	; keybd_event			キーボード操作
+	; mouse_event			マウス操作
+	;
+	; 計	2個
+
+
+	;使い方
+	;================================================================================
+	; keybd_event n1,n2,n3		キーボード操作
+	;
+	;  n1 : キーコード
+	;  n2 : キーを放すフラグ
+	;  n3 : オプション
+	;================================================================================
+	;
+	;<>説明
+	; キーボード操作を行います。
+	; n1に押したいキーのキーコードを指定します。
+	; n2を0にしてこの命令を実行するとn1を前回実行したときと同じキーコード、
+	; n2を1にしてもう一度この命令を実行しないとキーを放したことになりません。
+	; n2を-1にすると押して放したことになります。
+	; n3のオプションはスクリーンショットキーを押すときに使用します。n3を0に
+	; するとフルスクリーン、1にするとアクティブなウィンドウがクリップボードに
+	; コピーされます。
+	;
+	; keybd_eventは他のプログラムのウィンドウがアクティブな場合でも実行されます。
+	;
+	;
+	;<>キーコード
+	; キーコードはgetkeyで使用するものと同じです。
+	; ほかにも以下のようなものがあります。
+	;n1の値
+	; 44		スクリーンショット
+	; 45		INS
+	; 46		DEL
+	; 106		テンキーの'*'
+	; 107		テンキーの'+'
+	; 108		テンキーの','
+	; 109		テンキーの'-'
+	; 110		テンキーの'.'
+	; 111		テンキーの'/'
+	;
+	;<>例
+	;	#include "llmod.as"
+	;	#include "input.as"
+	;
+	;	exec "notepad"
+	;	s="ABCDEFG" : strlen L,s
+	;
+	;	repeat L
+	;		peek c,s,cnt
+	;		keybd_event c,-1
+	;	loop
+	;
+	;	keybd_event 18,-1	;ALT
+	;	keybd_event 'F',-1	;ﾌｧｲﾙ(F)
+	;	keybd_event 'O',-1	;開く(O)
+	;
+	;	keybd_event 'N',-1	;セーブ確認ダイアログのいいえ(N)
+	;
+	;	s="INPUTnAS" : strlen L,s	;'n'はキーコードで'.'(110)を表す
+	;
+	;	;ここのコメントを外すとSHIFTを押したことになり大文字になります
+	;	;keybd_event 16
+	;
+	;	repeat L
+	;		peek c,s,cnt
+	;		keybd_event c,-1
+	;	loop
+	;
+	;	;上のコメントを外したときはここのコメントも外してください
+	;	;keybd_event 16,1
+	;
+	;	keybd_event 13,-1	;ENTER
+	;
+	;	stop
+	;
+
+
+	;================================================================================
+	; mouse_event n1,n2,n3		マウス操作
+	;
+	;  n1 : 操作タイプ
+	;  n2 : 水平方向の移動量
+	;  n3 : 垂直方向の移動量
+	;================================================================================
+	;
+	;<>説明
+	; マウス操作を行います。
+	; n1に指定するタイプでマウス操作を行うことができます。
+	; 水平方向の移動量は、画面左から右へ移動させるときが正、その逆が負
+	; 垂直方向の移動量は、画面上から下へ移動させるときが正、その逆が負
+	; であることに注意してください。
+	;
+	; mouse_eventはHSPのプログラムがアクティブでないときでもマウス操作に影響します。
+	;
+	;<>操作タイプ
+	; n1の値は以下のものを組み合わせて使用することができます。
+	;
+	; n1の値
+	; $1	マウス移動
+	; $2	左のボタンを押す
+	; $4	左のボタンを放す
+	; $8	右のボタンを押す
+	; $10	右のボタンを放す
+	; $20	中のボタンを押す
+	; $40	中のボタンを放す
+	;
+	;<>例
+	;	#include "llmod.as"
+	;	#include "input.as"
+	;
+	;*lp
+	;	movx=0 : movy=0
+	;	getkey k,37 : if k : movx-	;←キー
+	;	getkey k,38 : if k : movy-	;↑キー
+	;	getkey k,39 : if k : movx+	;→キー
+	;	getkey k,40 : if k : movy+	;↓キー
+	;
+	;	;SHIFTが押されたら左ボタンを押す
+	;	getkey kSHIFT,16 : if kSHIFT : Lbtn=$2 : else Lbtn=0
+	;	mouse_event $1+Lbtn, movx, movy
+	;
+	;	;SHIFTを押すとマウスの左ボタンを押したことになりkが1になる
+	;	getkey k,1 : if k : pset mousex,mousey
+	;
+	;	;SHIFTが押されてたら左ボタンを放す
+	;	if kSHIFT : mouse_event $4
+	;
+	;	await 1
+	;	goto lp
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "_input"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;keybd_event
+	;キーボード操作
+	;................................................................................
+	#deffunc keybd_event int v1,int v2,int v3
+	if(pkeybd_event == 0) {
+		dll_getfunc pkeybd_event,"keybd_event",D_USER
+		if(pkeybd_event == 0) : return
+	}
+
+	;#define KEYEVENTF_EXTENDEDKEY	1
+	;#define KEYEVENTF_KEYUP	2
+
+	prm = v1,v3,v2
+	prm.3 = 0
+	prm.4 = 0
+
+	;prm.2が正ならKEYEVENTF_KEYUPにする
+	if(prm.2) {
+		if(prm.2 > 0) : prm.2 = 2 : else : prm.2 = 0 : prm.4 = 1
+	}
+
+	ll_callfunc prm,4,pkeybd_event
+	if(prm.4) : prm.2 = 2 : ll_callfunc prm,4,pkeybd_event
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;mouse_event
+	;マウス操作
+	;................................................................................
+	#deffunc mouse_event int v1,int v2,int v3,int v4
+	if(pGetMessageExtraInfo == 0) {
+		dll_getfunc pGetMessageExtraInfo,"GetMessageExtraInfo",D_USER
+		dll_getfunc pmouse_event,"mouse_event",D_USER
+		if(pGetMessageExtraInfo == 0)|(pmouse_event == 0) : return
+	}
+
+	;#define MOUSEEVENTF_MOVE	1
+	;#define MOUSEEVENTF_LEFTDOWN	2
+	;#define MOUSEEVENTF_LEFTUP	4
+	;#define MOUSEEVENTF_RIGHTDOWN	8
+	;#define MOUSEEVENTF_RIGHTUP	16
+	;#define MOUSEEVENTF_MIDDLEDOWN	32
+	;#define MOUSEEVENTF_MIDDLEUP	64
+	;#define MOUSEEVENTF_WHEEL	0x0800 /* wheel button rolled   NT only*/
+	;#define MOUSEEVENTF_ABSOLUTE	0x8000 /* absolute move */
+
+	prm.0 = v1,v2,v3,v4
+
+	ll_callfnv pGetMessageExtraInfo
+	prm.4 = dllret
+
+	ll_callfunc prm,5,pmouse_event
+	return
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */

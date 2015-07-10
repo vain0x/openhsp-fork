@@ -1,0 +1,32 @@
+
+	;
+	;	カーソルキーで画像を動かす(1)
+	;
+	celload "face.bmp"				; 元画像ファイル
+	face=stat					; 元画像のIDを保存
+
+	mx=320						; X座標
+	my=240						; Y座標
+	msp=4						; スピード
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf						; 背景を消す
+
+	gmode 2						; 透明色ありの指定
+	pos mx,my					; 表示位置の設定
+	celput face					; 画像コピー
+
+	redraw 1					; 描画終わり
+	await 20
+
+	stick key,15					; キー入力
+
+	if key&1 : mx=mx-msp
+	if key&4 : mx=mx+msp
+	if key&2 : my=my-msp
+	if key&8 : my=my+msp
+
+	goto *main
+

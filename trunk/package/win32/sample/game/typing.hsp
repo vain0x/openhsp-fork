@@ -1,0 +1,57 @@
+	;
+	;	タイピングゲーム サンプル
+	;
+	title "タイピングゲーム"
+	randomize
+*start
+	;	ゲーム開始
+	score=0
+*greset
+	;	問題の準備
+	cursor=0
+	timer=250
+	typemode=0
+	m=rnd(3)
+	if m=0 : mondai="HOTSOUPPROCESSOR":mondai2="ホットスーププロセッサ"
+	if m=1 : mondai="HSPSCRIPTEDITOR":mondai2="HSPスクリプトエディタ"
+	if m=2 : mondai="HSPTVDEASOBOU":mondai2="HSPTVで遊ぼう"
+	onkey gosub *typein
+*main
+	;	ゲームメイン
+	redraw 0
+	color 192,192,192:boxf
+	font msgothic,16
+	color 0,0,0
+	pos 80,20:mes "残り時間:"+timer
+	pos 80,40:mes "スコア:"+score
+	font msgothic,30,1
+	color 0,120,160
+	pos 170,198:mes mondai2
+	pos 170,238:mes mondai
+	pos 170,238:color 255,0,0:mes strmid(mondai,0,cursor)
+	redraw 1
+	await 50
+	if typemode>0 : onkey 0 : goto *greset
+	if timer<=0 : onkey 0 : goto *gameover
+	timer=timer-1
+	goto *main
+*gameover
+	onkey 0
+	dialog "ゲームオーバー"
+	end
+
+*typein
+	;	キーを押した時の処理
+	a=peek(mondai,cursor)
+	if a!=iparam : goto *typemiss
+	len=strlen(mondai)
+	cursor=cursor+1:if cursor<len : return
+	goto *win
+*typemiss
+	;	ミスタッチをした時
+	return
+*win
+	;	タイピング成功
+	typemode=1
+	score+=10
+	return

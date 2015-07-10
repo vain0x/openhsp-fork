@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "callfunc"
+
+#define パラメーターが格納されている配列変数	""	;;str
+#define 関数アドレス	""	;;str
+#define パラメーター数	""	;;str
+
+#ahtmes "callfunc( "+パラメーターが格納されている配列変数+" , "+関数アドレス+" , "+パラメーター数+" )"+

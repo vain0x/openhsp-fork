@@ -1,0 +1,19 @@
+	title "getpath関数のテスト"
+	screen 0,640,320
+	mes "ファイルを開いて下さい。"
+	dialog "*",16:if stat=0 : end
+	a=refstr
+	mes "すべて取り出す。"
+	mes getpath(a,0)
+	mes "拡張子を除いた部分を取り出す。"
+	mes getpath(a,1)
+	mes "拡張子を取り出す。"
+	mes getpath(a,2)
+	mes "ファイル名のみ取り出す。"
+	mes getpath(a,8)
+	mes "文字列の小文字変換を有効にする。"
+	mes getpath(a,16)
+	mes "ディレクトリ名を取り出す。"
+	mes getpath(a,32)
+	stop
+

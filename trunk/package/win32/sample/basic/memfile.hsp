@@ -1,0 +1,15 @@
+	;
+	;	bloadで読み込んだ画像データをpicloadで表示する
+	;	(メモリストリームの例)
+	;
+	notesel buf		; 読み込みバッファをbufに指定
+	fname=dir_exe+"\\doclib\\hsp3ttl.jpg"
+	noteload fname		; サイズ可変バッファbufにファイルを読み込み
+	memfile buf		; ストリームの直前で指定してください
+	picload "MEM:a.jpg"	; 画像の拡張子識別のためダミー名a.jpgを使用
+	sdim buf,64		; もったいないのでbufのメモリ領域を小さくしておきます
+	;
+	;	上は、「picload "hsp3ttl.jpg"」と同じ結果になります
+	;
+	stop
+

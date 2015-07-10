@@ -1,0 +1,54 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; 座標変換のサンプルです。
+;
+; Artlet2D では、alTransMode～ 命令で座標変換モードを設定する
+; ことができます。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; 仮想イメージ 0 を作成
+	alCreateImage 0, 640, 480
+	if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+
+	; 比較用に、座標変換なしで描画
+	alFont "Arial", 40
+	alDrawText "no trans", 0, 0
+
+	; 位置を 100, 100 にオフセットして描画
+	alTransModeOffsetRotateZoom 100, 100
+	alDrawText "offset 100, 100", 0, 0
+
+	; 位置 200, 200 を中心位置として、時計回りに 30 度回転させて描画
+	alTransModeRotateAt 30, 200, 200
+	alDrawText "rotate 30", 200, 200
+
+	; 位置 200, 200 を中心位置として、時計回りに 60 度回転させて描画
+	alTransModeRotateAt 60, 200, 200
+	alDrawText "rotate 60", 200, 200
+
+	; オフセットを 300, 300 に、回転角度を -60 度回転させて描画
+	alTransModeOffsetRotateZoom 300, 300, -60
+	alDrawText "offset+rotate", 0, 0
+
+	; オフセットを 300, 300 に、回転角度を -30 度回転、ズームを X 方向 0.5, Y 方向 5.0 で描画
+	alTransModeOffsetRotateZoom 300, 300, -30, 0.5, 5.0
+	alDrawText "offset+rotate+zoom", 0, 0
+
+	; 画面中心を基準に 10 度ずつ回転させながら、線を描画するとこうなる
+	repeat 36
+		alTransModeRotateAt cnt * 10, 320, 240
+		alDrawLine 100, 100, 200, 100
+	loop
+
+	; 仮想イメージ 0 から HSP スクリーンにコピー
+	alCopyImageToScreen 0, 0
+	redraw
+

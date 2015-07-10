@@ -1,0 +1,24 @@
+
+	;	window内aviファイル再生サンプル
+	;
+	dialog "avi",16,"aviﾌｧｲﾙ"
+	if stat=0 : goto *dlcan
+	fname=refstr
+	mmload fname,1
+
+	screen 0,640,480,0
+	cls 4
+	objsize 160,32
+	pos 0,0
+	button "PLAY",*gogo
+	pos 160,0
+	button "END",*dlcan
+	pos 0,32
+	stop
+*gogo
+	mmplay 1
+	stop
+
+*dlcan
+	end
+

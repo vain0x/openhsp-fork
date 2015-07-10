@@ -1,0 +1,17 @@
+#include "hsedsdk.as"
+
+font "", 12: objmode 2
+
+pos 5, 9: mes "ID:"
+pos 25, 5: input nTabID, 610, 20
+
+pos 5, 30: sdim buf, 32000: mesbox buf, 630, 445
+
+repeat
+	hsed_exist
+	if stat{
+		hsed_getfootyid nFootyID, nTabID
+		if stat == 0: hsed_settext nFootyID, buf
+	}
+	wait 100
+loop

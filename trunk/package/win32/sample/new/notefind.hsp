@@ -1,0 +1,34 @@
+
+	;	•¡”s•¶š—ñ‚ÌŒŸõ
+	;
+	sdim st,1000
+	st={"peach
+apple
+orange
+banana
+kiwi
+grape"}
+
+	pos 0,0
+	mes st
+
+	findstr="apple"
+
+	notesel st
+
+	pos 320,0
+
+	findstr="apple"
+	i=notefind( findstr, notefind_match )
+	mes "notefind(\""+findstr+"\",notefind_match) = "+i
+
+	findstr="ora"
+	i=notefind( findstr, notefind_first )
+	mes "notefind(\""+findstr+"\",notefind_first) = "+i
+
+	findstr="ape"
+	i=notefind( findstr, notefind_instr )
+	mes "notefind(\""+findstr+"\",notefind_instr) = "+i
+
+	stop
+

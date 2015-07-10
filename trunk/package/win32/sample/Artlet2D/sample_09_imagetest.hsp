@@ -1,0 +1,159 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; イメージサンプルを描画するスクリプトです。
+;
+; HSP スクリーンへのコピー時に、コピーモードを使った
+; アニメーション効果で表示します。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; HSP の buffer 1 に背景模様を作成
+	buffer 1
+	color 222, 222, 222
+	div = 8
+	repeat ginfo_winy / div + 1
+		y = cnt
+		repeat ginfo_winx / 2 / div + 1
+		boxf (cnt*2+y\2)*div, y*div, (cnt*2+y\2+1)*div-1, (y+1)*div-1
+		loop
+	loop
+	gsel 0
+
+#define IMG_MAIN  0
+#define IMG_TEX1  1
+
+	; 仮想イメージ IMG_MAIN を作成
+	alCreateImage IMG_MAIN, ginfo_winx, ginfo_winy
+	if stat = -1 {
+		dialog "GDI+ を初期化できませんでした。"
+		end
+	}
+
+	; テクスチャ用仮想イメージ IMG_TEX1 を画像ファイルから作成
+	alCreateImageByFile IMG_TEX1, "texture.jpg"
+
+	alSelectImage IMG_MAIN ; 仮想イメージ IMG_MAIN を選択
+
+
+	; ロゴを描画
+	strn = "Artlet2D test"
+	alFont "Times New Roman", 60, 3
+	alGradientColor 0, 0, 0, 80, RGBA(0, 0, 0, 0), RGBA(0, 0, 0, 128)
+	alDrawText strn,  5,  5, ginfo_winx, , 1, 0
+	alColor 0, 0, 0, 128
+	alDrawText strn,  1,  1, ginfo_winx, , 1, 0
+	alColor 255, 255, 255, 128
+	alDrawText strn, -1, -1, ginfo_winx, , 1, 0
+	alGradientColor 0, 10, 0, 80, RGBA(255, 255, 255), RGBA(0, 0, 128)
+	alDrawText strn,  0,  0, ginfo_winx, , 1, 0
+
+
+	; テストイメージを描画
+	repeat 6
+		x = 20
+		y = cnt * 70 + 30
+		wm = cnt
+
+		alColor
+		alFont "Tahoma", 12
+
+		if cnt = 0 {
+			alColor
+		} else:if cnt = 1 {
+			alDrawText "Solid", x, y+25
+			alColor 64, 128, 255, 255
+		} else:if cnt = 2 {
+			alDrawText "Alpha", x, y+25
+			alColor 64, 128, 255, 128
+		} else:if cnt = 3 {
+			alDrawText "Gradient", x, y+25
+			alGradientColor 0, y, 0, y+70, RGBA(0, 128, 255), RGBA(255, 128, 0)
+		} else:if cnt = 4 {
+			alDrawText "AlphaGrad", x, y+25
+			alGradientColor 0, 0, 20, 40, RGBA(255, 128, 64, 255), RGBA(255, 128, 64, 1), WrapModeTileFlipX
+		} else:if cnt = 5 {
+			alDrawText "Texture", x, y+25
+			alTextureImage IMG_TEX1
+		}
+		x += 70
+
+		if wm {
+			alFillRect x, y+10, 50, 40
+		} else {
+			alDrawText "alFillRect", x, y+50
+		}
+		x += 70
+
+		if wm {
+			alFillEllip x, y+10, 50, 40
+		} else {
+			alDrawText "alFillEllip", x, y+50
+		}
+		x += 60
+
+		if wm {
+			alFont "Arial", 60, 3
+			alDrawText "Art", x, y
+		} else {
+			alDrawText "alDrawText", x+20, y+50
+		}
+		x += 120
+
+		alPenWidth 5-wm/2
+		alPenStyle wm-1
+
+		repeat 4
+			points = x,y+20,  x+50,y+15,  x+10,y+55,  x+30,y+5, x+50,y+45
+			if cnt = 0 {
+				if wm {
+					alDrawPoly points, 5
+				} else {
+					alDrawText "al Draw/Fill Poly, al Draw/Fill ClosedCurve", x, y+50
+				}
+			} else:if cnt = 1 {
+				if wm {
+					alFillPoly points, 5
+				}
+			} else:if cnt = 2 {
+				if wm {
+					alDrawClosedCurve points, 5
+				}
+			} else:if cnt = 3 {
+				if wm {
+					alFillClosedCurve points, 5
+				}
+			}
+			x += 60
+		loop
+	loop
+
+
+	; テストイメージをアニメーションしながら HSP スクリーン 0 に転送
+	ani = 100
+	repeat ani, 1
+		redraw 0
+		; buffer 1 の背景模様で HSP スクリーン 0 を初期化
+		gcopy 1, 0, 0, 640, 480
+
+		; 仮想イメージ 0 からストレッチコピー
+		alCopyModeAlpha 1.0 * (100-cnt) / 100
+		alStretchImageToScreen IMG_MAIN, 0,  0,0,640,480,  320-320*cnt/ani, 240-240*cnt/ani, 640*cnt/ani, 480*cnt/ani
+
+		; 仮想イメージ 0 からストレッチコピー
+		alCopyModeAlpha 1.0 * cnt / 100
+		alStretchImageToScreen IMG_MAIN, 0,  320-320*cnt/ani, 240-240*cnt/ani, 640*cnt/ani, 480*cnt/ani,  0,0,640,480
+
+		redraw
+		await 33
+	loop
+
+
+
+

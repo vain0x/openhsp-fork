@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "stick"
+
+#define 読み込むための変数	""	;;str
+#define 非トリガータイプキー指定	"0"	;;str
+#define ウィンドウアクティブチェックON/OFF	"1"	;;str
+
+#ahtmes "stick "+読み込むための変数+" , "+非トリガータイプキー指定+" , "+ウィンドウアクティブチェックON/OFF+

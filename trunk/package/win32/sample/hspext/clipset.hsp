@@ -1,0 +1,17 @@
+#include "hspext.as"
+
+	;	長い文字列をクリップボードへ
+	;
+	sdim v,10000
+	a="clip test\n"
+	repeat 30
+	v+=a
+	loop
+	clipset v
+
+	sdim a,10000
+	clipget a,10000
+	b=strlen(a)
+	mes ""+b+"文字がクリップボードに登録されています。"
+	mes "STAT="+stat
+	stop

@@ -1,0 +1,46 @@
+
+#include "hsp3util.as"
+
+	s="abc\ndef\nhij\nklm"
+	note2array a,s
+
+*main
+	cls
+	syscolor 15:boxf
+
+	color 0,0,0
+	pos 8,8:mes "配列変数のセーブ・ロードを行ないます"
+	pos 8,32
+	objsize 320,24
+	repeat 4
+	input a(cnt)
+	loop
+
+	button "セーブ",*asave
+	button "ロード",*aload
+	button "確認",*aview
+	button "終了",*owari
+*stay
+	stop
+
+*aload
+	dialog "txt",16
+	if stat=0 : goto *stay
+	fname=refstr
+	arrayload fname,a
+	goto *main
+*asave
+	dialog "txt",16
+	if stat=0 : goto *stay
+	fname=getpath(refstr,1)+".txt"
+	arraysave fname,a
+	goto *main
+*aview
+	array2note b,a
+	dialog b
+	stop
+*owari
+	end
+
+
+

@@ -1,0 +1,146 @@
+#include "hgimg3.as"
+#packopt name "sndedit"
+#pack "btex.bmp"
+
+;
+;	OGGファイルを選択して再生することができます。
+;	また、ループのスタートポイントを指定して再生テストを行なう
+;	簡易プレビューツールとして使用することができます。
+;
+;
+
+#module
+#deffunc musinit
+	dmmini
+	m_defvol=0
+	m_vol=0
+	m_fade=0
+	return
+
+#deffunc musload str _p1,int _p2
+	dmmload _p1,0
+	m_loop=_p2
+	return
+
+#deffunc musterm
+	dmmbye
+	return
+
+#deffunc musplay
+	m_vol=m_defvol
+	m_fade=0
+	dmmloop 0,m_loop
+	dmmvol 0,m_vol
+	dmmplay 0
+	return
+
+#deffunc musplay2 int _p1
+	m_vol=m_defvol
+	m_fade=0
+	dmmloop 0,m_loop
+	dmmvol 0,m_vol
+	dmmplay 0, _p1
+	return
+
+#deffunc musstop
+	m_fade=0
+	dmmstop 0
+	return
+
+#deffunc musfade int _p1
+	m_fade=_p1
+	if _p1>0 : m_vol=-4000
+	return
+
+#deffunc musexec
+	if m_fade=0 : return
+	m_vol+=m_fade
+	if m_vol<-4000 : m_vol+=m_fade*2
+	if m_vol<=-8000 {
+		musstop 	;title "VOL=MIN"
+		return
+	}
+	if m_vol>=0 : m_vol=0 : m_fade=0 ;title "VOL=MAX"
+	dmmvol 0,m_vol
+	;title "VOL="+m_vol
+	return
+
+#global
+
+	title "Music playback test v1.0"
+	screen 0,640,480,0
+	cls 4
+	p_loop=0
+	p_file="oot06.ogg"
+	objsize 200,20
+	button gosub "読み込み",*m_load
+	button gosub "再生",*m_play
+	button gosub "途中",*m_skip
+	button gosub "停止",*m_stop
+	button gosub "フェードアウト",*m_fout
+	button gosub "フェードイン",*m_fin
+	button "終了",*owari
+	pos 200,0
+	input p_file:obj_file=stat
+	input p_loop
+	input p_pos
+
+	;	初期設定
+	;
+	hgini
+	musinit
+
+	;	BOXオブジェクトを登録
+	;
+	setsizef 8.0, 8.0	; BOXのXYZサイズ
+	setuv 0,0,127,127	; テクスチャUV座標
+	addbox mdid		; BOXモデルを作成
+	texload "btex.bmp"	; テクスチャの登録
+	regobj mychr,mdid	; BOXモデルをオブジェクトとして登録
+
+	;	カメラ位置設定
+	;
+	selcpos
+	objset3 0.0, 0.0, 20.0
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	hgsync 10			; 時間待ち
+	musexec
+
+	stick k
+	if k&128 : goto *owari		; [ESC]で終了
+
+	addang mychr, 0.01, -0.01, 0.0
+	goto *main
+*m_load
+	dialog "ogg",16
+	if stat = 0 : return
+	p_file=refstr
+	objprm obj_file,p_file
+	return
+*m_play
+	musload p_file, p_loop
+	musplay
+	return
+*m_skip
+	musload p_file, p_loop
+	musplay2 p_pos * 44100
+	return
+*m_fout
+	musfade -10
+	return
+*m_fin
+	musfade 10
+	return
+*m_stop
+	musstop
+	return
+
+
+*owari
+	musterm
+	end
+

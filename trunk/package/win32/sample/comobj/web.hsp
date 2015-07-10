@@ -1,0 +1,46 @@
+	;
+	;	IEコンポーネントを使ったブラウザ
+	;
+#define DIID_DWebBrowserEvents2     "{34A715A0-6587-11D0-924A-0020AFC7AC4D}"
+#define DISPID_NAVIGATECOMPLETE2    252
+	cls 1
+	sdim url,512
+	url="http://hsp.tv/"
+	objsize 600,24
+	pos 0,2:mes "URL:"
+	pos 0,26:mes "WEB Browser Sample"
+	pos 40,0:input url
+	objsize 120,24
+	pos 520,24:button "移動",*wow
+	pos 400,24:button "進む",*go_f
+	pos 280,24:button "戻る",*go_b
+	pos 0,48
+	axobj ie, "Shell.Explorer.2",640,480-48
+	num=stat
+	comevent ie_event, ie, "{34A715A0-6587-11D0-924A-0020AFC7AC4D}",*event	; DIID_DWebBrowserEvents2     
+	ie->"Navigate" url
+*main
+	stop
+*event
+	;	COMイベント処理
+	dispid = comevdisp(ie_event)
+	if dispid = DISPID_NAVIGATECOMPLETE2 : gosub *OnNavigateComplete2
+	return
+
+*OnNavigateComplete2
+	name = ie("LocationURL")
+	objprm 0,name
+	pDoc = ie("Document")
+	name = pDoc("Title")
+	title name
+	delcom pDoc
+	return
+*wow
+	ie->"Navigate" url
+	goto *main
+*go_f
+	ie->"GoForward"
+	goto *main
+*go_b
+	ie->"GoBack"
+	goto *main

@@ -1,0 +1,68 @@
+	;
+	;	文字を描画して、その画像にぼかしをかけます
+	;	何段階かぼかしをかけた画像を切り替えながら表示します
+
+#module
+#deffunc gblur int p1, int p2
+
+	;
+	;	簡易ぼかしモジュール
+	;	gblur ぼかし強度 , 方向フラグ
+	;
+	;	現在の操作先バッファに簡易ぼかしを適用します。
+	;	ぼかし強度は、大きい値ほど強くなります(処理も重くなります)。
+	;	方向フラグは、0=XY、1=Y、2=Xの方向を選択します(通常は0)。
+	;
+	gmode 3, ginfo_sx, ginfo_sy, 128
+	if (p2&1)=0 {
+		repeat p1
+		pos 1,0:gcopy ginfo(3)
+		pos 0,0:gcopy ginfo(3),2,0
+		loop
+	}
+	if (p2&2)=0 {
+		repeat p1
+		pos 0,1:gcopy ginfo(3)
+		pos 0,0:gcopy ginfo(3),0,2
+		loop
+	}
+	return
+
+#global
+
+	;
+	;	gblur命令サンプル
+	;
+	times=10		; 切り替え枚数
+	level=1			; ぼかしの深さ(段数)
+
+	buffer 1,640,200
+	cls 4
+	color 255,255,255
+	font msmincho,120,1
+	pos 20,40
+	mes "画像ぼかし"
+
+	;picload "hsp3ttl.jpg"
+
+	repeat times+1
+	buffer 2+cnt,640,200
+	gmode 0,640,200:gcopy 1+cnt
+	gblur level
+	loop
+
+	screen 0,640,400
+
+	gmode 0,640,200
+	pos 0,200:gcopy 1
+*main
+	repeat times
+	pos 0,0:gcopy times-cnt
+	wait 10
+	loop
+	repeat times
+	pos 0,0:gcopy cnt+1
+	wait 10
+	loop
+	goto *main
+

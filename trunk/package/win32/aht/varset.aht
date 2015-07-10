@@ -1,0 +1,15 @@
+#aht name "変数代入"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "指定した変数の値を設定します。"
+#aht exp "あらかじめ、変数パーツを登録しておく必要があります。"
+
+#const obj_id	0	;;parts,prm="hsp3.std.rsrc.var",help="変数"
+#define __refvar	;;pprop,prm="変数名",help="変数名",read
+#define 設定値 0	;;str,opt="wide",help="設定する値を入力してください。"
+#define 代入方法	;;combox,prm="=\n+=\n-=\n*=\n/=\n",opt="設定値を代入\n設定値を加算\n設定値を減算\n設定値を乗算\n設定値を除算\n"
+
+	__refvar 代入方法 設定値
+

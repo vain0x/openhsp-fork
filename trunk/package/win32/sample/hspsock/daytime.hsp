@@ -1,0 +1,55 @@
+
+#include "hspsock.as"
+
+	;
+	;	TCP/IP socket sample
+	;	任意サーバーに接続してサーバー時刻を受信する
+	;
+	sdim buf,256
+	;
+	pos 0,128
+	objsize 100,24,24
+	;
+	pos 100,0
+	url=""
+	input url,480
+	;
+	pos 0,0
+	mes "URL HTTP://"
+	;
+	pos 0,40
+	button "CONNECT",*sd
+	button "BYE",*bye
+	;
+	url="www.yahoo.co.jp":objprm 0,url
+	wait 10
+	;
+	stop
+
+*sd
+	;	Daytime socketに接続
+	;
+	title "Connecting... ["+url+"]"
+	sockopen 0,url,13
+	if stat : dialog "ERROR\nSTAT="+stat : goto *sdover
+	;
+	title "getting time..."
+	buf="":a=""
+	b=0
+*wloop
+	wait 5
+	sockget a,64
+	if stat : dialog "socket error" : goto *sdover
+	b=peek(a,0):if b=0 : goto *sdok
+	buf+=a
+	goto *wloop
+*sdok
+	mes buf
+	title "Completed."
+*sdover
+	sockclose
+	stop
+
+*bye
+	end
+

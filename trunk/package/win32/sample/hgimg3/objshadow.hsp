@@ -1,0 +1,76 @@
+#include "hgimg3.as"
+
+	;	影モデル描画サンプル
+	;	生成モデルを使用してオブジェクトの影を落とします。
+	;	あくまでも簡易的に作られた平面の影なので複雑な形状の上には不向きです。
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_a.x"	; モデルを読み込む
+	regobj obj, m_xmodel		; オブジェクトの登録
+	clscolor $80			; 背景色の設定
+
+	;	カメラ設定
+	;
+	cammode CAM_MODE_LOOKAT
+	setpos HGOBJ_CAMERA, 0,-10,30	; カメラ位置の設定
+
+
+	;	BG:地面
+	;
+	addxfile m_xmodel,"sb_bg1.x"
+	modelshade m_xmodel,0
+	regobj b_obj, m_xmodel
+	setpos b_obj,0,20,0
+	setscale b_obj, 1,0.2,1
+
+	;	影モデルの作成
+	addeprim m_sd,0				; 影モデルを生成する
+	seteprim m_sd,0,2
+	seteprim m_sd,1,12
+	seteprim m_sd,2,2.5
+	seteprim m_sd,3,4
+	seteprim m_sd,16,$80000000
+	seteprim m_sd,17,$80000000
+	seteprim m_sd,18,$80000000
+	seteprim m_sd,19,$00000000
+	regobj mysdw, m_sd, OBJ_LAND|OBJ_LATE	; 接地モードで登録
+	setangr mysdw,-64,0,0			; 上を向ける
+	setefx mysdw,$500			; Zバッファを無視
+	setpos mysdw,0,50,0
+	objchild obj, mysdw			; メインキャラの子に設定
+	hgprm 0,10				; 接地座標を指定
+
+*main
+	stick key,$3ff
+	if key&128 : goto *owari
+
+	hgdraw				; 描画
+
+	fprt "HGIMG3 Plugin test",8,8
+
+	hgsync 10			; 時間待ち
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : addpos obj, -0.2, 0,0
+	if key&1 : addpos obj, 0.2, 0,0
+	if key&2 : addpos obj, 0,0, 0.2
+	if key&8 : addpos obj, 0,0, -0.2
+
+	;	モデルを回転させる
+	addang obj,0,0.05,0
+
+	goto *main
+
+*owari
+	end

@@ -1,0 +1,54 @@
+#include "hspda.as"
+#define varfile	"vtest_data2.var"
+
+	;	変数指定によるvload,vsaveサンプル
+	;
+	max=16
+	sdim comment,256
+	dim samp,max
+
+	gosub *setup
+
+	stop
+
+*load
+	;	指定した変数をまとめてファイルから読み込み
+	vload_start varfile
+	vload_get comment
+	vload_get samp
+	vload_end
+
+	gosub *setup
+	dialog "読み込みました。"
+	stop
+*save
+	;	指定した変数をまとめてファイルに保存
+	vsave_start
+	vsave_put comment
+	vsave_put samp
+	vsave_end varfile
+
+	dialog "保存しました。"
+	stop
+*owari
+	end
+
+*setup
+	cls 4
+	sysfont 17
+	syscolor 15
+	boxf
+	repeat max
+	input samp(cnt)
+	loop
+
+	color 0,0,0
+	objsize 300,24
+	pos 100,0:mes "コメント文字列:"
+	input comment
+
+	objsize 80,24
+	pos 372,450:button "LOAD",*load
+	pos 460,450:button "SAVE",*save
+	pos 548,450:button "END",*owari
+	return

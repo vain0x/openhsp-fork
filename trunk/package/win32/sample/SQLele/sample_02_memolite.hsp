@@ -1,0 +1,248 @@
+
+;============================================================
+;                                                 2010/--/--
+;	SQLele sample
+;	memolite
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+ memolite (SQLele を使った簡単なアプリ)
+
+ 時刻つきメモ帳 (日記帳?) のサンプルです。登録時刻ごとにメモが作成されます。
+ データは、memolite.db に保存されます。動作には、sqlite3.dll が必要です。
+
+ 使い方
+・新しいメモの登録
+ [新規作成] ボタンを押して、メモを書いて [登録/更新] ボタンを押す
+・メモの閲覧
+ メモの一覧からメモを選択し、[開く] ボタンを押す
+・メモの更新
+ メモを開いた状態でメモを編集し、[登録/更新] ボタンを押す
+・メモの削除
+ メモの一覧からメモを選択し、[削除] ボタンを押す
+・メモの検索
+ 画面右上の欄に検索キーワードを入力して [検索] ボタンを押す
+
+*/
+
+#include "sqlele.hsp"
+
+	;--------------------------------------------------
+	; ステータス変数の初期化
+
+	lst = -1	; 現在選択された過去メモリストのインデックス
+	curid = -1	; 現在選択されたレコードの ID (新規作成時は -1)
+	srch = ""	; 検索文字列
+
+	srchbuf = "" ; 検索ボックス用バッファ
+	sdim memobuf, 32768 ; メモ内容バッファ
+
+
+	;--------------------------------------------------
+	; 画面作成
+
+	title "memolite"
+
+	; 背景表示
+	font "ＭＳ ゴシック", 13
+	color 222,222,111 : boxf 440-2, 0, 640, 80
+	color : pos 440, 0 : mes "メモを検索"
+
+	; left gui-object
+	pos 0, 20 : objsize 100, 20 : button "新規作成", *new
+	pos 0, 40 : mesbox memobuf, 440-4, 400, 1 : idmes = stat
+	pos 170, 440 : objsize 100, 20 : button "登録/更新", *update
+
+	; right-top
+	pos 440, 20 : objsize 200-4, 20 : input srchbuf : idsrch = stat
+	pos 500, 45 : objsize 70, 20 : button "検索", *search
+	pos 580, 45 : objsize 50, 20 : button "リセット", *reset
+
+	; right-btm
+	pos 440, 100 : objsize 200-4, 300 : listbox lst, 0, memobuf : idlst = stat
+	pos 500, 400 : objsize 70, 20 : button "開く", *open
+	pos 580, 400 : objsize 50, 20 : button "削除", *dels
+
+	objsel idmes
+
+
+	;--------------------------------------------------
+	; DB オープン
+
+	sql_open "memolite.db"
+
+	; TMemo テーブルがなければ新たに作成
+	sql_q "CREATE TABLE IF NOT EXISTS TMemo (ID INTEGER PRIMARY KEY, Date, Memo, Upd)"
+
+	; TMemo テーブルのフィールド
+	; ID    自動連番ID
+	; Date  メモの登録日
+	; Memo  メモ内容
+	; Upd   メモの最終更新日
+
+
+	;--------------------------------------------------
+	; 画面更新
+
+	gosub *editor_renew_sub
+	gosub *list_renew_sub
+	stop
+
+
+
+;============================================================
+; サブルーチン
+
+; エディタ領域の更新
+*editor_renew_sub
+
+	; ID = curid のレコードを読み出し
+	sql_q "SELECT * FROM TMemo WHERE ID=" + curid
+
+	if stat {
+		; 現在のレコード ID が有効な場合 メモ内容を取り出す
+		memobuf = sql_v("Memo")
+		objprm idmes, memobuf
+
+		; 画面更新
+		color 222,222,222 : boxf 0, 0, 440-2, 480
+		color : pos 0, 0 : mes sql_v("Date") + " のメモを編集 (更新 " + sql_v("Upd") + ")"
+
+	} else {
+		; 現在のレコード ID が無効の場合 新規作成
+		memobuf = ""
+		objprm idmes, memobuf
+
+		; 画面更新
+		color 222,222,222 : boxf 0, 0, 440-2, 480
+		color : pos 0, 0 : mes "新規作成"
+	}
+
+	return
+
+; リスト領域の更新
+*list_renew_sub
+
+	if srch ! "" {
+		; 画面更新
+		color 111,222,222 : boxf 440-2, 80, 640, 480
+		color : pos 440, 80 : mes "'" + srch + "' 検索結果"
+
+		; 検索文字列がある場合
+		sql_q "SELECT ID, Date, substr(replace(Memo,'\n',''),0,100) as subMemo FROM TMemo WHERE Date like '%"+sqesc(srch)+"%' OR Memo like '%"+sqesc(srch)+"%' ORDER BY ID DESC"
+
+	} else {
+		; 画面更新
+		color 111,222,222 : boxf 440-2, 80, 640, 480
+		color : pos 440, 80 : mes "メモの一覧"
+
+		; 全件抽出
+		sql_q "SELECT ID, Date, substr(replace(Memo,'\n',''),0,100) as subMemo FROM TMemo ORDER BY ID DESC"
+	}
+
+	count = stat
+	astr = ""
+	lst = -1
+	repeat count
+		list_ids(cnt) = sql_i("ID")			; リストボックスのインデックスと レコード ID との変換テーブル
+		if curid = sql_i("ID") : lst = cnt	; 現在のレコードがあれば選択状態にする
+
+		astr += sql_v("Date") + "  " + sql_v("subMemo") + "\n"
+		sql_next
+	loop
+
+	objprm idlst, astr	; 内容更新
+	objprm idlst, lst	; 選択インデックス更新
+
+	return
+
+
+
+;============================================================
+; ボタンを押した時の動作
+
+; 新規作成ボタン
+*new
+	; 新規作成モードへ (現在の選択 ID を無効値に設定)
+	curid = -1
+	gosub *editor_renew_sub
+	objsel idmes
+	stop
+
+; 開くボタン
+*open
+	; メモ内容の変更確認
+	yes = 1
+	sql_q "SELECT Memo FROM TMemo WHERE ID=" + curid
+	if stat {
+		if (sql_v("Memo") ! memobuf) : yes = 0
+	} else {
+		if memobuf ! "" : yes = 0
+	}
+	if yes = 0 {
+		dialog "内容は変更されています。保存せずにメモを開きますか?", 2
+		if stat = 6 : yes = 1
+	}
+
+	; 新しい curid を設定してエディタ部を更新
+	if yes {
+		curid = list_ids(lst)
+		gosub *editor_renew_sub
+	}
+	stop
+
+; 登録/更新ボタン
+*update
+	dialog "内容を登録/更新します。", 2
+	if stat = 6 {
+		; レコードの挿入 or 更新
+		if curid >= 0 {
+			; 現在の ID が有効な場合 : 既存レコード更新
+			sql_q "UPDATE TMemo SET Memo=" + prm_text(memobuf) + ", Upd=datetime('now','localtime') WHERE ID="+curid
+		} else {
+			; 現在の ID が無効な場合 : 新規レコード 挿入
+			sql_q "INSERT INTO TMemo (Date, Memo) VALUES (datetime('now','localtime'), " + prm_text(memobuf) + ")"
+
+			; 挿入したレコードの ID を調べる
+			sql_q "SELECT last_insert_rowid() AS ID"
+			curid = sql_i("ID")
+		}
+		gosub *list_renew_sub
+		gosub *editor_renew_sub
+	}
+	stop
+
+; 検索ボタン
+*search
+	; srch を設定してリストを再表示させる
+	srch = srchbuf
+	gosub *list_renew_sub
+	stop
+
+; 検索リセットボタン
+*reset
+	; srch をクリアしてリストを再表示
+	srch = ""
+	gosub *list_renew_sub
+	stop
+
+; 削除ボタン
+*dels
+	if lst >= 0 {
+		sql_q "SELECT * FROM TMemo WHERE ID=" + list_ids(lst)
+		dialog sql_v("Date") + " のメモを削除しますか?", 2
+
+		if stat = 6 {
+			; 削除対象が現在のレコードの場合 現在のレコード ID を無効化
+			if list_ids(lst) = curid : curid = -1
+
+			; レコード削除
+			sql_q "DELETE FROM TMemo WHERE ID=" + list_ids(lst)
+
+			gosub *list_renew_sub
+		}
+	}
+	stop
+
+
+

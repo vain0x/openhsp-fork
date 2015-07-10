@@ -1,0 +1,181 @@
+
+;============================================================
+;                                                 2006/--/--
+	title "S.Programs Cosmic Flower"
+;	version 1.0/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+・天ノ花
+
+色とりどりの星々で構成された「天ノ花 (あまのはな)」を描くスクリプトです。
+宇宙空間に宝石をまいたようなイメージで書いてみました。
+
+[Enter] : フルスクリーン切り替え
+[Esc] : 終了
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+;	main
+;============================================================
+
+; config
+#const	PTC_N	10
+
+;------------------------------------------------------------
+; init
+	; パーティクル作成
+
+	; ランダム放射形
+	repeat 100
+		arr(cnt) = rnd(50) + 50
+	loop
+	arr = 1, 47
+	d3mkparticle   ,  300, 300, 600,  arr
+
+	; ×型
+	arr = 4, 4,  30, 30, 140, 30
+	d3mkparticle  1,  200, 200, 400,  arr
+
+	; 星
+	arr = 5, 2,  100, 45
+	d3mkparticle  2,  500, 500, 100,  arr
+
+	; サクラ
+	arr = 5, 6,  80, 100, 75, 40, 75, 100
+	d3mkparticle  3,  400, 200, 200,  arr
+
+	; プロペラ
+	arr = 7, 6,  100, 90, 80, 70, 60, 50
+	d3mkparticle  4,  300, 300, 300,  arr
+
+	; 結晶
+	arr = 6, 10, 100, 90, 70, 50, 50, 50, 50, 50, 70, 90
+	d3mkparticle  5,  200, 400, 400,  arr
+
+	; よつば
+	arr = 4, 10,  100, 97, 90, 80, 65, 40, 65, 80, 90, 97
+	d3mkparticle  6,  100, 400, 100,  arr
+
+	; hexa
+	arr = 6, 2,  40, 110
+	d3mkparticle  7,  200, 300, 400,  arr
+
+	; sun
+	arr = 10, 2, 100, 66
+	d3mkparticle  8,  400, 200, 100,  arr
+
+	; †
+	arr = 4, 8,  100, 100, 52, 36, 28, 36, 52, 100
+	d3mkparticle  9,  100, 300, 500,  arr
+
+
+	t_start = d3timer()
+
+
+;------------------------------------------------------------
+*mainloop
+
+
+	;------------------------------------------------------------
+	; full-screen ctrlr (toggle : Enter)
+
+	stick ky_inp
+	if ky_inp & 128 : end
+	if ky_inp & 32 {
+		mode_fsc ^= 1
+		chgdisp mode_fsc ; (default : 640, 480)
+		if mode_fsc {
+			bgscr 2
+			gsel 2, 2
+			mouse -1
+		} else {
+			gsel 2, -1
+			gsel
+			mouse
+		}
+	}
+
+
+	;------------------------------------------------------------
+	; setup
+
+	randomize 0
+	redraw 0
+
+	sec = 0.001 * d3timer()
+	div = (d3timer() - t_start + 1000) // start-efct divisor
+
+	cz = sin(sec/13)*500 + 8000000.0/div
+
+	hsvcolor 112, 128 - 128000/div, limit(limit(80 - cz*cz/1000, 0, 255) + 300000/div, 0, 255)
+	boxf
+
+
+	;------------------------------------------------------------
+	; カメラ座標
+
+	#define f0 sec / 7
+	#define r0 600
+	#define f1 sec / 11
+	#define r1 500
+	d3setcam  cos(f0)*r0, sin(f0)*r0, cz,  cos(f1)*r1, sin(f1)*r1, 0
+
+
+	;------------------------------------------------------------
+	; stars
+
+	#define GX_STARS 300
+
+	repeat GX_STARS
+
+		; --- galaxy
+
+		r = (5.0 + cnt) / GX_STARS
+		j = 1.0 - r
+		r *= 900
+		f = 1.264 * cnt - j * rnd(60) / 100
+
+		d3vpos cos(f) * r, sin(f) * r, ((10000 / (r + 100)) * (cnt\3-1))
+
+		gosub *draw_ptc
+
+		if cnt\17=0 : d3particlem 1, 70
+
+
+		; --- bg
+
+		j = 2
+		d3vpos rnd(32768)-16384, rnd(32768)-16384, rnd(32768)-16384
+		gosub *draw_ptc
+	loop
+
+
+	;------------------------------------------------------------
+	; center x
+
+;	gmode 5, , , 80
+	d3particle  2,  0, 0, 0,  200
+	d3particlem  ,  150
+	d3particlem  ,  300
+
+
+	redraw
+	await ;10
+
+	goto *mainloop
+
+
+;------------------------------------------------------------
+*draw_ptc
+	gmode 5, , , 224
+	d3particlem rnd(PTC_N),  j * 25 + 5
+	gmode 5, , , 76
+	d3particlem rnd(PTC_N),  j * 60 + 10
+
+	return
+
+

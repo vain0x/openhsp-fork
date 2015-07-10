@@ -1,0 +1,58 @@
+#include "hgimg3.as"
+#include "obaq.as"
+
+	;	OBAQ描画サンプル
+	;
+
+	;	初期設定
+	;
+	hgini
+	qreset			; OBAQの初期化
+	qgetptr obaq_ptr
+	hgobaq obaq_ptr, 0, 1
+
+	;	OBAQモデル
+	;
+	addobaq3d m_obaq
+	regobj obj, m_obaq
+	setscale obj, 0.25,0.25,0.25
+	setangr obj, -32,0,0
+
+	;	OBAQ設定
+	;
+	qmat 0,mat_wire		; 枠線
+	qaddpoly my, 5, 96,20,0	; 三角形を追加
+	qmat my,mat_wire	; 線描画を設定
+
+	;	OBAQロゴ
+	;
+	texload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+	;	表示の準備
+	;
+	setpos HGOBJ_CAMERA, 0,0,-50	; カメラ位置の設定
+
+	;	背景色の設定
+	;
+	clscolor $40
+
+*main
+	;	描画メイン
+	;
+	qexec				; OBAQによるオブジェクトの更新
+	hgdraw				; 描画処理
+
+	color 255,0,0:gmode 2,128,64	; ロゴ描画の設定
+	pos 110,64:hgrotate logoid,0,0,0 ; ロゴ描画
+
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	goto *main
+
+*owari
+	end
+

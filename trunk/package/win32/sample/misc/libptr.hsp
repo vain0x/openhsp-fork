@@ -1,0 +1,27 @@
+
+	#uselib "user32.dll"
+	#func MessageBoxA "MessageBoxA" int,sptr,sptr,int
+
+	ladr=libptr( MessageBoxA )
+	dupptr lptr,ladr,28	; STRUCTDAT\‘¢‘Ì‚ğæ“¾
+	lib_id=wpeek(lptr,0)
+	mes "LIB#"+lib_id
+
+	mref hspctx,68
+	linf_adr=lpeek( hspctx, 832 )
+
+	if linf_adr=0 {
+		mes "No Data."
+		stop
+	}
+
+	dupptr linf,linf_adr + lib_id*16,16	; LIBDAT\‘¢‘Ì‚ğæ“¾
+
+	dll_flag = linf(0)
+	dll_name = linf(1)
+	dll_handle = linf(2)
+
+	mes "FLAG("+dll_flag+") NAME_ID#"+dll_name+" : HANDLE="+strf("%x",dll_handle)
+
+	stop
+

@@ -1,0 +1,733 @@
+	;================================================================================
+	;モジュール listview
+	;ver 2.2
+	;	リストビュー
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; listviewモジュール命令一覧
+	;
+	; listview			リストビューの作成
+	; sel_listview		操作するリストビューを選択
+	; listadd			リストビューにアイテムを追加
+	; listdel			リストビューのアイテムを消去
+	; listaddcl			リストビューに欄を追加
+	; listdelcl			欄を消去
+	; listsel			リストビューのアイテムを選択
+	; listget			リストビューのアイテムを取得
+	; listmax			リストビューのアイテムの数を取得
+	; listicon			リストビューのアイコンを設定
+	; listhit			マウスの下にあるアイテムを取得
+	;
+	; 計	11個
+
+
+	;使い方
+	;================================================================================
+	; listview n1,n2,n3		リストビューの作成
+	;
+	;  n1 : 幅
+	;  n2 : 高さ
+	;  n3 : スタイル
+	;================================================================================
+	;
+	;<>説明
+	; リストビューを作成します。
+	; リストビューは、Explorerの右側にある様なオブジェクトです。
+	; 幅や高さを省略するとobjsizeで設定した幅、高さが使われます。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; リストビューのID
+	;
+	;<>スタイル
+	; スタイルは以下の値を足して、複数のスタイルを指定することができます。
+	; 0	大きいアイコン表示
+	; 1	詳細表示
+	; 2	小さいアイコン表示
+	; 3	リスト表示
+	; 4	複数選択できないようにする
+	; 8	listviewが選択されていないときでも、選択されているアイテムの色を変える
+	; $10	昇順でアイテムをソートする
+	; $20	降順でアイテムをソートする
+	; $40	セットしたイメージリストをlistview消去時に消去しない
+	;	(複数のlistviewで同じイメージを使う場合に指定する)
+	; $80	アイコン表示のとき、アイテムのテキストを折り返さない
+	;	(デフォルトではテキストは長いと折り返される)
+	; $100	?
+	; $800	?
+	; $2000	スクロールバーがつかない
+	; $4000	欄の名前を表示する部分を付けない
+	;
+	; 以下のスタイルはcomctl32.dllのバージョンによっては有効にならない場合があります。
+	; $10000	リスト表示時に罫線を付ける
+	; $40000	チェックボックスを付ける
+	; $100000	欄の名前を表示する所をドラッグ&ドロップできる
+	; $200000	リスト表示時にアイテムが選択されたときサブアイテムも色を変える
+	; $400000	アイテムの上にマウスポインタが来たときカーソルを指の形にする
+	; $800000	アイテムクリックされたときカーソルを指の形にする
+	; $1000000	スクロールバーを平らなスタイルに変える
+	; $8000000	$400000,$800000のスタイルを指定したとき、アイテムの上に
+	;		マウスポインタが来ると下線がつく
+	; $10000000	$400000,$800000のスタイルを指定したとき、下線がつく
+	;
+	; ※チェックボックスを付けたときのスタイルで、アイテムがチェックされているかを
+	; 調べるときは以下のようにしてください
+	;
+	;	;list_id : listviewのID
+	;	;idx : アイテムのインデックス
+	;	prm=list_id,4140,idx,61440
+	;	sendmsg prm
+	;	chk=stat>>12-1
+	;	if chk : dialog ""+idx+"番目のアイテムはチェックされています"
+	;
+	; リストビューのスタイルは作成後でも以下のようにして変更することができます。
+	;	;lstはリストビューのID、styleは新しく設定するスタイル
+	;	prm=lst,-16,style|$50000000
+	;	setwndlong prm
+	;
+	; スタイルを省略するとここで設定したデフォルトスタイルが使用されます。
+
+	#define DEFAULT_LISTVIEW_STYLE	0
+
+	;================================================================================
+	; sel_listview n1		操作するリストビューを選択
+	;
+	;  n1 : リストビューのID
+	;================================================================================
+	;
+	;<>説明
+	; この命令使用後はn1で指定したリストビューに対して各操作を行います。
+	; リストビュー新規に作成すると、自動的にそのリストビューが
+	; 各操作の対象になります。
+	; 複数のリストビューを作成したときは、この命令で操作するリストビュー
+	; を選択してください。
+	;
+
+	;================================================================================
+	; listadd n1,"s2",n3,n4,n5,n6		リストビューにアイテムを追加
+	;
+	;  n1 : アイテムの位置
+	;  s2 : アイテムのテキスト
+	;  n3 : 欄の番号
+	;  n4 : アイコン番号
+	;  n5 : アイテムの状態
+	;  n6 : アイテムに持たせる数値
+	;================================================================================
+	;
+	;<>説明
+	; リストビューのn1番目の位置にアイテムをつけ加えます。
+	; n3には何番目の欄に追加するかを指定するインデックス、
+	; n4にはアイコン番号、n5にはアイテムの状態を入れます。
+	;
+	; 欄への追加は、listaddclで欄を追加しているときのみ有効です。
+	; またアイコン番号は、listiconでアイコンを追加している場合のみ有効になり、
+	; 欄へ追加するときはアイコン番号は無視されます。
+	;
+	; n6に値を入れてアイテムにその数値を持たせることができます。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; 追加したアイテムのインデックス(-1ならエラー)
+	;
+	;<>アイテムの状態
+	; listviewのアイテムの状態には、以下のものがあります。
+	;
+	; 状態				数値
+	; フォーカスがあっている	1
+	; 選択されている		2
+	; 切り取られた状態		4
+	; ハイライト			8
+	;
+	;※ハイライトはlistselで選択状態を解除しないと元に戻りません。
+	;
+	;例)
+	;	;3番目にアイテム追加、0番目の欄、アイコン番号を15
+	;	listadd 3,"new item",0,15
+	;
+	;	;0番目の1つめの欄にアイテムを追加、
+	;	;フォーカスを合わせる
+	;	listadd 0,"new sub item",1,0,1
+	;
+
+	;================================================================================
+	; listdel n1			リストビューのアイテムを消去
+	;
+	;  n1 : アイテムのインデックス
+	;================================================================================
+	;
+	;<>説明
+	; n1番目のアイテムを消去します。
+	; n1を-1にすると全てのアイテムを消去します。
+	;
+
+	;================================================================================
+	; listaddcl n1,"s2",n3,n4		リストビューに欄を追加
+	;
+	;  n1 : 欄のインデックス
+	;  s2 : 欄の名前
+	;  n3 : 欄の幅
+	;  n4 : 欄の名前の位置
+	;================================================================================
+	;
+	;<>説明
+	; 欄を追加します。
+	; n3を省略したときのデフォルト値は100です。
+	;<>n4の値
+	; 0	左寄せ
+	; 1	右寄せ
+	; 2	中央
+	;
+
+	;================================================================================
+	; listdelcl n1			欄を消去
+	;
+	;  n1 : 欄のインデックス
+	;================================================================================
+	;
+	;<>説明
+	; n1番目の欄を消去します。
+	;
+
+	;================================================================================
+	; listsel n1,n2			リストビューのアイテムを選択
+	;
+	;  n1 : アイテムのインデックス
+	;  n2 : 選択状態のタイプ
+	;================================================================================
+	;
+	;<>説明
+	; n1番目のアイテムを選択します。
+	; n2を-1にすると選択状態を解除します。
+	; n2を省略するとフォーカスをあわせて、選択状態にします。
+	;
+	; 状態				数値
+	; フォーカスがあっている	1
+	; 選択されている		2
+	; 切り取られた状態		4
+	; ハイライト			8
+	;
+
+	;================================================================================
+	; listget v1,n2,n3,n4		リストビューのアイテムを取得
+	;
+	;  v1 : 取得したものを入れる変数
+	;  n2 : アイテムのインデックス
+	;  n3 : 取得するもの
+	;  n4 : 取得するアイテムの状態
+	;================================================================================
+	;
+	;<>説明
+	; 主にアイテムのインデックスを取得します。
+	; n3で以下の値を代入すると取得するものが変わってきます。
+	;
+	;<>n3の値					n4の値
+	; 1	n2の上のアイテムのindexを取得		0 or 取得するアイテムの状態
+	; 2	n2の下のアイテムのindexを取得		0 or 取得するアイテムの状態
+	; 3	n2の左のアイテムのindexを取得		0 or 取得するアイテムの状態
+	; 4	n2の右のアイテムのindexを取得		0 or 取得するアイテムの状態
+	; 5	n2のテキスト取得			変数のサイズ or -1
+	; 6	n2のアイテムに持たせた値を取得		0 or 1
+	;
+	; n3を5にしたときはstatにアイテムに持たせた値が入ります。
+	; n3を5にしたときn4を-1にすると、v1に入っている文字列を使ってアイテムのテキスト
+	; を再設定できます。
+	; n3を6にしたときn4を1にすると、v1に入っている値を使ってアイテムに持たせた値を
+	; 再設定できます。
+	;
+	; n4を以下の値にするとn4で指定した状態のアイテムを(n2+1)番目のアイテムから
+	; n3で指定した方向に向かって検索します。
+	; (n3を0にすると方向は指定しません)
+	; n4の状態のアイテムが見つかればv1にアイテムのインデックスが代入されます。
+	; 見つからなかった場合はv1に-1が代入されます。
+	; n2を-1にすると先頭のアイテムから検索します。
+	;
+	; n4の値
+	; 0		状態は指定しない
+	; 1		フォーカスがあっている
+	; 2		選択されている
+	; 4		切り取られた状態
+	; 8		ハイライト
+	;
+	;<>例
+	;	#include "llmod.as"
+	;	#include "listview.as"
+	;
+	;	listview winx-6,winy/2,1
+	;	lv=stat
+	;	listaddcl 0,"name"
+	;	repeat 30 : listadd cnt,"アイテム No."+cnt : loop
+	;
+	;	button "check",*check
+	;	alloc bf,1024*32 : bf=""
+	;	mesbox bf,winx-6,winy-csry-26
+	;	_objsel lv
+	;	stop
+	;
+	;*check
+	;	bf="" : notesel bf : start=-1	;先頭から検索
+	;	repeat -1
+	;		listget chk,start,0,2	;選択状態のアイテムを探す
+	;		if chk=-1 : break	;見つからない場合-1が代入される
+	;		listget s,chk,5		;見つかったアイテムのテキストを取得
+	;		noteadd s+"は選択されています"
+	;		start=chk
+	;	loop
+	;	objprm 1,bf
+	;	stop
+	;
+
+	;================================================================================
+	; listmax v1,n2			リストビューのアイテムの数を取得
+	;
+	;  v1 : リストビュー内のアイテムの数を入れる数値変数
+	;  n2 : フラグ
+	;================================================================================
+	;
+	;<>説明
+	; リストビュー内のアイテムの数を取得します。
+	; n2を1にするとリストビュー内に完全に見えているアイテムの数を取得します。
+	;
+
+	;================================================================================
+	; listicon v1,n2,n3		リストビューのアイコンを設定
+	;
+	;  v1 : アイコンが入った数値変数(get_iconで取得したもの)
+	;  n2 : アイコンの数
+	;  n3 : セットするアイコンの大小
+	;================================================================================
+	;
+	;<>説明
+	; リストビューのアイテムのアイコンを設定します。
+	; アイコンをセットするには、imgモジュールが必要です。
+	;
+	;※必ず、listview.asより先にimg.asをインクルードしてください。
+	;
+	; n3を0にすると大きいアイコンを表示するときのアイコンをセットし、
+	; n3を1にすると小さいアイコンを表示するときのアイコンをセットします。
+	;
+	;<>例
+	;	#include "llmod.as"
+	;	#include "img.as"	;listiconを使う時は必要(listview.asより前に)
+	;	#include "listview.as"
+	;	;まずリストビューを作成
+	;	listview 300,200,1|2|4|$20
+	;
+	;	;shell32.dllの3番目と4番目のアイコン(小さい方)を使う
+	;	;(*get_iconについてはimg.asの説明を読んでください。)
+	;	filename="shell32.dll"
+	;	get_icon icons.0,filename,3,1
+	;	get_icon icons.1,filename,4,1
+	;
+	;	;小さいアイコンを2つセットする
+	;	listicon icons,2,1
+	;	img_id=stat	;セットしたアイコンについての情報が入った特別な値
+	;
+	;	;アイテムを追加
+	;	;0行目の0番目の欄にアイコン番号1のアイコンを付けたアイテムを追加
+	;	listadd 0,"folder 1",0,1
+	;	itm1=stat
+	;		;
+	;		;
+	;
+	;<>この命令を呼び出した後のstatの値
+	; セットしたアイコンについての情報が入った特別な値が返されます。
+	; (イメージリストと呼ばれるものです。)
+	;
+	; listviewはtreeboxと違って、_clrobjなどでlistviewが消去されると、
+	; アイコンをセットして消費したメモリを自動的に開放するので、
+	;	destroy_imglist 'listicon実行後にstatに代入された値'
+	; を実行する必要はありません。
+	; ただし、listviewのスタイルに'セットしたイメージリストをlistview消去時に消去しない'
+	; を指定している場合は、メモリは自動的に開放されません。このときは、
+	;	destroy_imglist 'listicon実行後にstatに代入された値'
+	; を実行してください。
+	;
+
+	;================================================================================
+	; listhit			マウスの下にあるアイテムを取得
+	;================================================================================
+	;
+	;<>説明
+	; マウスの下にあるアイテムのインデックスを取得します。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; マウスの下にあるアイテムのインデックスが代入されます。
+	; マウスの下にアイテムが無ければ-1が代入されます。
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "_listview"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listview
+	;List-Viewの作成
+	;................................................................................
+	#deffunc listview int v1,int v2,int v3
+
+	_v3 = v3
+	if(_v3 == 0) : _v3 = DEFAULT_LISTVIEW_STYLE
+
+	;#define LVS_NOSORTHEADER	$8000
+	a = _v3 >> 16			;ExStyle 下位16ビットは標準のスタイル
+	_v3 = _v3 & $ffff | $8000		;ソートしないので常にLVS_NOSORTHEADERを加える
+
+	;#define WS_CHILD		0x40000000
+	;#define WS_VISIBLE		0x10000000
+	;#define WS_CLIPCHILDREN	0x2000000
+
+	_v3 = _v3 | $52000000
+	alloc m,64		;リセット
+	m = ginfo@hsp(22),ginfo@hsp(23),v1,v2,_v3,0,$200
+	_makewnd m,"SysListView32"
+	handle_of_list = m
+
+	;#define LVM_FIRST	0x1000
+	;#define LVM_SETEXTENDEDLISTVIEWSTYLE (LVM_FIRST + 54)
+	if(a) : sendmsg objinfo(handle_of_list,2),$1036,0,a
+
+	return handle_of_list
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;sel_listview
+	;
+	;................................................................................
+	#deffunc sel_listview int v1
+	stt = handle_of_list
+	handle_of_list = v1
+	return stt
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listadd
+	;List-Viewにアイテムを加える
+	;................................................................................
+	#deffunc listadd int v1,str v2,int v3,int v4,int v5,int v6
+
+	;typedef struct _LV_ITEM {  
+	;    UINT   mask; 
+	;    int    iItem; 
+	;    int    iSubItem; 
+	;    UINT   state; 
+	;    UINT   stateMask; 
+	;    LPTSTR  pszText; 
+	;    int    cchTextMax; 
+	;    int    iImage;       // index of the list view item's icon 
+	;    LPARAM lParam;       // 32-bit value to associate with item 
+	;} LV_ITEM; 
+
+	;LV_ITEM mask
+	;#define LVIF_TEXT	1
+	;#define LVIF_IMAGE	2
+	;#define LVIF_PARAM	4
+	;#define LVIF_STATE	8
+	;#define LVIF_DI_SETITEM	4096
+
+;	alloc lvi,64
+;	lvi=9		;mask
+;	lvi.1=v1	;iItem
+;	lvi.2=v3	;iSubItem
+;	lvi.3=v5	;state
+;	lvi.4=v7	;stateMask
+;	strlen m,v2 : if m>=64 : alloc lcl_s,m+1
+;	lcl_s=v2
+;	getptr p,lcl_s
+;	lvi.5=p		;pszText
+
+	_v2 = v2
+	dim lvi,9
+	getptr p,_v2
+	lvi = 9,v1,v3,v5,0,p
+
+	;#define LVIS_FOCUSED		1
+	;#define LVIS_SELECTED		2
+	;#define LVIS_CUT		4
+	;#define LVIS_DROPHILITED	8
+	;#define LVIS_OVERLAYMASK	3840
+	;#define LVIS_STATEIMAGEMASK	61440
+
+	;#define LVM_SETITEMA		4102
+	if(v3) : m = 4102 : else {
+		;サブアイテム追加じゃないとき
+
+;		lvi=lvi | 2			;image mask
+;		lvi.7=v4			;iImage
+;		lvi=lvi | 4			;param mask
+;		lvi.8=v6			;lParam
+		lvi += 6
+		lvi.7 = v4,v6
+		;#define LVM_INSERTITEMA	4103
+		m = 4103
+	}
+
+	getptr p,lvi
+
+	sendmsg objinfo(handle_of_list,2),m,0,p
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listdel
+	;List-Viewのitemを消去する
+	;................................................................................
+	#deffunc listdel int v1
+
+	;#define LVM_DELETEITEM		4104
+	;#define LVM_DELETEALLITEMS	4105
+
+	prm = 4104
+	if(v1 == -1) : prm++		;index = -1で全て消去
+	sendmsg objinfo(handle_of_list,2),prm,v1,0
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listaddcl
+	;List-Viewに欄を加える
+	;................................................................................
+	#deffunc listaddcl int v1,str v2,int v3,int v4
+
+	;#define LVCF_FMT	1
+	;#define LVCF_WIDTH	2
+	;#define LVCF_TEXT	4
+	;#define LVCF_SUBITEM	8
+
+	;#define LVCFMT_LEFT	0
+	;#define LVCFMT_RIGHT	1
+	;#define LVCFMT_CENTER	2
+
+	;typedef struct _LV_COLUMN {  
+	;    UINT mask; 
+	;    int fmt; 
+	;    int cx; 
+	;    LPTSTR pszText; 
+	;    int cchTextMax; 
+	;    int iSubItem; 
+	;} LV_COLUMN; 
+
+;	lcl_s=v2
+;	a=1|2|4|8
+;	a=15
+;	a.1=v4
+;	a.5=v1
+;	if v3 : a.2=v3 : else a.2=100
+;	getptr a.3, lcl_s
+
+	_v2 = v2
+	_v3 = v3
+	if(_v3 == 0) : _v3 = 100
+	getptr p,_v2
+	a = 15,v4,_v3,p,0,v1
+
+	;#define LVM_INSERTCOLUMNA	4123
+	getptr p,a
+	sendmsg objinfo(handle_of_list,2),4123,a.5,p
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listdelcl
+	;List-Viewの欄を消去する
+	;................................................................................
+	#deffunc listdelcl int v1
+
+;欄は一度に全て消去しない
+;	if v1=-1 {	;index=-1で全て消去
+;		;#define LVM_GETCOLUMNA	4121
+;		a=1
+;		getptr p,a
+;		prm=handle_of_list,4121,0,p
+;		repeat -1
+;			prm.2=cnt
+;			sendmsg prm
+;			if stat=0 : m=cnt : break
+;		loop
+;		v1=0
+;	} else m=0
+
+	;#define LVM_DELETECOLUMN	4124
+	sendmsg objinfo(handle_of_list,2),4124,v1,0
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listsel
+	;List-Viewのitemを選択する
+	;................................................................................
+	#deffunc listsel int v1,int v2,int v3
+
+	;#define LVIS_FOCUSED		1
+	;#define LVIS_SELECTED		2
+	;#define LVIS_CUT		4
+	;#define LVIS_DROPHILITED	8
+	;#define LVIS_OVERLAYMASK	3840
+	;#define LVIS_STATEIMAGEMASK	61440
+
+	_v2 = v2
+	if(_v2 == 0) : _v2 = 3 : else : if(_v2 == -1) : _v2 = 0
+
+	;LV_ITEM mask
+	;#define LVIF_TEXT	1
+	;#define LVIF_IMAGE	2
+	;#define LVIF_PARAM	4
+	;#define LVIF_STATE	8
+	;#define LVIF_DI_SETITEM	4096
+
+;	lvi=8		;mask
+;	lvi.1=v1	;iItem
+;	lvi.2=0
+;	lvi.3=v2	;state
+;	lvi.4=-1	;stateMask
+	lvi = 8,v1,0,_v2,-1
+
+;	if v3 : lvi=lvi|2
+
+	getptr p,lvi
+	;#define LVM_SETITEMA		4102
+	sendmsg objinfo(handle_of_list,2),4102,0,p
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listmax
+	;List-View内にあるitemの数を調べる
+	;................................................................................
+	#deffunc listmax var v1,int v2
+
+	;#define LVM_GETITEMCOUNT	4100
+	;#define LVM_GETCOUNTPERPAGE	4136
+	if(v2) : m = 4136 : else : m = 4100
+	sendmsg objinfo(handle_of_list,2),m,0,0
+	v1 = stat
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listget
+	;itemの取得
+	;................................................................................
+	#deffunc listget var v1,int v2,int v3,int v4,int v5
+
+	;v5はlistgetの説明には書いていない。v5に1以上の値を入れると
+	;v5番目の欄のテキストの設定、再設定ができる。
+
+	;				v3(flag)
+	;#define LVNI_ALL	0	0	x
+	;#define LVNI_ABOVE	$100	1	上のアイテムのindexを取得
+	;#define LVNI_BELOW	$200	2	下のアイテムのindexを取得
+	;#define LVNI_TOLEFT	$400	3	左のアイテムのindexを取得
+	;#define LVNI_TORIGHT	$800	4	右のアイテムのindexを取得
+	;x				5	テキスト取得
+
+	;				v3
+	;#define LVNI_FOCUSED	1	1
+	;#define LVNI_SELECTED	2	2
+	;#define LVNI_CUT	4	4
+	;#define LVNI_DROPHILITED 8	8
+
+	_v4 = v4
+	dim lvi,9
+	if(v3 >= 5) {
+		getptr p,lvi
+		if(v3 == 5) {
+			lvi = 5,v2,v5		;mask, iItem, iSubItem
+			getptr lvi.5,v1		;pszText
+			;バッファのサイズを省略したときの大きさ
+			if(_v4 == 0) : _v4 = 64
+			lvi.6 = _v4		;cchTextMax
+
+			;#define LVM_GETITEMA	4101
+			;#define LVM_SETITEMA	4102
+			m = 4101
+			if(_v4 < 0) : lvi = 1 : m++	;再設定
+			sendmsg objinfo(handle_of_list,2),m,0,p
+			stt = lvi.8	;lParam
+		} else {
+			lvi = 4,v2		;mask, iItem
+			m = 4101
+			if(_v4) : lvi.8 = v1 : m++	;再設定
+			sendmsg objinfo(handle_of_list,2),m,0,p
+			v1 = lvi.8	;lParam
+			stt = 0
+		}
+	}else{
+		a = 0,$100,$200,$400,$800
+		;#define LVM_GETNEXTITEM	4108
+		sendmsg objinfo(handle_of_list,2),4108,v2,a.v3 + _v4
+		v1 = stat
+		stt = 0
+	}
+	return stt
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listimglist
+	;List-Viewのitemのイメージリストをセット
+	;................................................................................
+	#deffunc listimglist int v1,int v2
+
+	;#define LVSIL_NORMAL	0
+	;#define LVSIL_SMALL	1
+	;#define LVSIL_STATE	2
+
+	;#define LVM_SETIMAGELIST	4099
+	sendmsg objinfo(handle_of_list,2),4099,v2,v1
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listicon
+	;List-Viewのitemのアイコンをセット
+	;img.hspが必要
+	;................................................................................
+	#deffunc listicon array v1,int v2,int v3
+
+	_v3 = v3
+	if(_v3) : _v3 = 16 : m = 1 : else : _v3 = 32 : m = 0
+	create_imglist _v3,_v3,1 | 4,v2
+	a = stat
+	if(a == 0) : return 0
+
+	repeat v2
+		addicon_imglist a,v1(cnt)
+	loop
+
+	listimglist a,m
+
+	return a
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;listhit
+	;List-View
+	;................................................................................
+	#deffunc listhit int v1
+
+	m = ginfo(0),ginfo(1)
+	getptr p,m
+	prm = objinfo(handle_of_list,2),p
+	dllproc "ScreenToClient",prm,2,D_USER
+
+	;#define LVHT_NOWHERE		1
+	;#define LVHT_ONITEMICON	2
+	;#define LVHT_ONITEMLABEL	4
+	;#define LVHT_ABOVE		8
+	;#define LVHT_ONITEMSTATEICON	8
+	;#define LVHT_BELOW		16
+	;#define LVHT_TORIGHT		32
+	;#define LVHT_TOLEFT		64
+	;#define LVHT_ONITEM	(LVHT_ONITEMICON|LVHT_ONITEMLABEL|LVHT_ONITEMSTATEICON)
+	;2+4+8=14
+
+	if(v1) : m.2 = v1 : else : m.2 = 14
+	m.3 = 0
+
+	;#define LVM_HITTEST	4114
+	sendmsg objinfo(handle_of_list,2),4114,0,p
+	return
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */

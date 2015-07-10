@@ -1,0 +1,16 @@
+; 枠なしウィンドウを作成して、ドラッグ可能にするサンプル
+
+	bgscr 0,320,240:cls 1
+	sysfont 16
+	pos 30,80:mes "ウィンドウ自体をドラッグできます。"
+
+	onclick gosub *move
+
+	objsize 240,24
+	button "閉じる",*owari
+	stop
+*move
+	if wparam=1 : sendmsg hwnd,$00A1,2,0
+	return
+*owari
+	end

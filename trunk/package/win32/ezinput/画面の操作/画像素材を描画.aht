@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "celput"
+
+#define ‰æ‘œ‘fŞ‚ğ‚ÂƒEƒCƒ“ƒhƒDID	"1"	;;str
+#define •ªŠ„‰æ‘œNo.	"0"	;;str
+#define ‰¡•ûŒü‚Ì•\¦”{—¦	"1"	;;str
+#define c•ûŒü‚Ì•\¦”{—¦	"1"	;;str
+#define ‰ñ“]Šp“x	"0"	;;str
+
+#ahtmes "celput "+‰æ‘œ‘fŞ‚ğ‚ÂƒEƒCƒ“ƒhƒDID+" , "+•ªŠ„‰æ‘œNo.+" , "+‰¡•ûŒü‚Ì•\¦”{—¦+" , "+c•ûŒü‚Ì•\¦”{—¦+" , "+‰ñ“]Šp“x+

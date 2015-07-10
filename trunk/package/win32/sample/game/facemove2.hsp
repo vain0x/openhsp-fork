@@ -1,0 +1,63 @@
+	;
+	;	複数の物体を動かす(2)
+	;
+	randomize
+	celload "face.bmp"				; 画像ファイル
+	face_id=stat
+	celdiv face_id,64,64,32,32			; パーツのサイズと中心位置
+
+	screen 0,640,480
+
+	facemax=30					; 物体の最大数
+	gosub *faceini
+*main
+	redraw 0					; 描画始め
+
+	color 0,64,0
+	boxf						; 背景を消す
+
+	gosub *facemove				; 物体を動かす
+	gosub *facedraw				; 物体を描画
+
+	redraw 1					; 描画終わり
+	await 20
+
+	goto *main
+
+*faceini
+	;	物体の初期化
+	;
+	dim facex,facemax
+	dim facey,facemax
+	dim facepx,facemax
+	repeat facemax
+	facex(cnt)=rnd(640)			; X位置を決める
+	facey(cnt)=rnd(480)			; Y位置を決める
+	facepx(cnt)=rnd(5)-2		; X位置の増分を決める
+	loop
+	return
+
+*facemove
+	;	物体を動かす
+	;
+	repeat facemax
+	facex(cnt)+=facepx(cnt)		; 横方向に動かす
+	facey(cnt)+=4				; 下に動かす
+	if facey(cnt)>480 {			; 下まで行ったら上に戻す
+		facey(cnt)=-64
+		facex(cnt)=rnd(640)		; X位置を決める
+		facepx(cnt)=rnd(5)-2	; X位置の増分を決める
+	}
+	loop
+	return
+
+*facedraw
+	;	物体を描画
+	;
+	gmode 2					; 画像モード
+	repeat facemax
+		pos facex(cnt),facey(cnt)
+		celput face_id			; 画像の描画
+	loop
+	return
+

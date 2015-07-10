@@ -1,0 +1,31 @@
+	;	画像の読み込み
+	buffer 1			; ID1のバッファを初期化する
+	picload "bg.bmp"		; 画像を読み込む
+	gsel 0				; ID0のバッファを操作する
+
+	;	変数の設定
+	bgx=0:bgy=0			; 背景のX,Y座標
+
+	;	メインループ
+	repeat				; 無限に繰り返す
+	redraw 0			; 描画更新を無効にする
+	gmode 0,128,128			; コピーサイズを設定する
+	font msgothic,60,1		; 文字フォントとサイズを設定
+
+	repeat 4			; Y方向に４回繰り返す
+		y=cnt*128-bgy		; Yの描画位置を計算する
+		repeat 6		; X方向に６回繰り返す
+		x=cnt*128-bgx		; Xの描画位置を計算する
+		pos x,y:gcopy 1		; 画像を描画する
+		loop			; 繰り返しの終わり(X)
+	loop				; 繰り返しの終わり(Y)
+	bgx=bgx+1			; 背景の座標を移動させる
+	if bgx>=128 { bgx=0 }		; 128以上の時は0に戻す
+
+	color 100,160,255		; 文字の色を設定する
+	pos 140,200:mes "HSP3 Sample"	; 文字を描画する
+
+	await 16			; 一定時間待つ
+	redraw 1			; 描画内容を反映させる
+	loop				; 繰り返しの終わり
+

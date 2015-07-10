@@ -1,0 +1,29 @@
+#include "hspcmp.as"
+
+;hspcmp.dllを呼び出して、HSPスクリプトのコンパイルと実行を行ないます
+;使い方は、アイデア次第だと思いますが、知っておくと役立つ日がくるかもしれませんよ。
+;以下のスクリプトは、「winobj.hsp」というスクリプトを実行する
+;(スクリプトエディタで[F5]キーを押すのと同じ)サンプルです。
+
+	sdim mesbuf,$10000
+	sdim rtname,256
+
+	fname="winobj.hsp" ; スクリプトファイル名
+	objname="obj" ; オブジェクトファイル名
+
+	hsc_ini fname
+	hsc_objname objname
+	hsc_comp 0 ; コンパイル
+	res=stat:if res!=0 : dialog "ERROR" : goto *goerror
+
+	hsc3_getruntime rtname, objname ; ランタイム名を取得
+	if rtname="" : rtname="hsp3.exe"
+	debug_mode=0 ; デバッグウィンドウ表示フラグ
+
+	cmdexe = "\""+dir_exe+"\\"+rtname+"\" "+objname
+	hsc3_run cmdexe, debug_mode ; ランタイムを実行する
+*goerror
+	hsc_getmes mesbuf
+	objmode 1
+	mesbox mesbuf,636,446,5
+	stop

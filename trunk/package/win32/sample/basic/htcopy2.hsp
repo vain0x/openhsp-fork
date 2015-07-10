@@ -1,0 +1,33 @@
+
+	;	半透明コピーテスト2
+	;
+
+	screen 0,640,200,0
+
+
+	buffer 4,640,200,0
+	color 255,0,0
+	boxf 0,0,640,200
+	color 0,0,255
+	boxf 320,0,640,100
+	boxf 0,100,320,200
+
+	buffer 3,640,200,0
+	picload dir_exe+"\\doclib\\hsp3ttl.jpg"
+
+	gsel 0
+
+*start
+	pos 0,0
+	repeat 33
+		redraw 0
+		gmode 0,640,200
+		gcopy 3			; 背景
+		gmode 4,640,200,cnt*8	; 指定色は透過で半透明コピー
+		color 0,0,255		; 透過色の指定
+		gcopy 4			; 半透明コピー
+		redraw 1
+		wait 10
+	loop
+
+	goto *start

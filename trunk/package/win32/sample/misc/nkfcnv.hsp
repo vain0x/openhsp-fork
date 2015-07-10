@@ -1,0 +1,61 @@
+
+;
+;	nkf32.dllを使って、EUC、JIS、SJIS、UTF等の
+;	文字コード変換を行ないます。
+
+;     (*1)nkf32.dll の入手先  :  作者 : 海人氏
+;     Network Kanji Filter V1.5kの32bit DLL移植版
+;     http://www.vector.co.jp/authors/VA002133/
+;
+
+#uselib "nkf32.dll"
+#func global GetNkfVersion "GetNkfVersion" var
+#func global SetNkfOption "SetNkfOption" sptr
+#func global NkfConvert "NkfConvert" var,sptr
+#func global ToHankaku "ToHankaku" var
+#func global ToZenkakuKana "ToZenkakuKana" var,sptr
+#func global EncodeSubject "EncodeSubject" var,sptr
+
+#include "hspinet.as"
+
+	;
+	;	単純なファイルのダウンロード
+	;
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	neturl "http://www.yahoo.co.jp/"
+
+	mes "DOWNLOAD 開始"
+
+	netload "index.html"
+
+	mes "DOWNLOAD 完了"
+	mes "index.htmlを保存しました。"
+
+
+	;
+	;	index.html(EUC)をindex_s.html(SJIS)に変換
+	;
+	sdim ver,256
+	GetNkfVersion ver
+	mes "Version="+ver
+
+	fname="index.html"
+
+	exist fname
+	sz=strsize
+	if sz<0 : dialog "ファイルがありません。" : end
+	notesel org
+	noteload fname
+
+	sdim cnv,sz*4	; 変換後のバッファを十分に取る
+	opt="s"		; SHIFT-JISに変換する
+
+	SetNkfOption opt
+	NkfConvert cnv,org
+
+	notesel cnv
+	notesave "index_s.html"
+
+	mes "変換しました。"

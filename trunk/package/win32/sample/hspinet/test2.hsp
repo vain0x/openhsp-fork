@@ -1,0 +1,33 @@
+#include "hspinet.as"
+
+	;
+	;	ファイルの取得(ループあり)
+	;
+
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	neturl "http://www.onionsoft.net/"
+	netrequest "index.cgi"
+
+	mes "DOWNLOAD 開始"
+
+*main
+	;	結果待ちのためのループ
+	netexec res
+	if res > 0 : goto *comp
+	if res < 0 : goto *bad
+	await 50
+	goto *main
+
+*bad
+	;	エラー
+	neterror estr
+	mes "ERROR "+estr
+	stop
+
+*comp
+	;	完了
+	mes "DOWNLOAD 完了"
+	stop
+

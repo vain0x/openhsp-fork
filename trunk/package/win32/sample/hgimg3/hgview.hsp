@@ -1,0 +1,37 @@
+#include "hgimg3.as"
+
+	;	指定エリア内の再描画を行なうサンプル
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+	setcolor 255,255,255
+	addbox mdid,8,8			; BOXモデルを作成
+	regobj mychr,mdid		; BOXモデルをオブジェクトとして登録
+
+	setpos HGOBJ_CAMERA, 0, 0, 20	; カメラ位置設定
+	ax=0.0:ay=0.0
+*main
+	;	描画メイン
+	;
+	hgdraw 0			; 描画処理(全画面)
+	hgview 0,0,320,240
+	hgdraw 1			; 描画処理(指定エリア内)
+	hgview 320,240,320,240
+	hgdraw 1			; 描画処理(指定エリア内)
+	hgsync 12			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	キー操作で回転
+	;
+	if k&1 : ax-=0.05
+	if k&4 : ax+=0.05
+	if k&2 : ay+=0.05
+	if k&8 : ay-=0.05
+	setang mychr, ax, ay, 0		; 箱の角度設定
+	goto *main
+*owari
+	end
+

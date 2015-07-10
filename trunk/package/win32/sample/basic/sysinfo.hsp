@@ -1,0 +1,22 @@
+
+	;
+	;	OSä¬ã´ÇÃèÓïÒÇï\é¶Ç∑ÇÈ
+	;
+
+	mes "OS = "+sysinfo(0)
+	mes "USER = "+sysinfo(1)
+	mes "MACHINE = "+sysinfo(2)
+
+	mes "CPU CODE = "+sysinfo(16)
+	mes "CPU NUM = "+sysinfo(17)
+
+	mes "USED MEMORY % = "+sysinfo(33)
+	mes "TOTAL MEMORY  = "+sysinfo(34)
+	mes "FREE MEMORY   = "+sysinfo(35)
+	mes "TOTAL PAGEFILE = "+sysinfo(36)
+	mes "FREE PAGEFILE  = "+sysinfo(37)
+	mes "TOTAL VIRTUAL MEMORY = "+sysinfo(38)
+	mes "FREE VIRTUAL MEMORY = "+sysinfo(39)
+
+	stop
+

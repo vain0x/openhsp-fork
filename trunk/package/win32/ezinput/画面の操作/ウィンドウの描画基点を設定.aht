@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "groll"
+
+#define ウィンドウに描画する基点となるX座標	"0"	;;str
+#define ウィンドウに描画する基点となるY座標	"0"	;;str
+
+#ahtmes "groll "+ウィンドウに描画する基点となるX座標+" , "+ウィンドウに描画する基点となるY座標+

@@ -1,0 +1,70 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; コピー・ズームのサンプルです。
+;
+; Artlet2D 仮想イメージ間、HSP スクリーンと仮想イメージ間での
+; 拡大・縮小コピーや、カラー変換コピーを行うことができます。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; 仮想イメージ 0, 1 を作成 (640x480)
+	alCreateImage 0, 640, 480
+	if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+	alCreateImage 1, 640, 480
+
+
+	alSelectImage 0 ; 仮想イメージ 0 を選択
+
+	; コピー元図形を仮想イメージ 0 の 100x100 の領域に描画
+	alGradientColor 0, 0, 100, 100, RGBA(0, 0, 255), RGBA(255, 255, 0)
+	alFillRect 0, 0, 100, 100
+	alColor 255, 255, 255, 64
+	alFillEllip 0, 0, 100, 100
+	alFillEllip 25, 25, 50, 50
+
+
+	; 仮想イメージ 0 から 1 へさまざまなズームサイズでコピー
+	alStretchImageToImage 0, 1, 0, 0, 100, 100, 0, 0, 300, 400
+	alStretchImageToImage 0, 1, 0, 0, 100, 100, 200, 200, 440, 280
+	alStretchImageToImage 0, 1, 0, 0, 100, 100, 100, 100, 300, 200
+
+
+	; 仮想イメージ 1 から HSP スクリーン 0 に、さまざまなモードでコピー
+	color 255, 255, 0
+
+	; デフォルト
+	alStretchImageToScreen 1, 0, 0, 0, 640, 480,   0,   0, 320, 240
+	pos 0, 0 : mes "normal stretch"
+
+	; ガンマ
+	alCopyModeGamma 0.5
+	alStretchImageToScreen 1, 0, 0, 0, 640, 480,   0, 240, 320, 120
+	pos 0, 240 : mes "Gamma 0.5"
+
+	alCopyModeGamma 1.5
+	alStretchImageToScreen 1, 0, 0, 0, 640, 480,   0, 360, 320, 120
+	pos 0, 360 : mes "Gamma 1.5"
+
+	; アルファ
+	alCopyModeAlpha 0.1
+	alStretchImageToScreen 1, 0, 0, 0, 640, 480, 320,   0, 320, 240
+	pos 320, 0 : mes "Alpha 0.1"
+
+	; カラーマトリクス (セピア化)
+	cmatrix(MAT_R) = 0.393, 0.769, 0.189, 0.0, 0.0
+	cmatrix(MAT_G) = 0.349, 0.686, 0.168, 0.0, 0.0
+	cmatrix(MAT_B) = 0.272, 0.534, 0.131, 0.0, 0.0
+	cmatrix(MAT_A) = 0.0, 0.0, 0.0, 1.0, 0.0
+	alCopyModeColorMatrix cmatrix
+	alStretchImageToScreen 1, 0, 0, 0, 640, 480, 320, 240, 320, 240
+	pos 320, 240 : mes "Matrix (セピア化)"
+
+	redraw
+

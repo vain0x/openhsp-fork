@@ -1,0 +1,159 @@
+
+;============================================================
+;                                                 2008/--/--
+;	Artlet2D demo
+;	AlphaSTG
+;
+;============================================================
+;
+; シューティングゲーム風のサンプルです。
+; 移動 : カーソルキー
+; ショット : スペース
+;
+;============================================================
+
+#include "a2d.hsp"
+
+#define IMG_JIKI 0
+#define IMG_TAMA 1
+#define IMG_TEKI 2
+#define OBJS 16
+
+	; 仮想イメージを作成
+	alCreateImage IMG_JIKI, 64, 80 : if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+	alCreateImage IMG_TAMA, 64, 64
+	alCreateImage IMG_TEKI, 64, 64
+
+	; 自機イメージ作成 (64x80)
+	alSelectImage IMG_JIKI
+	alColor 255, 255, 128, 64
+	alFillEllip 32-10, 50, 20, 20
+	alFillEllip 32-10, 60, 20, 20
+	alGradientColor 0,0, 64,64, RGBA(255, 255, 255), RGBA(111, 111, 111)
+	a = 32,0, 32+12,64, 0,50, 32,32, 64,50, 32-12,64
+	alFillClosedCurve a, 6, 0.3
+	alGradientColor 0,0, 64,64, RGBA(255, 255, 255), RGBA(0, 0, 0)
+	alFillEllip 32-4, 32-10, 8, 20
+
+	; 弾イメージ作成 (64x64)
+	alSelectImage IMG_TAMA
+	alColor 255, 255, 0, 16
+	alFillEllip 0, 0, 64, 64
+	alFillEllip 32-20, 0, 40, 64
+	alColor 255, 255, 255, 128
+	alFillEllip 32-10, 0, 20, 64
+
+	; 敵イメージ作成 (64x64)
+	alSelectImage IMG_TEKI
+	alTransModeRotateAt -45, 32, 32
+	alColor 0, 0, 0, 32
+	alFillEllip 32-13, 39, 26, 20
+	alGradientColor 0,0, 64,64, RGBA(64, 255, 64, 0), RGBA(64, 255, 64, 128)
+	alFillEllip 0, 0, 64, 64
+	alGradientColor 0,0, 64,64, RGBA(255, 255, 255, 0), RGBA(0, 0, 0, 128)
+	alFillEllip 10, 10, 44, 44
+	alColor 255, 255, 255, 192
+	alFillEllip 32-13, 5, 26, 20
+
+	; game setup
+	jikix = 320
+	jikiy = 240
+
+	dim tamaf, OBJS
+	dim tamax, OBJS
+	dim tamay, OBJS
+
+	dim tekif, OBJS
+	dim tekix, OBJS
+	dim tekiy, OBJS
+
+*mainloop
+	redraw 0
+
+	; control
+	getkey lef, 37
+	getkey up, 38
+	getkey rig, 39
+	getkey dn, 40
+	getkey trg, 32
+
+	jikix += (rig - lef) * 10
+	jikiy += (dn - up) * 10
+
+	repeat OBJS
+		; fire
+		if trg {
+			if tamaf(cnt) <= 0 {
+				tamaf(cnt) = 20
+				tamax(cnt) = jikix
+				tamay(cnt) = jikiy
+				trg--
+			}
+		}
+
+		if tekif(cnt) < 0 {
+			; recycle
+			tekif(cnt) = 10 ; teki life
+			tekix(cnt) = rnd(640)
+			tekiy(cnt) = -rnd(300)-50
+		}
+
+		if tamaf(cnt) > 0 {
+			; atari
+			c = cnt
+			x = tamax(cnt)
+			y = tamay(cnt)
+			repeat OBJS
+				if tekif(cnt) > 0 {
+					; 中心距離で当たり判定
+					if sqrt( (x-tekix(cnt))*(x-tekix(cnt)) + (y-tekiy(cnt))*(y-tekiy(cnt)) ) < 40 {
+						tekif(cnt)--
+						tamaf(c) = 0
+						break
+					}
+				}
+			loop
+
+			; fly
+			tamay(cnt) -= 30
+			tamaf(cnt)--
+		}
+
+		if tekif(cnt) > 0 {
+			; move
+			tekix(cnt) += rnd(3) - 1
+			tekiy(cnt) += rnd(4)
+		}
+	loop
+
+
+	; draw
+	color 64, 128, 255 : boxf
+
+	repeat OBJS
+		if tamaf(cnt) > 0 {
+			; 弾 描画
+			alCopyImageToScreen IMG_TAMA, 0,  tamax(cnt)-32, tamay(cnt)-32
+		}
+		if tekif(cnt) > 0 {
+			; 敵 描画
+			dmg = (10 - tekif(cnt)) + 1
+			alStretchImageToScreen IMG_TEKI, 0,  0,0,64,64,  tekix(cnt)-32 + rnd(dmg), tekiy(cnt)-32 + rnd(dmg), 64 + rnd(dmg), 64 + rnd(dmg)
+		}
+		if tekif(cnt) = 0 {
+			; 敵 破裂 描画
+			alCopyModeAlpha 0.1
+			alStretchImageToScreen IMG_TEKI, 0,  0,0,64,64,  tekix(cnt)-150, tekiy(cnt)-150, 300, 300
+			alResetCopyMode
+			tekif(cnt)--
+		}
+	loop
+
+	; 自機 描画
+	alCopyImageToScreen IMG_JIKI, 0,  jikix-32, jikiy-32
+
+
+	redraw
+	await 25
+	goto *mainloop
+

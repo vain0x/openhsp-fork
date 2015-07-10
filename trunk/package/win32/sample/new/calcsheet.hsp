@@ -1,0 +1,49 @@
+;	簡単な表計算を行なうサンプル
+;	枠の中に入力した数値の合計を表示し、値に応じた棒グラフを表示します。
+;	数値を入力して、[TAB]キーで次の枠に移動できます。
+;	HSP3.2で追加されたobjskip命令により、合計の枠はフォーカスが移動
+;	しないよう設定されています。
+;
+
+	cls
+
+	dim kazu,10
+	objsize 100,24
+	repeat 10
+	input kazu(cnt)
+	loop
+
+	pos 0,260
+	input total
+	obj_total=stat			; 合計を表示するオブジェクトID
+	objskip obj_total,3		; [TAB]キーの移動は行なわない
+
+	gosub *sum
+	objsel 0
+
+*main
+	objsel -1:focus=stat		; 現在のフォーカスを得る
+*main2
+	wait 10
+	objsel -1
+	if stat=focus : goto *main2	; フォーカスが変わったら再計算
+	gosub *sum
+	goto *main
+
+*sum
+	;	合計を計算する
+	redraw 0
+	color 255,255,255:boxf
+	a=0
+	repeat 10
+	x=110:y=24*cnt
+	color 255,0,0
+	boxf x,y,x+kazu(cnt),y+20
+	a=a+kazu(cnt)
+	loop
+	color 0,0,0:pos 0,240
+	mes "--合計------------------"
+	objprm obj_total,a
+	redraw 1
+	return
+

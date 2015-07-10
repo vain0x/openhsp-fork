@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSP3Dish,iOS,iPhone,iPad">
+	<meta name="description" content="HSP3Dish iOS版に関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3Dish iOS版 XCode4設定ガイド</title>
+</head>
+<body>
+	<div id="CONTAINER">
+	<!-- ヘッダー -->
+	<p id="COPY">HSP : HSP3Dish / onion software 2014(c)</p>
+	<img src="hsp3dish.jpg" width="640" height="200" alt="タイトル">
+	<h1>HSP3Dish iOS版 XCode4設定ガイド</h1>
+
+	<!-- 目次 -->
+	<ol>
+		<li><a href="#ABOUT">はじめに</a></li>
+		<li><a href="#MAKEPROJ">XCode4プロジェクトの作成</a></li>
+		<li><a href="#ADDHSP">HSP3Dish関連ファイルの登録</a></li>
+		<li><a href="#RUNPROJ">HSP3Dishの実行と設定</a></li>
+	</ol>
+
+	<h2 id="ABOUT">はじめに</h2>
+	<p>
+	このマニュアルでは、iOS版のHSP3Dishをビルドするために、XCode4(及びXCode4.5)を使用するための手順を説明しています。
+	<br>
+	現在、最新の開発環境はiOS7に対応したXCode5となります。このガイドでは、XCode4(及びXCode4.5)を使用する場合に参考にしてください。
+	開発環境やスクリプトの準備は、<a href="hsp3dish_ios.htm">通常の方法と同様です</a>。
+	特に問題がない場合は、XCode5をお使い頂くことを推奨しています。
+	<br>
+	</p>
+
+	<h2 id="MAKEPROJ">XCode4プロジェクトの作成</h2>
+	<p>
+	OSX上でXcode4を起動して新規プロジェクト(Create a new Xcode project)を選択します。
+	テンプレートの選択画面になりますので、「iOS Application」の「Empty Application」を選び「Next」を押してください。
+	</p>
+	<img src="hsp3dish/s_proj1.jpg"><br>
+	<p>
+	オプション画面で、製品名(Product Name)入力します。<br>
+	識別子(Company Identifier)は、作成者を識別する名前(メーカー名など)を入力します。<br>
+	Class Prefixは空欄にしておいて構いません。
+	Device FamilyはiPhoneに設定し、3つのチェックボックスは、基本的には外しておいて下さい。
+	</p>
+	<img src="hsp3dish/s_proj2.jpg"><br>
+	<p>
+	次に、プロジェクトのフォルダを作成する場所を設定します。これは任意の場所を指定して構いません。<br>
+	正常にプロジェクトが作成されると、開発環境(IDE)が起動します。<br>
+	メインウィンドウにプロジェクトの概要(Summary)が表示されるはずです。
+	</p>
+	<img src="hsp3dish/s_proj3.jpg"><br>
+	<p>
+	デフォルトで、Deployment Target(対応OSのバージョン)が5.0以降に設定されているので、
+	4.3以降に下げておいてください。(バージョン指定によって正しくビルドされないことがあります)
+	</p>
+	<img src="hsp3dish/s_xcode45.jpg"><br>
+	<p>
+	XCodeのバージョン4.5以降では、コンパイラの設定を変更する必要があります。<br>
+	プロジェクトのBuild Settingsの中にある、Apple LLVM compiler 4.1 - Language内のオプション、「C Language Dialect」「C++ Language Dialect」「C++ Standard Library」をすべて「Compiler Default」に変更してください。<br>
+	以前のXCodeで作成されたプロジェクトファイルは問題なく読み込みビルドすることが可能です。
+	</p>
+
+	<h2 id="ADDHSP">HSP3Dish関連ファイルの登録</h2>
+	<p>
+	作成されたプロジェクトのフォルダと同じ階層に、「iHSP18」フォルダを配置してください。
+	「iHSPxx」フォルダはアーカイブ内のiOSフォルダに同梱されています。
+	</p>
+	<img src="hsp3dish/s_menu.jpg" style="float:right;">
+	<img src="hsp3dish/s_folder.jpg"><br>
+	<p>
+	XCode上でプロジェクトに必要なファイルを追加してください。<br>
+	Fileメニューから、「Add Files to～」を選択し、「iHSP18」のフォルダ(下層も含む)を追加(Add)します。<br>
+	さらに、Windows上で作成されたCソースファイル(拡張子が.cppのファイル)を追加(Add)します。<br>
+	</p>
+	<p>
+	続いて、プロジェクトにフレームワークの追加を行ないます。以下のフレームワークを追加してください。
+	</p>
+	<ul>
+	<li>AudioToolbox.framework</li>
+	<li>OpenAL.framework</li>
+	<li>OpenGLES.framework</li>
+	<li>QuartzCore.framework</li>
+	<li>iAd.framework</li>
+	</ul>
+	<p>
+	フレームワークの追加は、プロジェクトの「Summary」タブの「Linked Frameworks and Libraries」項目の「+」ボタンで行なうことができます。<br>
+	正常に追加されると、ファイルナビゲーターは以下のような状態になります。
+	</p>
+	<img src="hsp3dish/s_proj4.jpg"><br>
+	<p>
+	プロジェクトの「Summary」タブで、サポートされる画面の方向、ステータスバーの表示設定(フルスクリーンにする場合は、Hide during application launchにチェックを入れる)を行なってください。
+	</p>
+	<img src="hsp3dish/s_plist.jpg"><br>
+	<p>
+	アイコンやデータファイル(画像やサウンド)がある場合は、「Resource」フォルダを作成してプロジェクトに追加(Add)してください。(サンプルプロジェクトのResourceフォルダなどを参考にしてみてください)
+	</p>
+	<img src="hsp3dish/s_resource.jpg"><br>
+
+	<p>
+	パッケージに含まれるPNGファイルの最適化(圧縮)を無効にします。これは、HSPが外部のPNG読み込みライブラリを使用するために必要な設定です。<br>
+	</p>
+	<ul>
+	<li>プロジェクトのBuild SettingsタブのPackaging内にある、Compress PNG Filesの設定をNoにしてください</li>
+	</ul>
+	<img src="hsp3dish/s_comppng.jpg"><br>
+	<br>
+
+	<p>
+	以上で、hsp3dishのビルドを行なう環境が整いました。
+	</p>
+
+	<h2 id="RUNPROJ">HSP3Dishの実行と設定</h2>
+	<p>
+	実際にHSP3Dishを実行させる場合は、HSPランタイムの初期化コードをAppDelegateに組み込む必要があります。
+	iOSフォルダに含まれているAppDelegate.m、AppDelegate.hファイルを上書きコピーしてご使用下さい。
+	(念のため、XCodeを一旦終了してから、プロジェクト内のファイルを上書き更新することを推奨します)
+	</p>
+	<img src="hsp3dish/s_code2.jpg"><br>
+	<br>
+	<p>
+	冒頭の「#import "AppDelegate.h"」の下に以下のコードが追加されていることを確認してください。<br>
+	(「iHSP18」への相対パス指定によりクラス宣言を読み込んでいます)
+	</p>
+	<pre>
+	    #import "../../iHSP18/Classes/HspView.h"
+	</pre>
+	<p>
+	次に「- (BOOL)application:～{」のあるブロック内の「// Override point for customization after application launch.」行の直前に以下のコードがあることを確認してください。<br>
+	(HSPの実行を行なうHspViewクラスを生成しウィンドウに設定しています)
+	</p>
+	<pre>
+	    //ビューの生成と追加
+	    HspView* view=[[HspView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]];
+
+	    [view startFrame:60];
+	    [view clsMode:1 color:0xffffff];
+	    //    [view useRetina];
+	    //    [view dispRotate:3];
+	    [view useMultiTouch];
+	    [view dispViewX:320 Y:480];
+	    [view dispAutoScale:0];
+	    //    [view useAccelerometer:1.0f / 30.0f];
+	</pre>
+
+	<p>
+	iOSフォルダに含まれているAppDelegate.mには、標準的な設定(320×480、60フレーム)による初期化コードが書かれています。
+	冒頭が「//」で始まる行はコメントとして認識され、書かれた内容は無効となります。
+	必要に応じて、「//」を削除することで設定を有効にすることができます。
+	</p>
+	<br>
+
+	<p>
+	AppDelegate.m内の追加コードにより、いくつかの設定を行なうことができます。
+	</p>
+	<pre>
+	    [view startFrame:60];
+	</pre>
+	<p>
+	この設定により、タスクが実行されるフレームレートをコントロールすることができます。
+	通常は、60を指定することにより秒間60フレーム(fps)となっていますが、この値を変更することができます。
+	通常のHSPとは異なり、iOS版のHSP3Dishでは指定されたフレームレートを単位として実行を行なっています。
+	高いフレームレートを指定することも可能ですが、CPUにかかる負荷はバッテリー消費に影響がありますので、
+	できる限り抑えた値にしておくことを推奨しています。
+	</p>
+	<pre>
+	    [view clsMode:1 color:0xffffff];
+	</pre>
+	<p>
+	この設定により、「redraw 0」による描画開始時に画面をクリア(消去)するかどうかを変更できます。
+	デフォルトの設定では、クリアは有効に、背景色は白(0xffffff)が指定されています。<br>
+	「clsMode:0」にした場合は画面のクリアは行なわれませんので、自前でクリアする必要があります。
+	(自前で画面クリアを行なう場合に、重複してクリアすることを避けるためのオプション設定になっています。)<br>
+	「color:0xffffff」は、クリアする色を指定するもので16進数によりRGBのコードを記述します。
+	</p>
+	<pre>
+	    [view useRetina];
+	</pre>
+	<p>
+	この設定により、Retinaディスプレイ搭載機種(iPhone4以降)では、解像度を倍にして処理することができます。
+	(あらかじめ、640×960などの高解像度でアプリを作成しておく必要があります)
+	Retinaディスプレイを搭載していない機種では、通常通りの解像度を維持します。
+	</p>
+	<pre>
+	    [view dispRotate:1];
+	</pre>
+	<p>
+	この設定を追加することにより、画面全体を回転して表示させることが可能です。<br>
+	指定する値は、0～3の範囲で90度単位(時計回り)に回転の角度を指定することができます。
+	1または、3の場合は横長の画面になります。その場合は、画面の初期化サイズ(CGRectMakeで
+	指定する座標)もあらかじめ横長(480x320など)に設定しておく必要があります。
+	</p>
+	<pre>
+	    [view useMultiTouch];
+	</pre>
+	<p>
+	この設定を追加することにより、mtlist,mtinfo命令によるマルチタッチ情報の取得が可能になります。<br>
+	この指定がない場合は、複数のポイントをタッチした場合でも、1つのタッチとみなされます。
+	</p>
+	<pre>
+	    [view dispViewX:320 Y:480];
+	</pre>
+	<p>
+	スクリプトが動作する解像度(想定される解像度)を設定することができます。
+	画面のスケーリング機能(dispAutoScale、dispScaleX)を使用する場合には、必ず設定するようにしてください。上の例では、横サイズが320、縦サイズが480であることを示しています。<br>
+	この項目をコメントアウト(無効)にした場合は、起動時のデバイス解像度全体がそのまま有効となり、スクリプト側で画面サイズに応じた処理を行なうことが可能になります。
+	</p>
+
+	<pre>
+	    [view dispScaleX:2.0f Y:2.0f];
+	</pre>
+	<p>
+	もともとの画面サイズに対して、指定した倍率で表示を行ないます。倍率を固定したい場合には、こちらを使用してください。画面サイズに合わせて自動設定する場合は、dispAutoScaleを使用してください。
+	</p>
+
+	<pre>
+	    [view dispAutoScale:0];
+	</pre>
+	<p>
+	描画した画面サイズを適切に拡大縮小し、現在のスクリーンに表示させます。<br>
+	カッコ内の数値で、スケーリングの方法をいくつか指定することができます。
+	</p>
+	<ul><pre>
+		0 : 画面全体に収まる最適な大きさ(縦横比は維持)
+		1 : X方向のサイズを基準に拡大縮小(縦横比は維持)
+		2 : Y方向のサイズを基準に拡大縮小(縦横比は維持)
+		3 : 縦横比は無視して画面全体に表示
+	</pre></ul>
+	<p>
+	スケーリングの設定は、起動時に行なわれます。スクリプト実行中に変更することはできません。
+	</p>
+	<pre>
+	    [view useAccelerometer:1.0f / 30.0f];
+	</pre>
+	<p>
+	この設定を追加することにより、加速度センサーの値を取得することが可能になります。<br>
+	指定する値は、センサーの読み取り間隔を設定します。上の設定では、30分の1秒単位に取得を行ないます。
+	加速度センサーの値は、システム変数のginfo_accx、ginfo_accy、ginfo_acczにそれぞれ
+	X,Y,Z軸の値が実数で代入されます。
+	これは、それぞれの座標軸の加速度を-1.0～+1.0の範囲で取得したものになります。<br>
+	加速度センサーを使用しない場合は、この設定を追加しないでください。センサー情報の取得により、余計なバッテリーを消費してしまいます。
+	Windows上など加速度センサーが使用できない環境では、0.0が取得されます。
+	</p>
+
+	<p>
+	タスク切替時には、HSPの実行を停止し処理を軽減させる設定になっています。
+	「AppDelegate.m」ファイルの、applicationWillResignActive内に停止用のコードが含まれています。
+	</p>
+	<pre>
+	    [hsp actMode:0];
+	</pre>
+	<p>
+	また、applicationDidBecomeActiveに以下の再開用コードが含まれています。
+	</p>
+	<pre>
+	    [hsp actMode:1];
+	</pre>
+	<p>
+	既にサンプルには、これらの適切なコードが含まれていますので参考にしてみてください。
+	適切に設定を行なった上で、「Run」ボタンでビルド実行を行なってください。
+	HSP3Dishで作成したスクリプトが実行されるはずです。
+	</p>
+
+	<p>
+	新規プロジェクトを作成した場合は、デフォルトでビルドスキームがDebugになっています。
+	ProductメニューのEdit Scheme...の設定で、Build Configurationを「Release」に変更することで、最適化されたコードが出力され、より高速に実行されます。
+	</p>
+
+	<img src="hsp3dish/s_iphone.jpg"><br>
+
+
+
+	<!-- フッター -->
+	<ul id="FOOTER">
+		<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+		<li><a href="../index.htm">インデックスに戻る</a></li>
+	</ul>
+	<a href="http://www.onionsoft.net/">
+		<img src="onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+	</a>
+</div><!-- container -->
+</body>
+</html>

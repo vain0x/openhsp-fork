@@ -1,0 +1,39 @@
+
+	;
+	;	celput命令によるスプライト描画
+	;
+	celload "face.bmp"			; 元画像ファイル
+	face=stat				; 元画像のIDを保存
+	celdiv face,64,64,32,32			; パーツのサイズと中心位置
+
+	mx=320						; X座標
+	my=240						; Y座標
+	zx=1.0						; X倍率
+	zy=1.0						; Y倍率
+	mr=0.0						; 角度
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf						; 背景を消す
+
+	gmode 2						; 透明色ありの指定
+	pos mx,my					; 表示位置の設定
+	celput face,0,zx,zy,mr				; 描画
+
+	color 255,255,255
+	pos 0,0
+	mes "カーソルキーでサイズ、角度を変えられます。"
+
+	redraw 1					; 描画終わり
+	await 20
+
+	stick key,15					; キー入力
+
+	if key&1 : mr=mr+0.05
+	if key&4 : mr=mr-0.05
+	if key&2 : zx=zx+0.1:zy=zy+0.1
+	if key&8 : zx=zx-0.1:zy=zy-0.1
+
+	goto *main
+

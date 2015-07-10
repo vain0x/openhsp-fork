@@ -1,0 +1,24 @@
+
+	;
+	;	ユーザー拡張命令txtloadを使ったテキストエディタの例
+	;
+
+#include "modtest2.hsp"				; モジュールを読み込む
+
+*main
+	cls 1
+	objmode 1
+	sdim txt,32000
+	mesbox txt,600,400,1
+	button "LOAD",*tload
+	stop
+
+*tload
+	dialog "txt",16,"テキストファイル"	; ダイアログ表示
+	if stat=0 : goto *tover			; キャンセルか?
+	txtload refstr,txt			; txtload命令
+	title "サイズ="+stat			; タイトルにファイルサイズ表示
+	objprm 0,txt
+*tover
+	stop
+

@@ -1,0 +1,14 @@
+
+#define navigate "Navigate"
+
+mes "InternetExplorerコンポーネントを起動します。"
+
+newcom ie, "InternetExplorer.Application"
+ie->"navigate" "http://www.onionsoft.net/"
+ie("Visible")=1
+
+mes "ウインドゥ位置("+ie("Left")+","+ie("Top")+")"
+mes "ウインドゥサイズ("+ie("Width")+","+ie("Height")+")"
+
+stop
+

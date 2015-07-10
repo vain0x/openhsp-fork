@@ -1,0 +1,23 @@
+	;
+	;	Group Box—á
+	;
+	syscolor 15:boxf
+	;
+	sdim bb,1024
+	st1=""
+	st2="Static Text Message..."
+	objsize 300,100
+	pos 10,20
+	mesbox st1,280,70,2
+	pos 40,40
+	mesbox st2,200,40,2
+	pos 0,0
+	button "GROUPBOX",*dummy
+	sendmsg objinfo_hwnd(2),$f4,7,0
+	pos 0,120
+	input bb
+	stop
+*dummy
+	stop
+
+

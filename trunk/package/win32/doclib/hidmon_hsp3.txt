@@ -1,0 +1,141 @@
+
+・はじめに
+
+	hidmon.asは、hidmon.dllを経由して、USB接続されたHIDaspxの各種機能を
+	呼び出すためのHSP3用定義ファイルです。
+	HIDaspxは、AVRマイコンをUSB経由で接続したもので、標準的なHIDとして
+	認識させることにより専用ドライバなしに利用可能なデバイスです。
+	詳しくは、以下のページを参照してください。
+	http://www-ice.yamagata-cit.ac.jp/ken/senshu/sitedev/index.php?AVR/HIDaspx#qa9690db
+
+	hidmon.asにより、hidmon.dllが持つ関数をHSP3から呼び出すことができ、
+	各種制御をHSPのスクリプトで記述できるようになります。
+
+
+・利用方法
+
+	HSP3がインストールされているフォルダに以下のファイルをコピーすることで
+	各種スクリプトから手軽に呼び出すことができます。
+
+	hidmon.dll → HSP3インストールフォルダ(hsp3.exeと同じ階層)
+	hidmon.as  → HSP3インストールフォルダのcommon内
+
+	hidmon.dllは、HSP3.EXEと同時に使用されるプラグインファイルです。
+	使用するHSPは、ver3.1以上をお使い下さい。ver2.61やそれ以前のHSPには
+	対応していませんのでご注意下さい。
+	EXEファイルを作成した場合でも、hidmon.dllをEXEファイルと同じフォルダ
+	に置かないと動作しません。(packfileにDLLを追加することはできません。)
+
+	dllを利用する場合は、スクリプトの先頭に以下の宣言を追加してください。
+
+		#include "hidmon.as"
+
+	以降は、以下の機能を使用することができます。
+
+		hidinit				hidmon初期化
+		hidbye				hidmon終了
+		hidpoke port, value, mask	ポート書き込み
+		usbpeek(port)			ポート読み込み
+
+	hidmon.dllを使用する際には、最初に必ずhidinitを呼び出して下さい。
+	各種設定を初期化して、Bポート全てが出力ポートとして準備されます。
+	初期化の結果が、システム変数statに反映されます。
+	statが0の場合は、初期化が正常に終了したことを示します。
+	それ以外の場合は、エラーが発生しています。
+	以下のような手順で初期化を行なってください。
+
+		hidinit
+		if stat<0 {
+			dialog "USBデバイスの初期化に失敗しました。"
+			end
+		}
+		mes "UsbInit成功"
+
+	hidinit命令には、初期化パラメーターを指定することができます。
+	初期化パラメーターを省略した場合には、接続されているHIDaspx機器を
+	自動的に検索します。
+	初期化パラメーターには、機器のシリアルIDを文字列で指定できます。
+
+		例:
+			hidinit "1234"	; シリアル"1234"の機器を初期化
+
+	商用バージョンのHIDaspx機器の場合は、先頭に「#」を付けて初期化を
+	行なってください。(ヒダピオ等)
+
+		例:
+			hidinit "#"	; 商用機器を初期化(自動選択)
+			hidinit "#1234"	; シリアル"1234"の商用機器を初期化
+
+	初期化した後は、hidpokeで書き込み、hidpeekで読み込みを行なうことが
+	できるようになります。
+	hidpokeは、以下ように記述します。
+
+		hidpoke port, value, mask	ポート書き込み
+
+	portには、HIDaspxのポートアドレスを指定します。
+	ポートアドレスは数値で指定する他、あらかじめ設定されている以下の変数を
+	指定することも可能です。
+
+		変数       ポート名称
+		--------------------------------
+		portb      portB
+		portd      portD
+		pinb       pinB
+		pind       pinD
+		ddrb       DDRB
+		ddrd       DDRD
+
+	valueには0～255までの1byte値を指定します。
+	特定のビットをマスクしたい場合は、maskにマスク値を指定してください。
+	maskを省略または0にした場合は、valueの値がそのまま書き込まれます。
+
+	hidpeekは、ポートの内容を読み出す関数です。
+	以下のように関数として1byte値を変数に読み出すことが可能です。
+
+		value=hidpeek(pind)
+
+	hidpeekで指定するポートアドレスは、hidpokeのポートアドレスと同様の
+	値になります。
+
+	尚、hidmon.dllが持つ関数を直接呼び出すことも可能です。
+
+		UsbInit "string"	;初期化.(戻り値=stat)
+		UsbExit			;終了.(戻り値=stat)
+		UsbPoke int adr,int arena,int data,int mask ; 書き込み
+		戻り値=UsbPeek( int adr,int arena )	; 1バイト読み出し
+		戻り値=PortAddress( "string" )	;ATtiny2313のポート名称をアドレスに変換する.
+
+	これらの関数・命令は、hidmon.dllが持つ関数と同じ機能を提供します。
+	詳しくは、hidmonのマニュアルを参照してください。
+
+	hidbye命令によってUSB制御終了処理を行ないます。
+	これはプログラム終了時に自動的に実行されるため、通常は呼び出す必要は
+	ありません。
+
+
+・更新履歴
+
+	2010/7/23 ver0.2
+
+		hidmon.dllを最新版と差し替え
+		USB初期化パラメーターを渡す処理を修正(ヒダピオ等の商用機器対応)
+
+	2010/2/3 ver0.1
+
+		最初のバージョン。
+
+
+・著作権とライセンス
+
+	hidmon.as及びサンプルの改変・配布・公開は自由に行なって頂いて構いません。
+	hidmon.dllは、irukaさん・senshuさんが作成し公開されているものです。
+	ライセンスの規定については、配布元のサイトにてご確認ください。
+
+	AVR/HIDmon
+	http://www-ice.yamagata-cit.ac.jp/ken/senshu/sitedev/index.php?AVR/HIDmon
+	HIDmon88
+	http://hp.vector.co.jp/authors/VA000177/html/HIDmon88.html
+
+	ヒダピオ
+	http://www.ne.jp/asahi/ja/asd/gijutu/HIDapio/
+

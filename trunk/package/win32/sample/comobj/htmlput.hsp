@@ -1,0 +1,21 @@
+
+;	プログラム内で生成したhtmlを表示するサンプル
+;	IEコンポーネントをウィンドウ上に配置して、その中に
+;	任意のhtmlコードを表示します。
+;
+
+	axobj ie, "Shell.Explorer.2", ginfo_winx, ginfo_winy
+	if stat == -1 {
+		dialog "ActiveXコントロールの配置に失敗しました。", 1
+		end
+ 	}
+
+	//	htmlのコード
+	html={"<html><body>
+<h2><a href="http://hsp.tv/">HSPTV!ホームページはこちらです</a></h2>
+</body></html>"}
+
+	ie -> "Navigate" "about:blank"
+	doc = ie("Document")
+	doc -> "write" html
+	stop

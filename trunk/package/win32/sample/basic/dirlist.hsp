@@ -1,0 +1,20 @@
+
+	;	ディレクトリ一覧表示サンプル
+	;	(入力したディレクトリに移動できます)
+	;
+	dirbuf=""
+	sel=0
+	ad=""
+	objsize 200,24:pos 0,30
+	listbox sel,200,dirbuf
+	input ad
+	button "ディレクトリ変更",*chg
+*getdir
+	color 255,255,255:boxf 0,0,640,24
+	color 0,0,0:pos 0,0:mes "DIR="+dir_cur
+	dirlist dirbuf,"*.*"
+	objprm 0,dirbuf
+	stop
+*chg
+	chdir ad
+	goto *getdir

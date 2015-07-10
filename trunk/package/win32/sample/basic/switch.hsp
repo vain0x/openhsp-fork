@@ -1,0 +1,32 @@
+
+	;
+	;	SWITCHÅ`CASEï∂ÇÃÉeÉXÉg
+	;
+
+	title "SWITCHÅ`CASE Test"
+	screen 0,240,160
+	a=-1
+	combox a,100,"ê¬\nê‘\nóŒ"
+*main
+	while bak_a=a:wait 5:wend
+
+	bak_a=a
+	switch a
+	case 0
+		color 0,0,255
+		swbreak
+	case 1
+		color 255,0,0
+		swbreak
+	case 2
+		color 0,255,0
+		swbreak
+	default
+		color 128,128,128
+		swbreak
+	swend
+
+	boxf
+	goto *main
+
+

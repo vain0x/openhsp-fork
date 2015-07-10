@@ -1,0 +1,121 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; 紙風船形の球体を描画するサンプルです。
+;
+; このサンプルからは、タイマー d3timer() を使用して、
+; アニメーション速度をフレームレートによらず一定にしています。
+;
+; 描画中のフレームレートは、d3getfps() で取得できます。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+
+	d3mkparticle 0, 255, 255, 64
+
+	gmode 5, , , 192 ; パーティクルを描画するときのコピーモードを設定
+
+
+	;------------------------------------------------------------
+	; Windows が起動してからの経過時間を ms で取得
+
+	time_start = d3timer()
+
+	;------------------------------------------------------------
+
+
+*mainloop
+
+	; ループを開始してからの時間を取得
+	time = d3timer() - time_start
+
+
+	;------------------------------------------------------------
+	; 現在のフレームレート (fps) を取得
+
+	fps = d3getfps()
+
+	; (1 フレームにつき 1 回だけ呼び出す必要があります)
+	;------------------------------------------------------------
+
+
+	title "fps = " + fps
+
+	redraw 0
+
+	color 24, 24, 24 : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.001 * time) * 1000, sin(0.001 * time) * 1414, cos(0.001 * time) * 1000
+
+
+	; 球体描画
+	color 255, 255, 192
+
+
+	POLYS = 20 ; 球体分割数
+	dh = 6.2831853 / POLYS
+
+	r = 500 ; 半径
+
+
+	; oOOo
+	repeat POLYS / 2 - 1, 1
+		ph = dh * cnt
+
+		d3initlineto
+
+		repeat POLYS + 1
+			th = dh * cnt
+
+			x = 0
+			y = 0
+			z = r
+
+			; 座標を回転置換
+			d3rotate y, z, y, z, ph
+			d3rotate x, y, x, y, th
+
+			d3lineto x, y, z
+		loop
+	loop
+
+
+	; (())
+	repeat POLYS
+		th = dh * cnt
+
+		d3initlineto
+
+		repeat POLYS / 2 - 1, 1
+			ph = dh * cnt
+
+			x = 0
+			y = 0
+			z = r
+
+			; 座標を回転置換
+			d3rotate y, z, y, z, ph
+			d3rotate x, y, x, y, th
+
+			d3lineto x, y, z
+			d3particlem 0, 40
+		loop
+	loop
+
+
+	redraw
+	await
+
+
+	goto *mainloop

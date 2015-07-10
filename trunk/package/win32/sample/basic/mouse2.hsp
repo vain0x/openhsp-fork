@@ -1,0 +1,40 @@
+
+;
+;	マウスカーソルの取得サンプル
+;	(マウスホイールの値も表示します)
+;
+
+screen 0,320,240
+title "Check mouse pointer"
+cx=160:cy=120
+pos 0,60
+button gosub "OFF",*moff
+button gosub "ON",*mon
+
+repeat
+	redraw 0
+	color 255,255,255:boxf
+	color 0,0,0:pos 0,0
+	mes "mouse=("+mousex+","+mousey+")"
+	mes "wheel="+mousew
+
+	color 255,0,0
+	dir=atan(mousex-cx,mousey-cy)
+	x=sin(dir)*100.0+cx:y=cos(dir)*100.0+cy
+	line cx,cy,x,y
+
+	redraw 1
+	await 20
+loop
+
+end
+
+*moff
+mouse -1
+return
+
+*mon
+mouse
+return
+
+

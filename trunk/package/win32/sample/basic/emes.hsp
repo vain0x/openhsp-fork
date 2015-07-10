@@ -1,0 +1,25 @@
+
+#include "hsp3util.as"		; emes命令を使用するために必要です
+
+	;
+	;	ゆっくり文字列を表示するサンプル
+	;
+	font msgothic,30,1
+	a="こんにちは、HSPです。\nゆっくりと文字を出してみましょう。"
+	;
+
+	text 100		; 表示スピードの設定
+	emes a			; メッセージ表示
+
+	color 0,0,0
+	textmode 1		; 影文字指定
+	color 0,128,255
+	emes a			; メッセージ表示
+
+	color 255,0,0
+	textmode 2		; 袋文字指定
+	color 200,200,200
+	emes a			; メッセージ表示
+
+	stop
+

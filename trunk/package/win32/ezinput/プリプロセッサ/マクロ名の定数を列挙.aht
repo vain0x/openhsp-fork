@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#enum"
+
+#define 定数を割り当てるマクロ名	""	;;str
+#define 割り当てられる定数	""	;;str
+
+#ahtmes "#enum "+定数を割り当てるマクロ名+" = "+割り当てられる定数+

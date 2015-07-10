@@ -1,0 +1,43 @@
+
+	;	ファイルダイアログ指定サンプル(HSP3.2)
+	;	dialog命令により呼び出されるファイル選択ダイアログの
+	;	パラメーター指定例を実際に実行することができます。
+	;	複数の拡張子、ファイル種別を区切り記号により記述することができます。
+	;
+	button "フィルタ1",*filter1
+	button "フィルタ2",*filter2
+	button "フィルタ3",*filter3
+	button "フィルタ4",*filter4
+	stop
+
+*filter1
+	mes "ダイアログ開始(1)"
+	dialog "txt",16,"テキストファイル"
+	if stat=0 : goto *selcan
+	mes refstr
+	stop
+
+*filter2
+	mes "ダイアログ開始(2)"
+	dialog "txt;*.text",16,"テキストファイル"
+	if stat=0 : goto *selcan
+	mes refstr
+	stop
+
+*filter3
+	mes "ダイアログ開始(3)"
+	dialog "txt;*.text|log",16,"テキストファイル|ログファイル"
+	if stat=0 : goto *selcan
+	mes refstr
+	stop
+
+*filter4
+	mes "ダイアログ開始(4)"
+	dialog ";a*.txt",16,"テキストファイル"
+	if stat=0 : goto *selcan
+	mes refstr
+	stop
+
+*selcan
+	mes "読み込みをキャンセルしました"
+	stop

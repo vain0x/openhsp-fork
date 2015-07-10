@@ -1,0 +1,46 @@
+
+	;	半透明コピーテスト1
+	;
+
+	screen 0,640,200,0
+
+
+	buffer 4,640,200,0
+	color 255,0,0
+	boxf 0,0,640,200
+	color 0,0,255
+	boxf 320,0,640,100
+	boxf 0,100,320,200
+
+	buffer 3,640,200,0
+	picload dir_exe+"\\doclib\\hsp3ttl.jpg"
+
+	gsel 0
+
+*start
+	pos 0,0
+	repeat 32
+		redraw 0
+		gmode 0,640,200
+		gcopy 4			; 背景
+		gmode 3,640,200,cnt*8
+		gcopy 3			; 半透明コピー
+		redraw 1
+		wait 10
+	loop
+
+	wait 100
+
+	pos 0,0
+	repeat 32
+		redraw 0
+		gmode 0,640,200
+		gcopy 4			; 背景
+		gmode 3,640,200,255-(cnt*8)
+		gcopy 3			; 半透明コピー
+		redraw 1
+		wait 10
+	loop
+
+	goto *start
+

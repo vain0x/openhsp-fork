@@ -1,0 +1,94 @@
+#include "hgimg3.as"
+
+	;	meshサンプル
+	;	(高さ画像を使用したMesh)
+	randomize
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	バッファサイズ
+	sx=32:sy=32
+	dim vmap,sx+1,sy+1
+	wave_init sx,sy
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	モデル登録
+	;
+	setuv 0,0,128,128
+	addmesh m_mesh,sx,sy,$400,32,32
+	texload "mapbg4.bmp"
+	regobj obj, m_mesh
+
+	;	高さマップの設定
+	;
+	gsel 3
+	picload "g_height2.bmp"
+	getvarmap vmap,sx,sy
+	meshmap vmap,m_mesh,0,0.025
+
+	;	表示の準備
+	;
+	gsel 0
+	clscolor $80			; 背景色の設定
+	cammode CAM_MODE_LOOKAT
+	setpos HGOBJ_CAMERA, 0,-25,25	; カメラ位置の設定
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+
+	;setang HGOBJ_LIGHT, -1.4, 1.1, 0.5
+	;setdir HGOBJ_LIGHT,0,100,0
+*main
+	gosub *alldraw
+	stick key,$3ff
+	if key&128 : goto *main2
+
+	;	カーソルキーで動かす
+	;
+	if key&1 : addang obj, -0.02, 0.0
+	if key&4 : addang obj, 0.02, 0.0
+	if key&8 : addang obj, 0.0, 0.02
+	if key&2 : addang obj, 0.0, -0.02
+
+	goto *main
+
+*main2
+	gosub *fadeout
+	repeat
+	gosub *alldraw
+	if scfadev=256 : break
+	loop
+
+*owari
+	end
+
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt "Frame:"+frame,8,8
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,640,480,scfadev
+		hgrect 320,240,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return

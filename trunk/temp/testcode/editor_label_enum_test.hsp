@@ -1,0 +1,40 @@
+; スクリプトエディター ラベル列挙 動作確認用スクリプト
+; ※コンパイルできません
+
+#define test *no_label
+#define test \
+*no_label ; \
+*no_label
+
+/* *no_label */
+*a
+; *no_label
+* no_label : *b : *c
+a *no_label : *d : ; *no_label
+a *no_label : *e : // *no_label
+// *no_label
+* *no_label : *f : /* *no_label
+*no_label
+*/
+*g/* *no_label
+*no_label
+*/
+*h; *no_label
+
+pos 0,0/*～*/
+mes " : *no_label"
+mes " : /* *no_label"
+
+test = {" ～
+*no_label
+/* *no_label */
+/*
+～
+"}
+
+mes "表\" *no_label "
+
+*i:x
+*j
+*k:*l
+*m;x

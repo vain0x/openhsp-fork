@@ -1,0 +1,2458 @@
+------------------------------------------------------------------------------
+Hot Soup Processor ver3.3                           HSP : Hot Soup Processor  
+SDK仕様ガイド                         copyright 1997-2011 (c) onion software  
+------------------------------------------------------------------------------
+
+・プラグイン開発マニュアル
+
+はじめに
+
+	このテキストは、Hot Soup Processor ver3.0以降に対応したプラグイン開発の
+	ための解説および資料が含まれています。
+	HSPプラグインは、HSPを拡張するための高度な方法です。
+	より高度にHSPを使用したいという方のための手段ですので、わからない方は
+	読まなくても問題はありません。
+
+	このテキストは、Cまたは、C++言語についての知識がある方を対象にしています。
+	また、Windowsプログラミングについての知識があればより深くHSPのリソースを
+	使うことができます。Windowsプログラミングがまったくわからない場合でも、
+	メモリアクセスのみで画面を書き換えるなど、ある程度のプログラミングが可能
+	です。
+
+
+HSP拡張プラグインの規定
+
+	HSPから認識され各種リソースや機能を拡張するための外部プログラムを
+	「HSP拡張プラグイン」と呼びます。
+	HSP拡張プラグインは、外部ファイルを呼び出す「DLLプログラム」と、
+	スタティックにリンクされたものを呼び出す「スタティックライブラリ」
+	のどちらからでも利用可能になっています。
+
+	「HSP拡張プラグイン」を作る上での制約は特にありません。あなたが、
+	個人的な用途で作る場合も、配布や販売を目的とした場合であっても
+	HSPの作者(ONION software)に無断で運用してかまいません。
+
+	ただし、「HSP拡張プラグイン」を使用して起こった不具合やトラブルなどの
+	責任はHSP作者(ONION software)は負いかねます。
+
+	「HSP拡張プラグイン」を配布する場合は、HSPに対応した拡張プラグインである
+	旨をドキュメント等に明記して、なるべくHSP本体の入手先、
+
+	「HSPTV!」
+	http://hsp.tv/
+
+	または、
+
+	「Hot Soup Processor Page」
+	http://www.onionsoft.net/hsp/
+
+	を明記してもらえると嬉しいです。
+
+	また、「HSP拡張プラグインDLL」の拡張子は、DLLまたはHPIのどちらかを使うよう
+	推奨しています。拡張子HPIは、通常のDLLと区別するためと、Windowsの設定で
+	拡張子DLLが表示されなくなっている場合に対処したい方のためのものです。
+
+
+このドキュメントのバージョン履歴
+
+	■HSP ver3.2β4
+
+	HSP3.2で追加されたBMSCR構造体メンバを修正しました。
+	hpi3sampleフォルダ内のヘッダファイルも更新しています。
+
+	■HSP ver3.1β9
+
+	β8でHSPCTXのメンバ内容に互換性がなくなっていたため修正しました。
+	(HSPCTX構造体を修正しました。)
+	HSP3プラグインをβ8で作成している場合は、お手数ですが、β9版で
+	再度ビルドし直して頂くようお願いします。
+
+	■HSP ver3.1β8
+
+	新規プラグインのソースを追加しました。
+	変数名に関するサービスを追加しました。(HSPEXINFO構造体を修正しました。)
+
+	■HSP ver3.1β7
+
+	フォルダ構成を一部変更しました。
+	サンプルソースとして、標準プラグインソースコードを同梱しました。
+	変数型を拡張するサンプルとしてhpi3typeプロジェクトを同梱しました。
+	例外エラー(Windowsエラー)を捕獲しないデバッグ版のhsp3.exeを同梱しました。
+	スクリプトエディタSDKを同梱しました。
+
+	■HSP ver3.1β6
+
+	マルチスレッド版のライブラリ、hsp3dlib_mt.lib、hsp3lib_mt.libを追加しました。
+
+	■HSP ver3.1β4
+
+	HSPEXINFO構造体を修正しました。
+
+	■HSP ver3.0a
+
+	HSPEXINFO構造体内のHspFunc_prm_getv関数の挙動を修正しました。
+	HSP2.61互換でmpvalの値が参照できるようになっています。
+	#regcmdに変数型拡張数のパラメーターを追加しました。
+
+	■HSP ver3.0β12
+
+	配列指定をしていない時はObjectWriteが呼ばれないように修正。
+
+	■HSP ver3.0β11
+
+	関数パラメーター取得仕様を修正。
+	PValの識別情報HSPVAR_SUPPORT_TEMPVAR(テンポラリ変数)を追加。
+	HspFunc_dimを始めとする配列変数操作用のサポート関数を追加。
+
+	■HSP ver3.0β9
+
+	説明の一部を補足、修正しました。
+
+	■HSP ver3.0β8
+
+	HSPEXINFO構造体を修正しました。
+	プラグインのソースを再度ビルドする必要があるので注意してください。
+
+	■HSP ver3.0β7
+
+	「HSPヘッダ情報について」「ライブラリ情報について」を追加。
+
+	■HSP ver3.0β6
+
+	ディレクトリの構成を変更しました。
+
+	■HSP ver3.0β2
+
+	HSPフルセットからHSPSDKを独立して配布する形に変更しました。
+
+	■HSP ver3.0α12
+
+	HspVarProc構造体を一部修正しました。
+
+	■HSP ver3.0α11
+
+	HspVarProc構造体を一部修正しました。
+	HSPEXINFO構造体を一部修正しました。
+
+	■HSP ver3.0α10
+
+	HspVarProc構造体を一部修正しました。
+	HSPEXINFO構造体を一部修正しました。
+
+	■HSP ver3.0α8
+
+	HSPCTX構造体を一部修正しました。
+
+	■HSP ver3.0α7
+
+	code_getv、code_setvの関数がそれぞれcode_getva、code_setvaに
+	変更されました。扱う値も変更されているため、以前のソースを変更するよう
+	お願い致します。
+	HspVarProc構造体の内容を一部変更しました。
+
+	■HSP ver3.0α5
+
+	構造体の一部を更新しました。
+	HSP3VarFunctionのサンプルを同梱。
+
+	■HSP ver3.0α4
+
+	プラグイン作成のためのサンプル及びドキュメントを同梱。
+	ver 2.61までのプラグインとの互換はありません。
+	また、β版に向けて仕様が変更されることもあるのでご了承下さい。
+
+
+サンプルプログラムについて
+
+	サンプルプログラム、およびプラグイン作成用のヘッダファイル等は
+	「hpi3sample」ディレクトリに置かれています。
+	同梱のサンプルソースでは、作成例がいくつか含まれています。
+
+
+プラグイン開発に必要なもの
+
+	HSP拡張プラグインDLLを使用する場合は、Windows 32bit DLLをダイナミックに
+	リンクします。スタティックライブラリの場合は、HSPランタイムとリンクして、
+	プラグインを同梱した形のランタイムを作成できる形になります。
+
+	プラグイン側の開発は、特に制限なくWindows APIやライブラリが使用できます。
+	DLLや、ライブラリを作成することができれば、言語は問いません。
+	このテキストでは、DLLを作成するためのツールとして、基本的に
+	Microsoft Visual C++(6.0以降)を対象にして解説をしています。
+	Borland C++や、C++ BuilderでのDLL作成も可能ですが、コンパイルやリンク
+	のために一部を修正する必要がある場合もあります。
+
+
+Ver2.61までのプラグインとの違い
+
+	HSP3では、以前のバージョンからはプラグインの定義が若干異なっています。
+	HSP3では、外部DLLを任意の引数で呼び出す機能があり、単純にDLL呼び出しを
+	行なうだけの場合は、拡張プラグインとは区別されます。
+	HSP3のプラグインは、HSP3システムと連携して動作する専用のDLLで
+	通常の外部DLL呼び出しよりも多くのリソースにアクセスすることができます。
+	以下に両者の違いをまとめます。
+
+	・HSP3プラグイン
+
+		#regcmd、#cmd命令により登録される
+		命令・関数および変数型の新規作成が可能
+		変数の型操作や管理情報にアクセスが可能
+		バッファの自動確保、イベントのキャプチャーが可能
+
+	・DLL呼び出し
+
+		#uselib、#func命令により登録される
+		命令の新規作成が可能
+		変数の型操作や管理情報にアクセスが可能
+		バッファの自動確保、イベントのキャプチャーが可能
+
+	プラグインのソースコードを一部修正することで、HSP3プラグインとして動作
+	させることができますので、是非すべての機能を引き出すことのできる
+	HSP3プラグインとして新規にリリースして頂けると嬉しいです。
+
+
+Ver2.61プラグインとの互換性
+
+	現状で、HSP2.5以降のすぺてのプラグイン規約に対応していますが、
+	HSP3.0の内部仕様変更による制限がいくつかあるので、注意が必要です。
+
+	・BMSCR構造体は、flagからcolorまでのフィールドのみ参照できます。
+	・PVal構造体は、ver2.5のPVAL2構造体と互換があります。
+	・PVal構造体のflagフィールド(型タイプ値)やlenフィールド(配列情報)を
+	　DLL側で書き換えることはできません。
+	・PVal構造体から文字列型の配列変数にアクセスすることはできません。
+	・HSPEXINFO構造体のstmpフィールドはrefstrと同一のバッファが使用されます。
+
+	これ以外の点においては、HSP ver2.61と同等の情報が受け渡されます。
+	HSP2.61互換のプラグインでは、以下のような制限が発生しますので注意
+	してください。
+	また、プラグインの互換機能はすべてのHSP2.xプラグインの動作を保障する
+	ものではありません。
+
+	・プラグインから変数に値を代入する場合、バッファの自動拡張は行なわれません。
+	　(バッファオーバーフローが発生しないように注意してください)
+
+
+HSP3システム概要
+
+	HSP3システムは、コードの実行部分がいくつかのブロックに分かれた構造を取っています。
+	HSP3TypeFunctionは、キーワードカテゴリ(タイプ)ごとの実行と参照を、
+	HSP3VarFunctionは、変数に格納される型ごとのデータ管理を行なっています。
+	それぞれのブロックは、任意に分離することができ、プラグイン(外部DLL)に振り分ける
+	ことが可能です。
+
+	HSP3コアシステム
+
+	    HSP3コードマネージャー
+
+		HSP3TypeFunction (内蔵命令)
+		HSP3TypeFunction (描画命令)
+		HSP3TypeFunction (マルチメディア命令)
+		HSP3TypeFunction (拡張命令)
+		HSP3TypeFunction (数学関数)
+
+	    HSP3ストレージマネージャー
+
+		HSP3VarFunction (int)
+		HSP3VarFunction (str)
+		HSP3VarFunction (double)
+
+		HSP3VarFunction (unicode) (*option)
+		HSP3VarFunction (variant) (*option)
+		HSP3VarFunction (COM automation) (*option)
+
+
+HSP3プラグイン概要
+
+	HSP3プラグインは、いくつかの方法でHSP3のシステムを拡張する
+	ことができます。
+	ここでは、３つの方法に分けて拡張の概要と方法について解説します。
+
+	■HSP3DLL Function
+
+	外部DLLとしてHSPの新規命令を登録することができます。
+	この中で、HSP3のパラメーターや変数など各種システム情報にアクセス
+	することができます。
+	ほとんどの場合は、この方法で拡張することができます。
+	HSP3DLL Functionで拡張できない項目としては、関数やシステム変数の追加、
+	変数型の追加などよる細かいシステム制御が該当します。
+	これらの拡張を行ないたい場合には、HSP3TypeFunction及びHSP3VarFunction
+	を利用して拡張する必要があります。
+	詳細については、「HSP3DLL Functionを利用した命令拡張について」を
+	参照してください。
+	HSP3に同梱されている拡張プラグインのほとんどは、この形式により作成
+	されています。
+
+	■HSP3TypeFunction
+
+	命令及び、システム変数、関数を拡張します。
+	１つのHSP3TypeFunctionにつき、１つのFunctionTypeが割り当てられます。
+	１つのHSP3TypeFunctionには、0～0xffffffffまでのサブIDを割り振った
+	キーワードを定義することができます。
+	HSP実行時に、登録されたキーワードが出現した時にHSP3TypeFunctionが
+	呼び出されることになります。
+	HSP3TypeFunctionは、初期化時、終了時、命令実行時、値参照時、さらに
+	HSPイベント発生時ごとにコールバック関数を設定することができます。
+	それぞれのコールバック関数の内部で、サブIDの情報などと合わせながら
+	機能が実行されるように作成する必要があります。
+	HSP2までは、１つのキーワード(命令)ごとに１つの関数を用意していましたが、
+	HSP3からは、HSP3TypeFunctionごとに関数を用意するだけで済むように
+	なります。
+	FunctionTypeは、おおまかにカテゴリを分けるための番号と考えて下さい。
+	効率の面から、システム変数、関数、命令ごとに別なFunctionTypeを割り振って
+	おくことを推奨しています。
+	FunctionTypeは、拡張プラグインが登録された順番に16から値が割り振られ
+	ます。FunctionTypeは、8192まで登録することができます。
+
+	■HSP3VarFunction
+
+	変数に格納するための型を拡張します。
+	１つのHSP3VarFunctionにつき、１つのVarTypeが割り当てられます。
+	１つのHSP3VarFunctionは、値を保存するためのメモリ管理、各種演算、
+	型の変換、配列の管理などを行なう必要があります。
+	VarTypeは、FunctionTypeとは違う値だということに注意してください。
+	標準で提供している、整数(int)、実数(double)、文字列(string)も同様の
+	仕組みで作られています。標準で利用されるタイプについては、サンプルとして
+	ソースコードが提供されます。
+
+
+HSP3DLL Functionを利用した命令拡張について
+
+	HSP3.0では、より手軽な命令拡張の手段として、外部DLLを自由に呼び出す機能を
+	持っています。これは、WIN32APIやHSP2.5以降のプラグインを呼び出すための
+	役割を果たしていますが、それ以外にもHSP3用の拡張として機能を提供する
+	ことが可能です。
+	DLL呼び出しは、以下のように定義して実行することが可能です。
+
+		例:
+		#uselib "a.dll"			; "a.dll"を使用
+		#func newfunc newfunc pexinfo	; newfunc命令を登録
+		newfunc	1,2,3			; 新しい命令を実行
+
+	上の例では、「newfunc」として「a.dll」からエクスポートされた関数を
+	newfunc命令として登録した後、それを呼び出しています。
+	呼び出される側のnewfunc関数側では、
+
+	#define EXPORT extern "C" __declspec (dllexport)	// VC++の場合
+
+	EXPORT BOOL WINAPI newfunc( HSPEXINFO *hei )
+	{
+		int p1,p2,p3;
+		p1 = hei->HspFunc_prm_getdi(0);	// パラメータ1:整数
+		p2 = hei->HspFunc_prm_getdi(0);	// パラメータ2:整数
+		p3 = hei->HspFunc_prm_getdi(0);	// パラメータ3:整数
+		return 0;
+	}
+
+	のような形で、直接パラメーターを取得して、任意の処理を行なうことができます。
+	この方法は、HSP2.61にあったプラグイン規約$202と同じものにあたります。
+	HSPEXINFO構造体にあるすべての関数、情報を利用することができるため、
+	手軽に命令を追加する手段としてご検討下さい。
+	ただしこの方法は、あくまでも命令を拡張する手段として用意されているものです。
+	関数やシステム変数の追加、変数型の追加などより細かいシステム制御を
+	行ないたい場合には、従来通りHSP3TypeFunction及びHSP3VarFunctionによって
+	拡張する必要があります。
+
+
+タイプIDについて
+
+	HSP3では、数値や文字列など異なる型を扱うためにタイプIDを使って判別を
+	行なっています。
+	変数に格納される値のタイプとして使用されるIDは以下の通りです。
+
+		#define HSPVAR_FLAG_STR 2	// SJIS文字列(str)
+		#define HSPVAR_FLAG_DOUBLE 3	// 64bit実数(double)
+		#define HSPVAR_FLAG_INT 4	// 32bit整数(int)
+
+	これ以外の値は、拡張されたVarTypeとして扱われます。
+	プラグインで利用するパラメーターや情報は、これらの値を標準的に
+	扱うことができます。また、プラグインの関数が返す値としても上のタイプを
+	指定することができます。
+	文字列は、C形式(終端コード0が付加された8bitの列)で日本語をShiftJIS
+	コードで格納しているので注意してください。
+
+	タイプIDは、型情報以外にHSP3TypeFunctionのコードを示すものとしても
+	利用されます。(FunctionTypeとも呼ばれます)
+
+		#define TYPE_INTCMD 8		// 内蔵命令
+		#define TYPE_EXTCMD 9		// 内蔵GUI命令
+		#define TYPE_EXTSYSVAR 10	// 内蔵GUIシステム変数
+		#define TYPE_CMPCMD 11		// 内蔵命令(if/else)
+		#define TYPE_MODCMD 12		// モジュール命令
+		#define TYPE_INTFUNC 13		// 内蔵関数
+		#define TYPE_SYSVAR 14		// 内蔵システム変数
+		#define TYPE_PROGCMD 15		// 内蔵命令(プログラム制御)
+
+	タイプID16以降は、プラグインで拡張されたタイプとなります。
+	これらのタイプIDは、プラグイン内部ではそれほど意識する必要はありません。
+	内蔵のタイプIDを置き換えたり、キーワードを定義することで、内蔵命令
+	そのものを置き換えたり、キーワードを変更することが可能になります。
+	コマンドプロンプト用のHSP(コンソールモード)では、内蔵GUIのタイプが
+	無効になります。
+
+
+HSP3TypeFunctionの初期化
+
+	HSP3TypeFunctionプラグインは、Cの関数形式(stdcall)によって呼び出されます。
+	DLLとして呼び出す場合には、HSPのソースに以下のプリプロセッサ命令を記述
+	してください。
+
+	#regcmd "初期化関数名","DLLファイル名",変数型拡張数
+
+	これにより、HSPランタイム起動時に指定されたDLLファイル内の初期化関数が
+	呼ばれることになります。
+	初期化関数名は、DLLからエクスポートされた名前を正確に指定しなければ
+	なりません。VC++からエクスポートした場合には、先頭に「_」が、最後に
+	「@4」が付加されるので、それを含めた名前を記述します。
+	(VC++以外のコンパイラで作成されたDLLの場合は、エクスポート名のルールが
+	異なります。詳しくは、それぞれの環境の資料を参照してください。)
+	変数型拡張数は、HSP3VarFunctionを拡張する場合に指定するパラメーターです。
+	HSP3TypeFunctionのみ拡張する場合は、0かまたは省略して構いません。
+	HSP3VarFunctionを拡張する場合は、拡張する個数を指定する必要があります。
+
+	同梱されているサンプルでは、「hpi3sample.dll」の「hsp3cmdinit」という
+	関数が登録されていますが、その場合は、
+
+		例:
+		#regcmd "_hsp3cmdinit@4","hpi3sample.dll"
+
+	のようになります。
+	初期化関数は、以下のパラメーターを受け取ります。
+	(EXPORTマクロは、VC++のみ使用可能です。他の環境では、別途エクスポート
+	するための指定を追加する必要があります。)
+
+	EXPORT void WINAPI hsp3cmdinit( HSP3TYPEINFO *info )
+	{
+	//		プラグイン初期化 (実行・終了処理を登録します)
+	//
+	hsp3sdk_init( info );			// SDKの初期化(最初に行なって下さい)
+	info->cmdfunc = cmdfunc;		// 実行関数(cmdfunc)の登録
+	info->reffunc = reffunc;		// 参照関数(reffunc)の登録
+	info->termfunc = termfunc;		// 終了関数(termfunc)の登録
+	}
+
+	初期化関数では、最初に提供されるHSP3TYPEINFO構造体に適切な関数を指定する
+	ことによりプラグイン機能が有効になります。
+	HSP3TYPEINFO構造体は、以下のような構成になっています。
+
+	typedef struct {
+		//	型ごとの情報
+		//	(*の項目は、親アプリケーションで設定されます)
+		//
+		short type;							// *型タイプ値
+		short option;						// *オプション情報
+		HSPCTX *hspctx;						// *HSP Context構造体へのポインタ
+		HSPEXINFO *hspexinfo;				// *HSPEXINFO構造体へのポインタ
+
+		//	ファンクション情報
+		//
+		int (* cmdfunc) (int);				// コマンド受け取りファンクション
+		void *(* reffunc) (int *,int);		// 参照受け取りファンクション
+		int (* termfunc) (int);				// 終了受け取りファンクション
+
+		// イベントコールバックファンクション
+		//
+		int (* msgfunc) (int,int,int);				// Windowメッセージコールバック
+		int (* eventfunc) (int,int,int,void *);		// HSPイベントコールバック
+
+	} HSP3TYPEINFO;
+
+	hsp3sdk_initは、プラグイン作成をサポートする関数を持っている
+	「hsp3plugin.cpp」内に含まれています。hsp3plugin.cppを使用する場合は、
+	最初に呼び出しておいてください。
+	その後、実行関数(cmdfunc)、参照関数(reffunc)、終了関数(termfunc)
+	を構造体に代入してください。(必要ないものは、代入する必要ありません。)
+	必要に応じて、イベントコールバック関数(eventfunc)等を登録することも
+	できます。イベントコールバック関数を利用する場合は、別途optionを指定
+	する必要があります。詳しくは、イベントコールバック関数についての説明を
+	参照してください。
+	終了関数(termfunc)は、逆にHSPランタイムの終了時に呼び出される関数を
+	指定します。プラグイン内で確保したリソースは、必ず終了時に解放するように
+	してください。
+
+	以上で初期化は完了します。
+	これ以降は、実行時に登録したキーワードが出現した場合に登録している
+	関数が呼び出されることになります。
+	キーワードの登録は、スクリプト内で以下のように記述します。
+
+	#cmd 新規キーワード サブID
+
+	#cmdは、必ず#regcmdの後に書く必要があります。
+	以下は、サンプルにある例です。
+
+		例:
+		#cmd newcmd $000
+		#cmd newcmd2 $001
+		#cmd newcmd3 $002
+
+	上の例では、「newcmd」というキーワードがサブID0として、
+	「newcmd2」というキーワードがサブID1、
+	「newcmd3」というキーワードがサブID2として登録されます。
+
+	cmdfunc(コマンド受け取りファンクション)は、登録されたキーワードがHSPの
+	命令として実行された時の処理ルーチンとなります。
+	最も単純な、コマンド受け取りファンクションは以下のようなものです。
+
+	static int cmdfunc( int cmd )
+	{
+		//		実行処理 (命令実行時に呼ばれます)
+		//
+		code_next();							// 次のコードを取得(最初に必ず必要です)
+
+		switch( cmd ) {							// サブコマンドごとの分岐
+
+		case 0x00:								// newcmd
+			:
+			サブIDが0の時の処理
+			:
+			break;
+
+		default:
+			puterror( HSPERR_UNSUPPORTED_FUNCTION );
+		}
+		return RUNMODE_RUN;
+	}
+
+	cmdfuncには、サブIDが引数として渡されます。
+	それに応じた処理をswitch文等で分けて記述していくのが標準的な
+	作成方法となります。
+	返値は、以下の中から選択することができます。
+
+		RUNMODE_RUN	// 実行を継続する
+		RUNMODE_WAIT	// waitする
+		RUNMODE_AWAIT	// awaitする
+		RUNMODE_STOP	// 実行を停止する
+		RUNMODE_END	// 実行を終了する
+
+	reffunc(参照受け取りファンクション)は、登録されたキーワードが
+	HSPのパラメーター内に式の一部として出現した時の処理を行ないます。
+	参照受け取りファンクションは、サブIDの情報を受け取りますが、
+	結果として何らかの値を返す必要があります。
+	参照受け取りファンクションでは、システム変数と関数のどちらかを
+	作成することができます。
+	サブIDごとに決められた値を返すものをシステム変数として、
+	またカッコ内のパラメーター取得してそれをもとに結果を返すものを
+	関数として扱うことができます。
+
+	最も単純な、参照受け取りファンクションは以下のようなものです。
+
+	static int ref_ival;		// 返値のための変数領域
+
+	static void *reffunc( int *type_res, int cmd )
+	{
+	//		システム変数の実行処理 (値の参照時に呼ばれます)
+	//
+	switch( cmd ) {					// サブコマンドごとの分岐
+
+	case 0x00:					// newcmd
+
+		ref_ival = 123;				// 返値をivalに設定
+		break;
+
+	default:
+		puterror( HSPERR_UNSUPPORTED_FUNCTION );
+	}
+
+	*type_res = HSPVAR_FLAG_INT;			// 返値のタイプを整数に指定する
+	return (void *)&ref_ival;
+	}
+
+	上の例では、システム変数としてサブID0(newcmd)を扱っています。
+	サブID0が現われた場合には、123という値を整数値(HSPVAR_FLAG_INT)
+	として返します。
+	関数として処理する場合は、以下のようになります。
+
+	static int ref_ival;		// 返値のための変数領域
+
+	static void *reffunc( int *type_res, int cmd )
+	{
+	//		関数の実行処理 (値の参照時に呼ばれます)
+	//
+	//			'('で始まるかを調べる
+	//
+	if ( *type != TYPE_MARK ) throw HSPERR_INVALID_FUNCPARAM;
+	if ( *val != '(' ) throw HSPERR_INVALID_FUNCPARAM;
+	code_next();
+
+
+	switch( cmd ) {				// サブコマンドごとの分岐
+
+	case 0x00:				// newcmd
+
+		p1 = code_geti();		// 整数値を取得(デフォルトなし)
+		ref_ival = p1 * 2;		// 返値をivalに設定
+		break;
+
+	default:
+		puterror( HSPERR_UNSUPPORTED_FUNCTION );
+	}
+
+	//			')'で終わるかを調べる
+	//
+	if ( *type != TYPE_MARK ) throw HSPERR_INVALID_FUNCPARAM;
+	if ( *val != ')' ) throw HSPERR_INVALID_FUNCPARAM;
+	code_next();
+
+	*type_res = HSPVAR_FLAG_INT;		// 返値のタイプを整数に指定する
+	return (void *)&ref_ival;
+	}
+
+	上の例でも基本的な流れは同じです。
+	システム変数との違いは、次に来るキーワードが「(」カッコに
+	なっているかをチェックする部分と、最後が「)」閉じカッコに
+	なっているかのチェック。そして、パラメーターを取得している
+	ところになります。パラメーターの取得方法は、命令実行処理に使用する
+	方法とまったく同じものになります。
+
+
+パラメーターの取得
+
+	命令や関数の中で、パラメーターを取得することができす。
+	「hsp3sdk_init」が呼ばれている状態であれば、以下の関数により
+	パラメーターを取得することができます。
+	エラーが発生した場合は、その時点で実行が中断されます。
+	(HSP2のプラグインSDKでは、パラメーター取得の最後にエラーチェックを
+	行なう必要がありましたが、HSP3では内部で例外によりエラートラップを
+	行なっているためチェックの必要はありません。)
+
+	int code_getdi( int defval );
+
+	整数値を取得します。パラメーターが省略された場合は、defvalを
+	デフォルトの値として返します。
+	実数(double)の場合は、整数に変換されたものを取得します。
+	それ以外の型はエラーになります。
+
+	int code_geti( void );
+
+	code_getdiと同じですが、デフォルト値はありません。
+	パラメーターが省略された場合はエラーとなります。
+
+	double code_getdd( double defstr );
+
+	実数値を取得します。パラメーターが省略された場合は、defvalを
+	デフォルトの値として返します。
+	整数(int)の場合は、実数に変換されたものを取得します。
+	それ以外の型はエラーになります。
+
+	double code_getd( void );
+
+	code_getddと同じですが、デフォルト値はありません。
+	パラメーターが省略された場合はエラーとなります。
+
+	char *code_getds( char *defstr );
+
+	文字列のポインタを取得します。パラメーターが省略された場合は、
+	defstrをデフォルトとして返します。
+	文字列以外の型はエラーになります。
+	ここで得られたポインタは、次にパラメーターを取得するまでしか
+	有効ではありません。文字列の取得以降に、別なパラメーター
+	(文字列だけでなく整数値や実数値も含む)を取得した場合には、
+	文字データが破壊されますので、必ずパラメーター取得側で保存
+	するようにしてください。
+	また、文字列の取得は非常に長いデータが返ってくることも
+	ありますので、コピーする場合には必要な長さだけに制限するか、
+	文字列サイズが収まるだけのメモリを確保するようにしてください。
+
+	char *code_gets( void );
+
+	code_getdsと同じですが、デフォルト値はありません。
+	パラメーターが省略された場合はエラーとなります。
+
+	unsigned short *code_getlb( void );
+
+	ラベルが示すスクリプト上のポインタを取得します。
+	ここで取得したラベルは、ジャンプ先やサブルーチンコールの
+	対象として扱うことができます。
+	ラベル以外が指定された場合はエラーになります。
+
+	APTR code_getva( PVal **pval );
+
+	パラメーターとして指定された変数のPValポインタと、APTRの
+	ポインタを取得します。
+	変数以外が指定された場合はエラーになります。
+	APTRポインタは、配列要素の値、
+	PValポインタは、変数の情報が格納されている情報への
+	ポインタとなります。
+	取得した変数の型は、PVal->flagで調べることができます。
+	取得した変数に代入を行なう場合には、code_setvを使用します。
+
+	void code_setva( PVal *pval, APTR aptr, int type, void *ptr );
+
+	APTRとPValのポインタをもとに、変数に値を代入します。
+	typeに代入する値の型(HSPVAR_FLAG_*)を、ptrに値が格納されている
+	ポインタを指定します。
+	変数に格納されている型が、代入される型と違う場合には、
+	代入される型に初期化されてから代入されます。
+
+	int code_getprm( void );
+
+	パラメーターを１つ取得します。
+	パラメーターの型は問いません。この関数の戻り値により、取得の
+	状況を確認することができます。戻り値は以下のいずれかになります。
+
+	#define PARAM_OK 0		// 正常に取得した
+	#define PARAM_SPLIT -1		// 正常に取得した(*)
+	#define PARAM_END -2		// 文末だった
+	#define PARAM_DEFAULT -3	// 省略されていた
+	#define PARAM_ENDSPLIT -4	// ')'だった
+
+	(*)PARAM_SPLITは、PARAM_OKと同様の意味ですが、次に取るパラメーターは
+	   PARAM_ENDSPLIT(カッコの終了)であることを示しています。
+	   PARAM_SPLITは、カッコ内のパラメーターを取得した場合以外では
+	   返されません。また、最後のパラメーターが省略値(PARAM_DEFAULT)
+	   の場合は、次のパラメーターを取得した場合には、PARAM_SPLITを返さずに
+	   PARAM_ENDSPLITが来るので注意してください。
+
+	PARAM_OK、PARAM_SPLITが返った場合には、変数mpvalがパラメーターの
+	内容を示す変数として作成されます。
+	(それ以外の戻り値では、mpvalは無効になります。)
+	実際には、「mpval->pt」がパラメーターの値が格納されているポインタ、
+	「mpval->flag」がパラメーターの型(HSPVAR_FLAG_*)になります。
+	(パラメーターとして変数が指定されていた場合でも、mpvalは変数そのものを
+	示すポインタとはなりません。mpvalは常に、結果の値が代入されたテンポラリ
+	の変数となります)
+
+	PARAM_DEFAULTが返った場合には、パラメーターが省略されていることを
+	示します。
+	取得すべきパラメーターが無い場合は、PARAM_ENDまたは、PARAM_ENDSPLITが
+	返ります。PARAM_ENDSPLITは、カッコ内のパラメーターが終了したことを
+	示す値になります。
+
+	void *code_getv( void );
+
+	HSPEXINFO内に用意されたver2.61互換の$202規約呼び出し用の関数です。
+	$202規約呼び出しでは、PValポインタを取得するために、mpvalポインタを
+	参照します。code_getv関数は、mpvalポインタを更新して、取得された
+	変数のポインタを示します。
+
+	void code_next( void );
+
+	次の中間コードを取得します。
+	取得されたパラメーターは、*type、*valに反映されます。
+	*typeは、「TYPE_*」の値が、*valは内容を示す値になります。
+	この命令は、通常パラメーター取得で使用する必要はありません。
+	独自に、中間コードを読み取って処理を行なうような特殊な場面でのみ
+	使用してください。
+
+	パラメーターの取得方法は、HSP2.6のSDKで採用された$202タイプで
+	使用されていたHSPEXINFO構造体と互換性があります。
+	HSP3でも同様に、HSPEXINFO構造体を使用しており、以下のような内容に
+	なっています。
+
+	typedef struct HSPEXINFO
+	{
+	//		HSP internal info data (2.6)
+	//
+	short ver;		// Version Code
+	short min;		// Minor Version
+	//
+	int *er;		// Not Use
+	char *pstr;		// String Buffer (master)
+	char *stmp;		// String Buffer (sub)
+	PVal **mpval;		// Master PVAL
+	//
+	int *actscr;		// Active Window ID
+	int *nptype;		// Next Parameter Type
+	int *npval;			// Next Parameter Value
+	int *strsize;		// StrSize Buffer
+	char *refstr;		// RefStr Buffer
+	//
+	void *(*HspFunc_prm_getv)( void );
+	int (*HspFunc_prm_geti)( void );
+	int (*HspFunc_prm_getdi)( const int defval );
+	char *(*HspFunc_prm_gets)( void );
+	char *(*HspFunc_prm_getds)( const char *defstr );
+	int (*HspFunc_val_realloc)( PVal *pv, int size, int mode );
+	int (*HspFunc_fread)( char *fname, void *readmem, int rlen, int seekofs );
+	int (*HspFunc_fsize)( char *fname );
+	void *(*HspFunc_getbmscr)( int wid );
+	int (*HspFunc_getobj)( int wid, int id, void *inf );
+	int (*HspFunc_setobj)( int wid, int id, const void *inf );
+
+	//		HSP internal info data (3.0)
+	//
+	int *npexflg;	// Next Parameter ExFlg
+	void *hspctx;	// HSP context ptr
+
+	//		Enhanced data (3.0)
+	//
+	int (*HspFunc_addobj)( int wid );
+	void (*HspFunc_puterror)( HSPERROR error );
+	HspVarProc *(*HspFunc_getproc)( int type );
+	HspVarProc *(*HspFunc_seekproc)( const char *name );
+
+	void (*HspFunc_prm_next)( void );
+	int (*HspFunc_prm_get)( void );
+	double (*HspFunc_prm_getd)( void );
+	double (*HspFunc_prm_getdd)( double defval );
+	unsigned short *(*HspFunc_prm_getlb)( void );
+	PVal *(*HspFunc_prm_getpval)( void );
+	APTR (*HspFunc_prm_getva)( PVal **pval );
+	void (*HspFunc_prm_setva)( PVal *pval, APTR aptr, int type, const void *ptr );
+	char *(*HspFunc_malloc)( int size );
+	void (*HspFunc_free)( void *ptr );
+	char *(*HspFunc_expand)( char *ptr, int size );
+	IRQDAT *(*HspFunc_addirq)( void );
+	int (*HspFunc_hspevent)( int event, int prm1, int prm2, void *prm3 );
+	void (*HspFunc_registvar)( int flag, HSPVAR_COREFUNC func );
+	void (*HspFunc_setpc)( const unsigned short *pc );
+	void (*HspFunc_call)( const unsigned short *pc );
+	void (*HspFunc_mref)( PVal *pval, int prm );
+
+	void (*HspFunc_dim)( PVal *pval, int flag, int len0, int len1, int len2, int len3, int len4 );
+	void (*HspFunc_redim)( PVal *pval, int lenid, int len );
+	void (*HspFunc_array)( PVal *pval, int offset );
+
+	//		Enhanced data (3.1)
+	//
+	char *(*HspFunc_varname)( int id );
+	int (*HspFunc_seekvar)( const char *name );
+
+	} HSPEXINFO;
+
+	HSP2.6から拡張されたり、削除されたフィールドもありますが、
+	パラメーターの取得など多くの点で同様の内容になっています。
+	HSPEXINFO構造体は、hsp3plugin.hの中でexinfoという名前で定義されています。
+	プラグインの中で、「exinfo->HspFunc_prm_geti();」のように記述しても
+	問題ありません。この項で説明してきた関数(code_geti)は、exinfoから該当する
+	関数を呼び出すためのマクロになっているだけです。
+	過去に作成したHSP2.6用のプラグインを3.0用に移植する場合には、この点に
+	留意すればある程度作業が軽減されると思います。
+
+
+内部情報の取得と設定
+
+	HSP側のリソースにアクセスするために、以下の関数を利用することができます。
+
+	void *getbmscr( int wid );
+
+	widで指定したウインドゥIDの情報を返します。
+	HSP3の標準GUIを使用している場合は、BMSCR構造体へのポインタになります。
+	BMSCR構造体についての詳細は、別項を参照してください。
+	また、現在の操作先ウインドゥIDは、active_windowマクロによって取得する
+	ことができます。
+
+	int getobj( int wid, int id, void *inf );
+
+	widで指定したウインドゥIDに配置されている、idで指定された番号の
+	オブジェクト情報を取得します。
+	取得されたデータは、infで指定されたポインタにコピーされます。
+	HSP3の標準GUIを使用している場合は、infにはHSPOBJINFO構造体の内容が
+	コピーされることになります。
+	HSPOBJINFO構造体については、オブジェクト情報についての項目を参照
+	してください。
+	返値は、正常に終了した場合は0に、それ以外の値はエラーを示します。
+
+	int setobj( int wid, int id, void *inf );
+
+	widで指定したウインドゥIDに配置されている、idで指定された番号の
+	オブジェクト情報を設定します。
+	infで指定されたポインタから内部データにコピーされます。
+	HSP3の標準GUIを使用している場合は、infにはHSPOBJINFO構造体の内容が
+	コピーされることになります。
+	HSPOBJINFO構造体については、オブジェクト情報についての項目を参照
+	してください。
+	返値は、正常に終了した場合は0に、それ以外の値はエラーを示します。
+
+	int addobj( int wid );
+
+	widで指定したウインドゥIDに、新しいオブジェクトIDを生成して返します。
+	プラグイン側で、独自のオブジェクトを生成する場合に使用します。
+	この関数でオブジェクトIDを生成したら、必ずsetobjで正しい情報を設定
+	するようにしてください。
+
+	HspVarProc *HspFunc_getproc( int type );
+
+	typeで指定された型(HSPVAR_FLAG_*)を処理するためのHspVarProc構造体
+	ポインタを返します。
+
+	HspVarProc *seekproc( char *name );
+
+	nameで指定された型を処理するためのHspVarProc構造体ポインタを返します。
+	nameは、それぞれの型で設定されている型名(int,str,double等)を文字列で
+	指定します。これにより、プラグイン等で拡張された型も含めて、処理を
+	行なうための情報を取得、設定することができます。
+
+	void *hspmalloc( int size );
+	void hspfree( void *ptr );
+	char *hspexpand( char *ptr, int size );
+
+	hspmallocと、hspfreeはHSP内部で管理するメモリマネージャーを経由して
+	メモリの確保と解放を行ないます。(malloc/freeと同様の使い方です。)
+	hspmallocと、hspfreeは少ないサイズ(64byte)であれば非常に高速に動作
+	します。また、HSP終了時にすべてのメモリは自動的に解放されます。
+	hspexpandは、既に確保済みのメモリをより大きなサイズで再確保します。
+	いままで保持されていた内容は変更されません。
+
+	int code_event( int event, int prm1, int prm2, void *prm3 );
+
+	HSP内部イベントを発生させます。
+	詳しくは、HSPイベントについてを参照してください。
+
+	void puterror( HSPERROR err );
+
+	HSPのエラーを発生させます。
+	errに指定するエラーコードは、hsp3plugin.hで定義されています。
+	この関数は実行された後、戻ってきませんので注意してください。
+
+	IRQDAT *addirq( void );
+
+	割り込み要因を追加します。
+	oncmdと同様にWindowsのウインドゥメッセージに対する割り込みを独自に
+	追加することができます。
+
+	void registvar( int flag, HSPVAR_COREFUNC func );
+
+	ストレージコアファンクション(HspVarProc)を登録します。
+	flagには、既存のタイプIDか新規ID(-1)を指定し、
+	funcに初期化関数(HSPVAR_COREFUNC)のアドレスを渡して下さい。
+	ストレージコアファンクションの登録は、必ずHSP3TypeFunctionの初期化時に
+	行なう必要があります。
+
+	void code_setpc( unsigned short *pc );
+
+	pcで指定したラベルへジャンプ(goto)を行ないます。
+	ラベルは、code_getlbで取得された値を使用します。
+
+	void code_call( unsigned short *pc );
+
+	pcで指定したラベルへサブルーチンコール(gosub)を行ないます。
+	ラベルは、code_getlbで取得された値を使用します。
+
+
+	void (*HspFunc_dim)( PVal *pval, int flag, int len0, int len1, int len2, int len3, int len4 );
+
+	pvalで指定した変数を指定した配列要素で初期化します。
+	dim命令と同様の動作になります。
+	len1～len4が各次元の最大数になります。使用しない次元は0になります。
+	len0は、１要素が可変サイズの場合の初期サイズを指定します。
+	(「sdim a,256」の256にあたる数値です。)
+	flagで初期化する型を指定します。
+
+	void (*HspFunc_array)( PVal *pval, int offset );
+
+	指定した配列要素を指したpvalを作成するために使用します。
+	以下の手順で、各次元の要素を任意に設定することが可能です。
+
+		 HspVarCoreReset( pval );// 配列ポインタをリセットする
+		 HspFunc_array( pval, 0 );// 1次元目
+		 HspFunc_array( pval, 0 );// 2次元目
+		 HspFunc_array( pval, 0 );// 3次元目
+		 HspFunc_array( pval, 0 );// 4次元目
+
+	HspFunc_arrayによって作成されたPvalは、pval->offsetに配列要素に
+	アクセスするためのオフセット値(APTR)が設定されます。
+
+	void (*HspFunc_redim)( PVal *pval, int lenid, int len );
+
+	指定した変数の配列を拡張します。
+	pval変数の、指定した次元数lenid(1～4)に対してlenの大きさに拡張します。
+
+	char *(*HspFunc_varname)( int id );
+
+	指定したIDの変数名を取得します。
+	IDは、0から始まり変数IDの最大個数(HSPHED構造体のmax_valメンバ)が有効です。
+	この関数は、HSPオブジェクトに変数名情報が格納されている場合にのみ
+	取得することができます。それ以外の場合は、常に「""」が返されます。
+	(変数名情報は、#cmpopt命令により設定することが可能です。)
+
+	int (*HspFunc_seekvar)( const char *name );
+
+	指定した変数名を持つ変数IDを取得します。
+	IDは、0から始まり変数IDの最大個数(HSPHED構造体のmax_valメンバ)を持っています。
+	該当する変数名がなかった場合は、-1を返します。
+	この関数は、HSPオブジェクトに変数名情報が格納されている場合にのみ
+	取得することができます。それ以外の場合は、常に-1が返されます。
+	(変数名情報は、#cmpopt命令により設定することが可能です。)
+
+
+BMSCR構造体について
+
+	BMSCR構造体は、ウインドゥに関する情報をすべて含んでいます。
+	ウインドゥのサイズから、HWNDハンドルやデバイスコンテキストの情報など
+	ウインドゥに関するほとんどの情報を得ることができます。
+
+	BMSCR構造体は、HSP2.61までのSDKで使用されていた同名の構造体と
+	多くの部分で互換性があります。
+	BMSCR構造体を参照して動作するプログラムは、そのままHSP3のBMSCR構造体
+	でも使用することができます。互換が維持できない部分については、
+	名前が変更されているか、フィールドが削除されています。
+	また、HSP3から追加されている項目もいくつか存在します。
+
+	HSP2からの大きな変更点は、オブジェクトの情報を示すフィールドが
+	HSPOBJINFO構造体ベースになっているところです。
+	オブジェクトの情報については、getobj/setobjを使用するようにして下さい。
+
+	typedef struct BMSCR
+	{
+		//
+		//		Window data structure
+		//
+		int		flag;				// used flag
+		int		sx;					// X-size
+		int		sy;					// Y-size
+		int		palmode;			// palmode
+		HDC		hdc;				// buffer HDC
+		BYTE	*pBit;				// bitmap pointer
+		BITMAPINFOHEADER *pbi;		// infoheader
+		HBITMAP	dib;				// bitmap handle(DIB)
+		HBITMAP	old;				// bitmap handle(OLD)
+		RGBQUAD *pal;				// palette table
+		HPALETTE hpal;				// palette handle
+		HPALETTE holdpal;			// palette handle (old)
+		int		pals;				// palette entries
+		HWND	hwnd;				// window handle
+		HINSTANCE hInst;			// Instance of program
+		int		infsize;			// *pbi alloc memory size
+		int		bmpsize;			// *pBit alloc memory size
+
+		//		Window object setting
+		//
+		int		type;				// setting type
+		int		wid;				// window ID
+		short	fl_dispw;			// display window flag
+		short	fl_udraw;			// update draw window
+		int		wx,wy,wchg;			// actual window size x,y
+		int		viewx,viewy;		// buffer view point x,y
+		int		lx,ly;				// buffer view size x,y
+		int		cx,cy;				// object cursor x,y
+		int		ox,oy,py;			// object size x,y,py
+		int		texty;				// text Y-axis size
+		int		gx,gy,gmode;		// gcopy size
+		HBRUSH	hbr;				// BRUSH handle
+		HPEN	hpn;				// PEN handle
+		HFONT	hfont;				// FONT handle
+		HFONT	holdfon;			// FONT handle (old)
+		COLORREF color;				// text color code
+		int		textspeed;			// slow text speed
+		int		cx2,cy2;			// slow text cursor x,y
+		int		tex,tey;			// slow text limit x,y
+		char	*prtmes;			// slow message ptr
+		int		focflg;				// focus set flag
+		int		objmode;			// object set mode
+		LOGFONT	logfont;			// logical font
+		int		style;				// extra window style
+		int		gfrate;				// halftone copy rate
+		int		tabmove;			// object TAB move mode
+		int		sx2;				// actual bitmap X size
+		SIZE	printsize;			// print,mes extent size
+
+		//		Class depend data
+		//
+		int		objstyle;					// objects style	
+		HSPOBJINFO *mem_obj;				// Window objects
+		int objmax;							// Max number of obj
+		int objlimit;						// Limit number of obj
+		short savepos[BMSCR_SAVEPOS_MAX];	// saved position
+		void *master_hspwnd;				// Parent hspwnd class
+		short	palcolor;					// Palette color code
+		short	textstyle;					// Extra text style
+		short	framesx, framesy;			// Window frame xy-size
+
+		int		imgbtn;						// Custom Button Flag (-1=none)
+		short	btn_x1, btn_y1;				// Custom Button Image X,Y
+		short	btn_x2, btn_y2;				// Custom Button Image X,Y (press)
+		short	btn_x3, btn_y3;				// Custom Button Image X,Y (mouse over)
+		short	divx, divy;					// Divide value for CEL
+		short	divsx, divsy;				// CEL size
+		short	celofsx, celofsy;			// CEL center offset
+
+	} BMSCR;
+
+	各フィールドの詳細は、以下の通りです。
+
+	int		flag;			// used flag
+
+	BMSCRが管理する画面が使用されているかどうかのフラグです。
+
+		#define BMSCR_FLAG_NOUSE	0
+		#define BMSCR_FLAG_INUSE	1
+
+	のいずれかが設定されています。
+
+	int		sx;			// X-size
+	int		sy;			// Y-size
+	int		sx2;			// actual bitmap X size
+	int		palmode;		// palmode
+
+	画面を初期化したサイズが格納されています。
+	sx,syはX,Y方向のドット数になります。
+	sx2は、横方向のビットマップサイズ(ドット数ではありません)を
+	バイト単位で格納します。
+	palmodeは以下のいずれかが設定されています。
+
+		#define BMSCR_PALMODE_FULLCOLOR	0
+		#define BMSCR_PALMODE_PALETTECOLOR	1
+
+	HDC		hdc;			// buffer HDC
+
+	画面のデバイスコンテキストが格納されています。
+	このハンドルを使ってGDIファンクションで画面に描画することが可能です。
+	注意しなければならないのは、これはメモリ上のビットマップへの
+	デバイスコンテキストだということです。ここに描画をしても、実際の
+	ウインドゥ画面上では何の変化も起こりません。実際のウインドゥ画面に
+	変更を反映させるためには、HSPのredraw命令などを使用して再描画を
+	行なうか、GetDC命令で実際のウインドゥへのデバイスコンテキストを
+	取得して描画する必要があります。
+
+	BYTE	*pBit;				// bitmap pointer
+
+	画面のビットマップデータが格納されているメモリの先頭アドレスです。
+	このポインタを使って直接、画面にデータを書き込むことが可能です。
+	メモリにデータを直接書き込み場合は、色々な注意が必要です。詳しくは、
+	「ビットマップ画面への直接書き込み」を参照してください。
+
+	BITMAPINFOHEADER *pbi;		// infoheader
+	HBITMAP	dib;				// bitmap handle(DIB)
+	HBITMAP	old;				// bitmap handle(OLD)
+
+	画面データを管理するビットマップについての情報です。
+	oldメンバは、ワークに使用しているだけなので特に決まった値は格納され
+	ません。
+
+	RGBQUAD *pal;				// palette table
+	HPALETTE hpal;				// palette handle
+	HPALETTE holdpal;			// palette handle (old)
+	int		pals;			// palette entries
+
+	画面に適用されているパレットの情報です。
+	holdpalメンバは、ワークに使用しているだけなので特に決まった値は格納
+	されません。パレットの変更はなるべくHSP側の命令で行なうようにして、
+	このメンバは参照だけにとどめておいてください。
+
+	HWND	hwnd;				// window handle
+
+	画面の描画先にあたるウインドゥのハンドルです。
+
+	HANDLE	hInst;				// Instance of program
+
+	ウインドゥを管理するプログラムためのインスタンスです。
+
+	int		infsize;		// *pbi alloc memory size
+	int		bmpsize;		// *pBit alloc memory size
+
+	画面データ初期化時のメモリ使用量を示すワークです。
+
+	int		type;			// setting type
+
+	画面の属性を示します。
+	数値の示す内容は以下の通りです。
+
+		#define HSPWND_TYPE_NONE 0
+		#define HSPWND_TYPE_BUFFER 1
+		#define HSPWND_TYPE_MAIN 2
+		#define HSPWND_TYPE_BGSCR 3
+
+	int		wid;			// window ID
+
+	ウインドゥIDを示します。
+
+	short	fl_dispw;			// display window flag
+	short	fl_udraw;			// update draw window
+
+	画面がウインドゥとして表示されているかどうか、
+	画面の更新が必要かどうかを示すフラグです。
+
+	int		wx,wy,wchg;		// actual window size x,y
+	int		viewx,viewy;		// buffer view point x,y
+	int		lx,ly;			// buffer view size x,y
+
+	スクロールバーによってスクロールが可能なウインドゥでの、
+	表示ウインドゥサイズ、画面内から転送する元座標、転送する範囲
+	などを示します。
+
+	int		cx,cy;			// object cursor x,y
+
+	カレントポジションを示します。
+
+	int		ox,oy,py;		// object size x,y,py
+
+	objsize命令で指定したオブジェクトの大きさを示します。
+	pyメンバは、カレントポジションをY方向へ増加する際のドット数になり
+	ます。
+
+	int		texty;			// text Y-axis size
+
+	現在選択されている文字フォントのY方向のサイズを示します。
+
+	int		gx,gy,gmode;		// gcopy size
+	int		gfrate;			// halftone copy rate
+
+	gmode命令で指定した画面コピー時のサイズとモードを示します。
+	gfrateは、半透明による画像コピー時のレートが格納されます。
+
+	HBRUSH	hbr;				// BRUSH handle
+	HPEN	hpn;				// PEN handle
+
+	color命令で指定した色によるブラシとペンを示すオブジェクトの
+	ハンドルです。
+
+	HFONT	hfont;				// FONT handle
+	HFONT	holdfon;			// FONT handle (old)
+
+	font命令で指定したフォントのオブジェクトハンドルです。
+	holdfonはワーク用で特に決まった値は持ちません。
+
+	COLORREF color;			// text color code
+
+	color命令で指定した色データを示します。
+
+	int		textspeed;		// slow text speed
+
+	text命令で指定したテキストの表示スピードを示します。
+
+	int		cx2,cy2;		// slow text cursor x,y
+	int		tex,tey;		// slow text limit x,y
+	char	*prtmes;			// slow message ptr
+
+	ゆっくりと文字列を表示するためのワークです。
+
+	int		focflg;				// focus set flag
+
+	focflgは、初期フォーカスを合わせるための一時フラグに使用されます。
+	この値は、内部で使用するだけなので変更しないで下さい。
+
+	int		objmode;			// object set mode
+	LOGFONT	logfont;			// logical font
+
+	objmodeは、objmode命令で設定されているモードが格納されます。
+	logfontは選択された論理フォント構造体が格納されます。
+
+	int		style;				// extra window style
+
+	ウインドゥ固有のスタイル(screen命令で設定)が格納されます。
+
+	int		tabmove;			// object TAB move mode
+
+	tabmodeは、[TAB]キーによるオブジェクトフォーカス移動を行なうかどうかのフラグが格納されます。
+
+	SIZE	printsize;			// print,mes extent size
+
+	printsizeは、mes、print命令により表示されたメッセージの矩形範囲が格納されます。
+	(ginfo命令で取得可能)
+
+	int		objstyle;			// objects style
+
+	オブジェクトに適用されるスタイルを格納します。
+
+	HSPOBJINFO *mem_obj;		// Window objects
+	int objmax;					// Max number of obj
+	int objlimit;				// Limit number of obj
+
+	mem_objは、オブジェクト情報(HSPOBJINFO)が格納されているポインタを
+	格納しています。この場所から、objmaxの数だけデータが連続して格納されて
+	います。また、objmaxの値がobjlimitに達すると、警告が表示されます。
+	オブジェクトの数自体に上限はありませんが、警告を発するための数が
+	設定されています。
+
+	short savepos[BMSCR_SAVEPOS_MAX];	// saved position
+
+	マウスポインタの座標などの情報が保存されています。
+
+	void *master_hspwnd;		// Parent hspwnd class
+
+	BMSCR構造体を管理するクラスへのポインタが格納されています。
+	通常、このポインタはプラグインからは使われません。
+
+	short	palcolor;			// Palette color code
+
+	パレットカラー指定時のパレット番号を保存します。
+
+	short	framesx, framesy;		// Window frame xy-size
+
+	ウィンドウの枠で使用されるサイズ(ドット数)が格納されます。
+
+	int		imgbtn;			// Custom Button Flag (-1=none)
+	short	btn_x1, btn_y1;			// Custom Button Image X,Y
+	short	btn_x2, btn_y2;			// Custom Button Image X,Y (press)
+	short	btn_x3, btn_y3;			// Custom Button Image X,Y (mouse over)
+
+	objimage命令で設定されたボタンの設置パラメーターを保存します。
+
+	short	divx, divy;			// Divide value for CEL
+	short	divsx, divsy;			// CEL size
+	short	celofsx, celofsy;		// CEL center offset
+
+	celdiv命令で設定された画像素材の分割情報を保存します。
+	divx, divyは、X,Y方向の分割数となります。
+	divsx, divsyは、1素材あたりのサイズが保存されます。
+	celofsx, celofsyは、中心点座標となります。
+
+
+ビットマップ画面への直接書き込み
+
+	BMSCR構造体のpBitメンバには、画面のビットマップデータが格納されている
+	メモリの先頭アドレスが格納されています。これを使って直接、画面にデータ
+	を書き込むことが可能です。
+
+	直接メモリをアクセスすることで、GDIを使った時よりも数倍速い処理が可能
+	になります。また、画面のドット単位に自由にアクセスできるので特殊効果や
+	画像の変換などにも非常に便利てす。
+
+	ただし、これには注意しなければならない点がいくつかあります。
+
+	１．画面とメモリアドレスの対応が上下逆になっています
+
+	  Windowsのビットマップ管理は、なぜか一番下のラインから順に上に上がって
+	  いく構造になっています。この不思議な構造のせいで、いままで画面の左上
+	  から下に向かって進む構造に慣れていた人は苦しむかもしれません。
+
+	  たとえば、画面のサイズが640x480で(0,0)-(639,479)の範囲がメモリ上にある
+	  とすれば、pBitが示す先頭メモリは(0,479)の座標(左下)にあたります。
+
+	  そこから、X方向(右)にアドレスが増加していきますが、(639,479)まで進んで
+	  次は、(0,478)になります。そして再び、(639,478)まで進んで、その次は
+	  (0,477)となります。これを(639,0)まで繰り返す形でドットのデータが並んで
+	  います。
+
+	  ドットのデータは画面の色数(palmodeメンバ)によって異なります。
+
+	  フルカラーモードの場合は、１ドット３バイト(24bit)で「B,G,R,B,G,R...」
+	  の順番に各色の輝度を示します。また、パレットモードの場合は、
+	  １ドット１バイト(8bit)でパレットコードを示しています。
+
+	２．画面の範囲外にあたるメモリに書き込むと一般保護違反が出て止まります
+
+	  ビットマップ画面は、単なるメモリ上の空間に過ぎません。ここの、範囲外
+	  にデータを書き込むとWindowsのエラーとなりHSPが一般保護違反で終了します。
+	  画面の範囲は、sx,syメンバで知ることができます。これをもとに範囲から
+	  出ないように気をつけてください。
+
+	  画面上の任意の点X,Yを示すアドレスは以下の式で求められます。
+
+	  (パレットモード(256色)時)
+
+	      x = X座標;
+	      y = Y座標;
+	      width = (sx+3)&~3;
+	      vram_adr = pBit + ( ( sy - 1 - y ) * width ) + x;
+
+	  (フルカラーモード(1670万色)時)
+
+	      x = X座標;
+	      y = Y座標;
+	      width = ((sx*3)+3)&~3;
+	      vram_adr = pBit + ( ( sy - 1 - y ) * width ) + ( x * 3 );
+
+	３．ビットマップを書き換えた後は、実際の画面の更新をする必要があります
+
+	  これは、hdcメンバを使用してGDIファンクションによる描画をした時にも
+	  言えることですが、メモリ上のビットマップに描画をしても、実際の
+	  ウインドゥ画面上では何の変化も起こりません。
+
+	  メモリ上の画面と、実際の画面上のウインドゥ内は別です。メモリ上の画面
+	  を更新した後は、実際の画面上のウインドゥにその内容をコピーして更新
+	  しなければなりません。
+
+	  変更を反映させる最も簡単な方法は、HSPのredraw命令を使用して再描画を
+	  行なうことです。これは、全画面を更新して書き換えるので、ひととおり
+	  メモリ上の画面を書き換え終わってから一気にredraw命令で更新した方が
+	  効率的です。この方法でも、GDIに比べれば十分に高速になります。
+
+	  もう１つの方法は、hwndメンバを使ってGetDC命令で実際のウインドゥへの
+	  デバイスコンテキストを取得して、自分で更新するというものです。
+
+	  この方法については、「HSPサポートルーチンズ」でサポートされている関数を
+	  使用することで比較的容易に行なえます。
+	  詳しくは、hsp3plugin.cppソースファイルをご覧下さい。
+
+
+オブジェクト情報について
+
+	HSP3から、オブジェクトの情報はHSPOBJINFO構造体をもとに管理される
+	形に変更されました。これにより、今まで限られた数までしかウインドゥ上に
+	配置できなかった制限をなくし、またプラグインなど後から別なユーザーが
+	新しいタイプのオブジェクトを追加できるようになっています。
+	オブジェクトは、ウインドゥが持つ情報として汎用的に使用することが
+	できるようになっています。たとえば、プラグインにより新しい形状のボタン
+	を配置したり、標準でサポートされていないコントロールを配置するような
+	ことが可能になっています。
+	HSPOBJINFO構造体は、以下のような内容を持っています。
+
+	typedef struct HSPOBJINFO
+	{
+		//		Object Info (3.0)
+		//
+		short	owmode;		// objectのmode
+		short	option;		// objectのoption(未使用・内部オブジェクトは0)
+		void	*bm;		// objectが配置されているBMSCR構造体のポインタ
+		HWND	hCld;		// objectのhandle
+		int		owid;		// objectのValue(汎用)
+		int		owsize;		// objectの使用サイズ(汎用)
+
+		HSP3VARSET varset;	// objectから設定される変数の情報
+
+		//		callback function
+		void	(*func_notice)( struct HSPOBJINFO *, int );
+		void	(*func_objprm)( struct HSPOBJINFO *, int, void * );
+		void	(*func_delete)( struct HSPOBJINFO * );
+
+	} HSPOBJINFO;
+
+	HSPOBJINFO構造体は、プラグインから取得、設定することが可能です。
+	各フィールドの詳細は、以下の通りです。
+
+	short	owmode;		// objectのmode
+
+	オブジェクトのモードを格納します。
+	以下のいずれかが値として格納されています。
+
+		#define HSPOBJ_NONE 0		// 無効
+		#define HSPOBJ_TAB_ENABLE 1	// TABフォーカス移動可能
+		#define HSPOBJ_TAB_DISABLE 2	// TABフォーカス移動不可能
+		#define HSPOBJ_TAB_SKIP 3	// TABフォーカスをスキップ
+
+	void	*bm;
+
+	配置されているBMSCR構造体のポインタが格納されています。
+
+	HWND	hCld;		// objectのhandle
+
+	配置されているオブジェクトのウインドゥハンドルが格納されています。
+
+	short	option;		// objectのoption(未使用・内部オブジェクトは0)
+	int		owid;		// objectのValue(汎用)
+	int		owsize;		// objectの使用サイズ(汎用)
+	HSP3VARSET varset;	// objectから設定される変数の情報
+
+	オブジェクトの処理ルーチンで汎用的に使用できるフィールドです。
+	varsetは、主にオブジェクトの内容とともに、変数の内容を変更する
+	場合の変数情報を格納するために使用します。
+
+	void	(*func_notice)( HSPOBJINFO *, int );
+	void	(*func_objprm)( HSPOBJINFO *, int, void * );
+	void	(*func_delete)( HSPOBJINFO * );
+
+	オブジェクトの処理ルーチンをコールバック関数として格納します。
+	func_deleteは、オブジェクトが破棄される時に呼び出される関数になります。
+	生成したオブジェクトは、必ずここで削除するようにしてください。
+	func_noticeは、ウインドゥメッセージの通知があった時に呼び出される
+	関数になります。intパラメーターには、wParamの内容が渡されます。
+	func_noticeコールバックを発生させるためには、HSPのウインドゥに
+	WM_COMMANDメッセージを送るようなコントロールを配置しなければ
+	なりません。また、WM_COMMANDメッセージに付随するコードとして、
+	(MESSAGE_HSPOBJ+オブジェクトのID)を設定しておく必要があります。
+	func_objprmは、objprm命令からオブジェクトに直接値が送られた時の
+	処理を行なう関数を指定します。引数のintはパラメーター型(HSPVAR_FLAG_*)を
+	void *は、パラメーターのポインタを示します。
+	これらのコールバック関数とともに、HSPOBJINFO構造体を設定することで
+	独自のオブジェクトを自由に拡張していくことが可能です。
+
+
+HSPイベントについて
+
+	HSPイベントは、HSP内部で実行時に発生するイベントを通知するもので、
+	いくつかのカテゴリーごとに情報を取得したり、置き換えることが可能に
+	なっています。たとえば、ファイルの入出力を別なデバイスにも対応させたり、
+	picload命令の読み込みフォーマットを拡張するなど既存の動作をプラグイン
+	からコントロールできるように設計されています。
+
+	HSPイベントは、いくつかのカテゴリーがあり、プラグインの初期化関数内で
+	イベント発生時のコールバック関数を指定することが可能です。
+	カテゴリーは以下のものが用意されています。
+
+	#define HSPEVENT_ENABLE_COMMAND 1	// １ステップ実行時
+	#define HSPEVENT_ENABLE_HSPIRQ 2	// HSP内での割り込み発生時
+	#define HSPEVENT_ENABLE_GETKEY 4	// キーチェック時
+	#define HSPEVENT_ENABLE_FILE 8		// ファイル入出力時
+	#define HSPEVENT_ENABLE_MEDIA 16	// メディア入出力時
+	#define HSPEVENT_ENABLE_PICLOAD 32	// picload命令実行時
+
+	イベントコールバックを発生させるためには、イベント種別をoption
+	フィールドに設定する必要があります。
+	以下は、HSPEVENT_ENABLE_GETKEYを設定してeventfuncという関数を
+	登録している例です。
+
+	//	イベントコールバックを発生させるイベント種別を設定する
+	info->option = HSPEVENT_ENABLE_GETKEY;
+	info->eventfunc = eventfunc;	// イベント関数(eventfunc)の登録
+
+	これで、getkey命令やstick命令などのキーチェック時のイベント発生時に
+	イベント関数が呼び出されることになります。
+	カテゴリは重複して指定することも可能です。ただし、１ステップ実行を
+	監視するためのHSPEVENT_ENABLE_COMMANDカテゴリーは、設定するとすべての
+	命令実行時にイベントが発生するようになるため全体の実行速度が低下します。
+	このカテゴリーは、デバッグ目的のために使用するようにしてください。
+
+	以下は、HSPEVENT_ENABLE_GETKEYから発生したイベントを処理するための
+	イベント処理関数の例です。
+
+	static int eventfunc( int event, int prm1, int prm2, void *prm3 )
+	{
+		//		イベント処理 (HSPイベント発生時に呼ばれます)
+		//
+		switch( event ) {
+		case HSPEVENT_GETKEY:
+			{
+			int *ival;
+			ival = (int *)prm3;
+			*ival = 123;
+			return 1;
+			}
+		}
+		return 0;
+	}
+
+	上の例では、getkey命令で取得される結果を123という値に置き換えます。
+	このようにイベント処理関数では、イベントの種別からその内容を置き換え、
+	または取得するという一連の動作を書いておく必要があります。
+	イベント処理関数は、値を置き換えた場合には0以外の値を返すように
+	してください。イベントの内容を取得しただけか、または処理していない
+	場合には0を返して下さい。これにより、適切にイベント処理が行なわれます。
+	また、
+	複数のプラグインが同じカテゴリーのイベントを取得しようとしている場合は、
+	プラグインが登録された順番に処理されます。
+	0を返した(書き換え処理をしていない)場合は、同じカテゴリーのイベントを
+	取得している別なプラグインにもイベントが渡されます。
+	0以外が返された場合には、その時点でイベントは終了します。それ以降の
+	プラグインに処理が渡されることはありません。
+
+	プラグインから、HSPイベントを発生させることも可能です。
+
+	int code_event( int event, int prm1, int prm2, void *prm3 );
+
+	の関数で直接イベントをHSPに渡すことができます。
+	これにより、特定ラベルへのジャンプ、サブルーチンジャンプ、
+	変数への代入などを行なうことができます。
+	これらのイベントは、主にウインドゥ上のオブジェクト処理などで
+	使用されています。
+
+	HSPイベントは、以下の種類があります。
+	イベントごとに渡されるパラメーターの内容が異なります。
+
+	HSPEVENT_COMMAND
+		prm1 : 中間コードタイプID
+		prm2 : 中間コードサブID
+		prm3 : なし
+
+		HSPが１命令実行するたびに発生するイベント。
+		内部で実行履歴などを作成するために利用されています。
+
+	HSPEVENT_HSPIRQ
+		prm1 : IRQ ID#
+		prm2 : iparam値
+		prm3 : IRQDATのポインタ
+
+		HSP内部割込み発生時の処理イベント。
+
+	HSPEVENT_GETKEY
+		prm1 : キーコード
+		prm2 : option
+		prm3 : 返値のポインタ
+
+		キー入力チェック時にフックされる割り込みです。
+
+	HSPEVENT_STICK
+		prm1 : なし
+		prm2 : なし
+		prm3 : 返値のポインタ
+
+		stick命令チェック時にフックされる割り込みです。
+
+	HSPEVENT_FNAME
+		prm1 : なし
+		prm2 : なし
+		prm3 : 文字列ポインタ
+
+		ファイル関連割り込みで使用するパス名を登録します。
+
+	HSPEVENT_FREAD
+		prm1 : 先頭からのオフセット
+		prm2 : 読み込みサイズ
+		prm3 : 読み込みポインタ
+
+		HSPEVENT_FNAMEで指定したファイルをメモリに読み込みます。
+
+	HSPEVENT_FWRITE
+		prm1 : 先頭からのオフセット
+		prm2 : 書き込みサイズ
+		prm3 : データのポインタ
+
+		メモリ上のデータをHSPEVENT_FNAMEで指定したファイルに書き込みます。
+
+	HSPEVENT_FEXIST
+		prm1 : なし
+		prm2 : なし
+		prm3 : なし
+
+		HSPEVENT_FNAMEで指定したファイルのサイズを調べます。
+		結果はシステム変数statに返ります。
+
+	HSPEVENT_FDELETE
+		prm1 : なし
+		prm2 : なし
+		prm3 : なし
+
+		HSPEVENT_FNAMEで指定したファイルを削除します。
+
+	HSPEVENT_FMKDIR
+		prm1 : なし
+		prm2 : なし
+		prm3 : なし
+
+		HSPEVENT_FNAMEで指定したディレクトリを作成します。
+
+	HSPEVENT_FCHDIR
+		prm1 : なし
+		prm2 : なし
+		prm3 : なし
+
+		HSPEVENT_FNAMEで指定したディレクトリに移動します。
+
+	HSPEVENT_FCOPY
+		prm1 : なし
+		prm2 : なし
+		prm3 : コピー先ファイル名へのポインタ
+
+		HSPEVENT_FNAMEで指定したファイルをコピーします。
+
+	HSPEVENT_FDIRLIST1
+		prm1 : dirlistオプション
+		prm2 : なし
+		prm3 : 結果のポインタ(char **)
+
+		HSPEVENT_FNAMEで指定したワイルドカードからディレクトリ内の
+		ファイル一覧を取得します。
+
+	HSPEVENT_FDIRLIST2
+		prm1 : なし
+		prm2 : なし
+		prm3 : なし
+
+		HSPEVENT_FDIRLIST1が確保したメモリを破棄します。
+		必ず、HSPEVENT_FDIRLIST1の後に呼び出されます。
+
+	HSPEVENT_GETPICSIZE
+		prm1 : なし
+		prm2 : なし
+		prm3 : 返値のポインタ
+
+		HSPEVENT_FNAMEで指定した画像ファイルの読み込み準備を行ないます。
+		prm3が示すポインタにint型で、X,Yサイズの情報が返されます。
+
+	HSPEVENT_PICLOAD
+		prm1 : なし
+		prm2 : なし
+		prm3 : デバイスコンテキストのハンドル(HDC)
+
+		HSPEVENT_GETPICSIZEによって読み込まれた画像ファイルを
+		実際のデバイスに描画します。
+
+
+
+HSPCTX構造体について
+
+	HSPCTX構造体は、HSPの基本的な動作に関する情報を格納しています。
+	プラグインからもctxという名前で参照することが可能です。
+
+	typedef struct HSPCTX
+	{
+	//	HSP Context
+	//
+	HSPHED *hsphed;						// HSP object file header
+	unsigned short *mcs;				// current code segment ptr
+	unsigned short *mem_mcs;			// code segment ptr
+	char *mem_mds;						// data segment ptr
+	unsigned char *mem_di;				// Debug info ptr
+	int *mem_ot;						// object temp segment ptr
+
+	IRQDAT *mem_irq;					// IRQ data ptr
+	int irqmax;							// IRQ data count
+	int iparam;							// IRQ Info data1
+	int wparam;							// IRQ Info data2
+	int lparam;							// IRQ Info data3
+
+	PVal *mem_var;						// var storage index
+	HSPEXINFO30 exinfo;					// HSP function data(3.0)
+	int runmode;						// HSP execute mode
+	int waitcount;						// counter for wait
+	int waitbase;						// wait sleep base
+	int waittick;						// next tick for await
+	int lasttick;						// previous tick
+	int sublev;							// subroutine level
+	LOOPDAT mem_loop[HSP3_REPEAT_MAX];	// repeat loop info
+	int looplev;						// repeat loop level
+	HSPERROR err;						// error code
+	int hspstat;						// HSP status
+	int stat;							// sysvar 'stat'
+	int strsize;						// sysvar 'strsize'
+	char *refstr;						// RefStr Buffer
+	char *fnbuffer;						// buffer for FILENAME
+	void *instance;						// Instance Handle (windows)
+	int intwnd_id;						// Window ID (interrupt)
+	PVal *note_pval;					// MemNote pval
+	APTR note_aptr;						// MemNote aptr
+	PVal *notep_pval;					// MemNote pval (previous)
+	APTR notep_aptr;					// MemNote aptr (previous)
+	char *stmp;							// String temporary buffer
+
+	void *prmstack;						// Current parameter stack area
+	LIBDAT *mem_linfo;					// Library info
+	STRUCTPRM *mem_minfo;				// Parameter info
+	STRUCTDAT *mem_finfo;				// Function/Struct info
+	int retval_level;					// subroutine level (return code)
+	int endcode;						// End result code
+	void (*msgfunc) (HSPCTX *);			// Message Callback Proc.
+	void *wnd_parent;					// Parent Window Handle
+	double refdval;						// sysvar 'refdval'
+	char *cmdline;						// Command Line Parameters
+
+	HSPEXINFO *exinfo2;					// HSP function data(3.1)
+
+	} HSPCTX;
+
+	以下は、各フィールドの詳細です。
+
+	HSPHED *hsphed;			// HSP object file header
+
+	HSPオブジェクトファイル(axファイル)のヘッダポインタを格納します。
+
+	unsigned short *mcs;		// current code segment ptr
+	unsigned short *mem_mcs;	// code segment ptr
+
+	実行中のコード位置と、中間コードが格納されているポインタを格納します。
+
+	char *mem_mds;			// data segment ptr
+
+	各種データが保存されている領域(data segment)ポインタを格納します。
+
+	unsigned char *mem_di;		// Debug info ptr
+
+	デバッグ情報が保存されている領域(Debug info)ポインタを格納します。
+
+	int *mem_ot;			// object temp segment ptr
+
+	ラベル情報が保存されている領域(OT segment)ポインタを格納します。
+
+	IRQDAT *mem_irq;		// IRQ data ptr
+	int irqmax;			// IRQ data count
+
+	HSP内部の割り込み要因(IRQDAT)の情報を格納します。
+	irqmaxには、格納されているIRQDATの数が入ります。
+
+	int iparam;			// IRQ Info data1
+	int wparam;			// IRQ Info data2
+	int lparam;			// IRQ Info data3
+
+	システム変数iparam,wparam,lparamの内容を保持します。
+
+	PVal *mem_var;			// var storage index
+
+	グローバル変数の情報が保存されているポインタを格納します。
+
+	HSPEXINFO30 exinfo;		// HSP function data
+
+	HSPEXINFO30構造体を格納しています。
+	このデータは、HSP3.0互換のために用意されているもので、
+	通常は、exinfo2メンバを参照してHSPEXINFO構造体を利用してください。
+
+	int runmode;			// HSP execute mode
+
+	実行モードを格納します。
+
+	int waitcount;			// counter for wait
+
+	wait/await命令のカウンタを格納します。
+
+	int waitbase;			// wait sleep base
+
+	await命令のSleep時間単位を格納します。
+
+	int waittick;			// next tick for await
+	int lasttick;			// previous tick
+
+	await命令での次回tickと、前回のtick数を格納します。
+
+	int sublev;			// subroutine level
+
+	サブルーチンのネスト数を格納します。
+
+	LOOPDAT mem_loop[HSP3_REPEAT_MAX];	// repeat loop info
+	int looplev;			// repeat loop level
+
+	repeat～loop命令で使用する情報を格納します。
+
+	HSPERROR err;			// error code
+
+	エラー発生時のエラーコードを格納します。
+
+	int hspstat;			// HSP status
+
+	システム変数hspstatの内容を格納します。
+
+	int stat;			// sysvar 'stat'
+
+	システム変数statの内容を格納します。
+
+	int strsize;			// sysvar 'strsize'
+
+	システム変数strsizeの内容を格納します。
+
+	char *refstr;			// RefStr Buffer
+
+	システム変数refstrの内容を格納します。
+
+	void *instance;			// Instance Handle (windows)
+
+	Windowsのインスタンスハンドルを格納します。
+
+	char *fnbuffer;			// buffer for FILENAME
+
+	割り込み時に使用されるファイル名の一次記憶バッファのポインタ。
+
+	void *intwnd_save;		// Window Handle (interrupt)
+
+	Windowsメッセージが送られたウインドゥのハンドルを保存しています。
+
+	PVal *note_pval;					// MemNote pval
+	APTR note_aptr;						// MemNote aptr
+
+	メモリノートパッド命令(notesel)で選択されている変数の情報を保存しています。
+
+	PVal *notep_pval;					// MemNote pval (previous)
+	APTR notep_aptr;					// MemNote aptr (previous)
+
+	notesel命令で選択される前の情報を保存しています。
+
+	char *stmp;						// String temporary buffer
+
+	関数の戻り値や、命令解釈時の文字列一時退避に使用できる領域です。
+	strbuf(sb～)系のライブラリで扱うことができる文字列ポインタです。
+
+	void *prmstack;						// Current parameter stack area
+
+	サブルーチンやユーザー定義命令内で参照されるスタックパラメーターを格納します。
+	スタックパラメーターには、複数の情報が多重に保存されています。
+
+	LIBDAT *mem_linfo;					// Library info
+
+	外部DLLやCOMなどの情報を管理するLIBDAT構造体のポインタを格納します。
+
+	STRUCTPRM *mem_minfo;				// Parameter info
+
+	外部DLLやCOMなどの引数情報を管理するSTRUCTPRM構造体のポインタを格納します。
+
+	STRUCTDAT *mem_finfo;				// Function/Struct info
+
+	モジュール変数やユーザー定義命令パラメーターの情報を管理するSTRUCTDAT構造体の
+	ポインタを格納します。
+
+	int retval_level;					// subroutine level (return code)
+	割り込み発生時のサブルーチンネストレベルを格納します。
+	この値は、システムが管理しています。
+
+	int endcode;						// End result code
+
+	スクリプト終了時にシステムに渡されるレザルトコードを格納します。
+
+	void (*msgfunc) (HSPCTX *);			// Message Callback Proc.
+
+	ウィンドウメッセージを処理する関数のポインタを格納します。
+
+	void *wnd_parent;					// Parent Window Handle
+
+	HSPウィンドウ生成時に渡される親ウィンドウ情報が格納されます。
+
+	double refdval;						// sysvar 'refdval'
+
+	システム変数refdvalの内容を格納します。
+
+	char *cmdline;						// Command Line Parameters
+
+	コマンドラインパラメーターを格納します。
+
+	HSPEXINFO *exinfo2;					// HSP function data(3.1)
+
+	HSPEXINFO構造体へのポインタを格納します。
+	このメンバは、HSP3.1以降のみ利用可能です。
+
+
+ライブラリ情報について
+
+	HSPCTX構造体内にある以下のメンバは、スクリプトで定義されているライブラリ情報を
+	示しています。以下のメンバは、外部DLL、COM、モジュール変数など多くの複合した
+	パラメーターを保存しています。
+
+	LIBDAT *mem_linfo;				// Library info
+
+	ライブラリ情報を格納するLIBDAT構造体へのポインタを提供します。
+	LIBDAT構造体は以下のように定義されています。
+
+		typedef struct LIBDAT {
+			int	flag;		// initalize flag
+			int	nameidx;	// function name index (DS)
+						// Interface IID ( Com Object )
+			void	*hlib;		// Lib handle
+			int	clsid;		// CLSID (DS) ( Com Object )
+		} LIBDAT;
+
+	ライブラリ情報は、mem_linfo[0]～mem_linfo[??]までのインデックスで管理されて
+	います。実際には、mem_finfoからライブラリ情報が参照されます。
+
+	LIBDAT構造体は、#uselib、#usecom等に対応した情報が含まれています。
+	それぞれの情報は、flagメンバによって情報の種類が決まります。
+	flagの値は、以下のいずれかになります。
+
+		#define LIBDAT_FLAG_NONE 0	// 無効
+		#define LIBDAT_FLAG_DLL 1	// DLL(未インポート)
+		#define LIBDAT_FLAG_DLLINIT 2	// DLL(インポート済)
+		#define LIBDAT_FLAG_MODULE 3	// モジュール変数
+		#define LIBDAT_FLAG_COMOBJ 4	// 定義済みCOMオブジェクト
+
+	nameidxには、ライブラリ(DLL)名またはインターフェースIIDを示すDSインデックス
+	が格納されます。DSインデックスは、mem_mds(data segment)内のインデックスを
+	示します。( &hspctx->mem_mds[DSインデックス] で実際のポインタを取得する
+	ことができます。 )
+	hlibは、インポートされたDLLのハンドルが格納されます。
+	clsidは、COMオブジェクト定義時のクラスIDを示すDSインデックスが格納されます。
+
+
+	STRUCTDAT *mem_finfo;				// Function/Struct info
+
+	ファンクション情報など個別の情報を格納しているSTRUCTDAT構造体へのポインタを
+	提供します。
+	STRUCTDAT構造体は以下のように定義されています。
+
+		typedef struct STRUCTDAT {
+			short	index;		// base LIBDAT index
+			short	subid;		// struct index
+			int	prmindex;	// STRUCTPRM index(MINFO)
+			int	prmmax;		// number of STRUCTPRM
+			int	nameidx;	// name index (DS)
+			int	size;		// struct size (stack)
+			int	otindex;	// OT index(Module) / cleanup flag(Dll)
+			void	*proc;		// proc address
+		} STRUCTDAT;
+
+	STRUCTDATは、スクリプトによって定義された１つのユーザー定義命令
+	(#deffunc、#func、#comfunc)に関する情報が含まれています。
+	indexは、対応するライブラリ情報インデックスを示します。
+	(indexが示すLIBDAT構造体が関連していることになります。)
+	subidは、ファンクション情報(自分自身)のインデックスIDが格納されます。
+	(「&hspctx->mem_finfo[インデックスID]」のインデックスになります。)
+	ただし、特殊なタイプでは以下の値が格納されます。
+
+		#define STRUCTPRM_SUBID_DLL -3		// 外部DLL定義命令
+		#define STRUCTPRM_SUBID_DLLINIT -4	// 外部DLL定義命令(*)
+		#define STRUCTPRM_SUBID_OLDDLL -5	// 外部DLL定義命令
+		#define STRUCTPRM_SUBID_OLDDLLINIT -6	// 外部DLL定義命令(*)
+		#define STRUCTPRM_SUBID_COMOBJ -7	// COM呼び出し命令
+
+		STRUCTPRM_SUBID_OLDDLL、STRUCTPRM_SUBID_OLDDLLINITは、
+		レガシー命令(2.x互換)できることを示しています。
+		(*)INITが付加されているものは、インポート済みであることを
+		   示しています。
+
+	実際のパラメーターに関する情報が、prmindexで示されるパラメーター情報に
+	格納されています。パラメーター情報は、「&hspctx->mem_minfo[prmindex]」
+	によって取得されるSTRUCTPRM構造体に記録されています。
+	prmmaxは、パラメーター情報の数を示しています。たとえば、prmmaxが３の
+	場合は、「prmindex、prmindex+1、prmindex+2」の合計３つのパラメーターを
+	このファンクション情報が保持していることを示しています。つまり、
+	prmindexからprmmaxの個数だけ情報があることになります。
+	nameidxは、ファンクション情報の名称文字列(またはファンクション名)を
+	示すDSインデックスが格納されます。
+	sizeには、パラメーターが使用するメモリ上のサイズ(バイト数)が格納されます。
+	procには、外部DLL定義命令時にインポートされた関数アドレスが格納されます。
+	otindexは、情報のタイプによって内容が分かれます。
+
+		ユーザー定義命令時        : OTインデックス(ラベル情報)
+		外部DLL定義命令時         : クリーンアップ命令フラグ(0～1)
+		COMオブジェクト定義命令時 : インポートID(序数)
+		モジュール変数情報時      : 0(なし)
+
+
+	STRUCTPRM *mem_minfo;				// Parameter info
+
+	パラメーター情報を提供するSTRUCTPRM構造体へのポインタを提供します。
+	パラメーター情報は、ファンクション情報から参照されます。
+	STRUCTPRM構造体は以下のように定義されています。
+
+		typedef struct STRUCTPRM {
+			short	mptype;		// Parameter type
+			short	subid;		// struct index
+			int	offset;		// offset from top
+		} STRUCTPRM;
+
+	mptypeは、パラメーターの型を示す値が格納されます。
+	パラメーターの型は、通常以下の値となります。
+
+		#define MPTYPE_NONE 0
+		#define MPTYPE_VAR 1		// 変数
+		#define MPTYPE_STRING 2		// 文字列
+		#define MPTYPE_DNUM 3		// 実数(64bit浮動小数)
+		#define MPTYPE_INUM 4		// 整数
+		#define MPTYPE_STRUCT 5		// モジュール変数型
+		#define MPTYPE_LABEL 7		// ラベル型
+
+		#define MPTYPE_LOCALVAR -1	// ローカル変数
+		#define MPTYPE_ARRAYVAR -2	// 配列変数
+		#define MPTYPE_SINGLEVAR -3	// 変数そのもの(配列なし)
+		#define MPTYPE_FLOAT -4		// 32bit浮動小数
+		#define MPTYPE_STRUCTTAG -5	// モジュール変数型タグ
+		#define MPTYPE_LOCALSTRING -6	// ローカル文字列
+		#define MPTYPE_MODULEVAR -7	// モジュール変数名
+		#define MPTYPE_PPVAL -8		// PVALへのポインタ
+		#define MPTYPE_PBMSCR -9	// BMSCRへのポインタ
+		#define MPTYPE_PVARPTR -10	// 変数情報へのポインタ
+		#define MPTYPE_IMODULEVAR -11	// モジュール変数名
+
+		#define MPTYPE_IOBJECTVAR -12	// COMオブジェクト型
+		#define MPTYPE_LOCALWSTR -13	// ローカル文字列(Unicode)
+		#define MPTYPE_FLEXSPTR -14	// sptr
+		#define MPTYPE_FLEXWPTR -15	// wptr
+		#define MPTYPE_PTR_REFSTR -16	// refstrへのポインタ
+
+	subidには、通常自分自身のID(パラメーター情報インデックス)が格納
+	されています。
+	ただし、特殊なタイプでは以下の値が格納されます。
+
+		#define STRUCTPRM_SUBID_STACK -1 // スタック内のローカル変数
+
+
+PVal構造体について
+
+	PVal構造体は、変数に保存されるデータを示すための情報が含まれています。
+	hspvar_core.hに以下のように定義されています。
+
+	//	PVAL structure
+	//
+	typedef struct
+	{
+		//	Memory Data structure (2.5 compatible)
+		//
+		short	flag;		// type of val
+		short	mode;		// mode (0=normal/1=clone/2=alloced)
+		int		len[5];		// length of array 4byte align (dim)
+		int		size;		// size of Val
+		char	*pt;		// ptr to array
+
+		//	Memory Data structure (3.0 compatible)
+		//
+		void	*master;	// Master pointer for data
+		short	autoresize;	// Auto Array Expand Flag
+		short	arraycnt;	// Array Set Count
+		int		offset;		// Array Data Offset
+		int		arraymul;	// Array Multiple Value 
+	} PVal;
+
+	先頭部分のフィールドは、HSP2.5以降のPVAL2構造体と完全な互換性があります。
+	HSP3.0から拡張されたフィールドによって、多くの機能が拡張されています。
+	PVal構造体に関わる処理はすべて、ストレージコアファンクションを介して
+	行なうため、直接それぞれのフィールドを操作することはまれです。
+	それぞれのフィールド詳細は以下の通りです。
+
+	short	flag;		// type of val
+
+	変数の型が格納されています。
+	以下のいずれか、または拡張されたVarTypeの値になります。
+
+		#define HSPVAR_FLAG_STR 2	// SJIS文字列(str)
+		#define HSPVAR_FLAG_DOUBLE 3	// 64bit実数(double)
+		#define HSPVAR_FLAG_INT 4	// 32bit整数(int)
+
+	short	mode;		// mode (0=normal/1=clone/2=alloced)
+
+	変数が作成されたモードが格納されています。
+	以下のいずれかの値になります。
+
+		#define HSPVAR_MODE_NONE -1	// 無効
+		#define HSPVAR_MODE_MALLOC 1	// 通常確保されたメモリ
+		#define HSPVAR_MODE_CLONE 2	// クローン変数
+
+	int	len[5];		// length of array 4byte align (dim)
+
+	配列のサイズについての情報が格納されています。
+	dim p1,p2,p3,p4とした場合に、p1がlen[1]に、p2がlen[2]に、
+	p3がlen[3]に、p4がlen[4]の値となり保持されています。
+
+	int		size;		// size of Val
+
+	変数が確保したメモリ全体のサイズが格納されています。
+
+	char	*pt;		// ptr to Val
+
+	実際の変数の内容が記憶されているメモリへのポインタです。
+	通常は、配列変数であれば、ここで指定されたアドレスから連続的な
+	空間が配列のために確保されています。
+	文字列など一部の型では、違っている場合もあるため、必ず
+	変数が保持する値の操作は、ストレージコアファンクションを介して
+	行なうようにしてください。
+
+	short	autoresize;	// Auto Array Expand Flag
+	short	arraycnt;	// Array Set Count
+	int		offset;		// Array Data Offset
+	int		arraymul;	// Array Multiple Value 
+	void	*master;	// Master pointer for data
+
+	以上のフィールドは、ストレージコアファンクション側が任意に
+	利用することができます。主に、可変長配列に関する情報が格納されて
+	います。
+
+
+ストレージコアファンクション(HspVarProc)について
+
+
+	HspVarProc構造体は、変数に格納されるタイプごとの情報を格納するための
+	ものです。この構造体に設定されたcorefunc(ストレージコアファンクション)
+	によって、新しい型を管理することができるようになります。
+	hspvar_core.hに以下のように定義されています。
+
+	//		command execute core function
+	//
+	typedef struct
+	{
+	//		データフィールド
+	//
+	short flag;							// 型タイプ値 (親アプリケーションで設定されます)
+	short aftertype;					// 演算後のタイプ値
+	short version;						// 型タイプランタイムバージョン(0x100 = 1.0)
+	unsigned short support;				// サポート状況フラグ(HSPVAR_SUPPORT_*)
+	short basesize;						// １つのデータが使用するサイズ(byte) / 可変長の時は-1
+	short opt;							// (未使用)
+
+	char *vartype_name;					// 型タイプ名文字列へのポインタ
+	char *user;							// ユーザーデータ(未使用)
+
+	//		システム参照・型変換用
+	//
+	void *(*Cnv)( void *buffer, int flag );
+	void *(*CnvCustom)( void *buffer, int flag );
+	PDAT *(*GetPtr)( PVal *pval );
+
+	void *(*ArrayObjectRead)( PVal *pval, int *mptype );// 配列要素の指定 (連想配列/読み出し)
+	void (*ArrayObject)( PVal *pval );							// 配列要素の指定 (連想配列/書き込み準備)
+	void (*ObjectWrite)( PVal *pval, void *data, int type );	// HSPVAR_SUPPORT_NOCONVERT指定時の代入
+	void (*ObjectMethod)( PVal *pval );							// 変数に対するメソッドの指定
+
+	void (*Alloc)( PVal *pval, PVal *pval2 );		// 変数メモリを確保する
+	void (*Free)( PVal *pval );						// 変数メモリを解放する
+
+	int (*GetSize)( void *pdat );					// 要素が使用するメモリサイズを返す(可変長のため)
+
+	//		変数バッファ(バイナリ)のポインタとサイズを返す
+	//		(要素が可変長(str)の場合は該当する１配列バイナリのみ)
+	//		(要素が固定長(int,double)の場合は全配列バイナリ)
+	//		(サイズはメモリ確保サイズを返す)
+	void *(*GetBlockSize)( PVal *pval, PDAT *pdat, int *size );
+
+	//		バイナリデータ用にメモリブロックを確保する
+	//		(要素が可変長(str)の場合にブロックサイズを強制的に確保する)
+	//		(固定長の場合は何もしない)
+	void (*AllocBlock)( PVal *pval, PDAT *pdat, int size );
+
+	//		代入用関数(型の一致が保障されます)
+	//
+	void (*Set)( PVal *pval, PDAT *pdat, void *in );
+
+	//		演算用関数(型の一致が保障されます)
+	//
+	void (*AddI)( PDAT *pval, void *val );
+	void (*SubI)( PDAT *pval, void *val );
+	void (*MulI)( PDAT *pval, void *val );
+	void (*DivI)( PDAT *pval, void *val );
+	void (*ModI)( PDAT *pval, void *val );
+
+	void (*AndI)( PDAT *pval, void *val );
+	void (*OrI)( PDAT *pval, void *val );
+	void (*XorI)( PDAT *pval, void *val );
+
+	void (*EqI)( PDAT *pval, void *val );
+	void (*NeI)( PDAT *pval, void *val );
+	void (*GtI)( PDAT *pval, void *val );
+	void (*LtI)( PDAT *pval, void *val );
+	void (*GtEqI)( PDAT *pval, void *val );
+	void (*LtEqI)( PDAT *pval, void *val );
+
+	void (*RrI)( PDAT *pval, void *val );
+	void (*LrI)( PDAT *pval, void *val );
+	} HspVarProc;
+
+
+	short flag;		// 型タイプ値 (親アプリケーションで設定されます)
+
+	型ごとに割り振られたID番号が設定されています。
+	HSPVAR_FLAG_INT等も型タイプ値を示しています。
+	タイプ値は、PVal構造体のflagフィールドに設定されます。
+
+	short aftertype;	// 演算後のタイプ値
+
+	演算後にタイプが変更される演算子を持つ場合は、このフィールドで
+	演算後のタイプ値をシステムに通知します。
+
+	short version;		// 型タイプランタイムバージョン(0x100 = 1.0)
+	unsigned short support;	// サポート状況フラグ(HSPVAR_SUPPORT_*)
+	short basesize;		// １つのデータが使用するサイズ(byte) / 可変長の時は-1
+	short opt;		// (未使用)
+	char *vartype_name;	// 型タイプ名文字列へのポインタ
+	char *user;		// ユーザーデータ(未使用)
+
+	ストレージコアファンクションの初期化時に型の持つ情報を設定する
+	必要があります。これらの情報をもとに、内部動作が決定されます。
+	supportは、以下の中から複数の内容を選択して設定します。
+
+	HSPVAR_SUPPORT_STORAGE		// 固定長ストレージサポート
+	HSPVAR_SUPPORT_FLEXSTORAGE	// 可変長ストレージサポート
+	HSPVAR_SUPPORT_FIXEDARRAY	// 配列サポート
+	HSPVAR_SUPPORT_FLEXARRAY	// 可変長配列サポート
+	HSPVAR_SUPPORT_ARRAYOBJ		// 連想配列サポート
+	HSPVAR_SUPPORT_FLEXSIZE		// 要素ごとのデータが可変長
+	HSPVAR_SUPPORT_CLONE		// クローン動作
+	HSPVAR_SUPPORT_USER1		// ユーザーフラグ1
+	HSPVAR_SUPPORT_USER2		// ユーザーフラグ2
+
+	変数初期化時に、PVal構造体のsupportフィールドに内容がコピーされます。
+	vartype_nameは、型を名前で識別するための情報です。
+	英小文字で設定しておく必要があり、他の型と名前が重複しないように
+	配慮する必要があります。
+
+	ユーザーデータ及びユーザーフラグは、ストレージコアファンクション側が
+	自由に使用できるフラグ情報です。
+
+
+	PDAT *(*GetPtr)( PVal *pval );
+
+	PValが示すデータの実態がある先頭ポインタを返します。
+	(PDAT*は、実態データのポインタを示しています。)
+	配列変数をサポートしている場合は、オフセット情報(PVal->offset)を
+	もとにデータの実態ポインタを求める必要があります。
+
+
+	void *(*ArrayObjectRead)( PVal *pval, int *mptype );// 配列要素の指定 (連想配列/読み出し)
+	void (*ArrayObject)( PVal *pval );	// 配列要素の指定 (連想配列/書き込み準備)
+	void (*ObjectWrite)( PVal *pval, void *data, int type );	// HSPVAR_SUPPORT_NOCONVERT指定時の代入
+	void (*ObjectMethod)( PVal *pval );	// 変数に対するメソッドの指定
+
+	型が連想配列サポートをしている時(HSPVAR_SUPPORT_ARRAYOBJ)に、
+	配列指定のために呼び出されます。
+	HSP3コアは、変数名の次にある中間コードをパースする段階で、この
+	関数を呼び出します。ArrayObject、ArrayObjectRead関数は、適切に中間コードを
+	パースして値を戻してやる必要があります。
+	ArrayObjectは、変数代入やパラメーターの変数指定時に配列指定がされている
+	時に呼び出されます。システムは、ArrayObjectで配列内容をチェックした後、
+	代入が行なわれる場合には、ObjectWriteを呼び出します。
+	ObjectWrite関数は、配列要素に従って適切な値を変数に代入する必要があります。
+
+	ArrayObjectReadは、変数の内容参照が行なわれる時に呼び出されます。
+	この時、戻す値の型タイプ(HSPVAR_FLAG_*)を(*mptype)に代入し、
+	データの実態ポインタを返値として渡します。
+	戻す値の型タイプが自分自身の型でいい場合は、(*mptype)はそのままで構いません。
+	中間コードのパースについては、命令や関数と同様にHSPEXINFO構造体にある
+	関数を利用して値を取得することが可能です。
+	ObjectMethod関数は、mcall命令によりメソッド呼び出しが行なわれた時に実行
+	されるものです。それぞれの型に固有の実行機構を用意することができます。
+
+
+	void *(*Cnv)( void *buffer, int flag );
+
+	flagでリクエストされた型から、自分の型への変換を行なうための
+	関数になります。flagでリクエストされるのは、組み込み型となる
+	HSPVAR_FLAG_INT、HSPVAR_FLAG_DOUBLE、HSPVAR_FLAG_STRだけで
+	それ以外はHSPVAR_ERROR_TYPEMISSのエラーを発生させて構いません。
+	bufferは、リクエストされた型を持つデータのポインタとなります。
+	これを変換したものを、返値として戻す必要があります。
+	bufferの内容は、変更しないでください。
+
+
+	void *(*CnvCustom)( void *buffer, int flag );
+
+	自分の型からflagでリクエストされた型への変換を行なうための
+	関数になります。flagでリクエストされるのは、組み込み型となる
+	HSPVAR_FLAG_INT、HSPVAR_FLAG_DOUBLE、HSPVAR_FLAG_STRだけで
+	それ以外はHSPVAR_ERROR_TYPEMISSのエラーを発生させて構いません。
+	bufferは、リクエストされた型を持つデータのポインタとなります。
+	これを変換したものを、返値として戻す必要があります。
+	bufferの内容は、変更しないでください。
+	この関数は、組み込み型の値に対して新規に作成された型の演算を
+	行なおうとした時に型変換のために呼び出されます。
+
+
+	void (*Copy)( void *in, void *out );
+
+	型のサイズに合わせてinの内容をoutにコピーします。
+
+
+	void (*Alloc)( PVal *pval, PVal *pval2 );		// 変数メモリを確保する
+
+	pval変数が必要とするサイズを確保し初期化を行ないます。
+	pval2がNULLの場合は、新規データになります。
+	pval2が指定されている場合は、pval2の内容を継承して再確保を
+	行なうことを示しています。この場合、pval2のsize、ptをもとに
+	内容をコピーするようにしてください。また、ptの解放も同時に
+	行なう必要があります。
+
+	例:
+		if ( pval2 != NULL ) {
+			memcpy( pt, pval->pt, pval->size );
+			free( pval->pt );
+		}
+
+
+	void (*Free)( PVal *pval );				// 変数メモリを解放する
+
+	pvalが確保しているメモリを解放します。
+	多くの場合、HSP3コアが自動的に呼び出しを行ないます。
+
+
+	int (*GetSize)( void *pdat );	// 要素が使用するメモリサイズを返す(可変長のため)
+
+	pdatが示す内容のサイズ(バイト数)を返します。
+	この関数は、１要素のデータサイズが可変長(basesizeが-1)の時に
+	呼び出されます。通常は、basesizeと同じサイズを戻しておいて
+	下さい。
+
+
+	void *(*GetBlockSize)( PVal *pval, PDAT *pdat, int *size );
+
+	変数バッファ(バイナリ)のポインタとサイズを返します。
+	要素が可変長の場合は該当する１配列のバイナリのみが対象となり、
+	要素が固定長(int,double等)の場合は全配列バイナリを返します。
+	また、(*size)にメモリ確保サイズを返します。
+
+
+	void (*AllocBlock)( PVal *pval, PDAT *pdat, int size );
+
+	バイナリデータ用にメモリブロックを確保します。
+	要素が可変長(str等)の場合にブロックサイズを強制的に確保する際に
+	使用されます。通常、固定長の場合は何もしなくて構いません。
+
+	void (*Set)( PVal *pval, PDAT *pdat, void *in );	// 代入
+	void (*AddI)( PDAT *pdat, void *val );	// 演算子 +
+	void (*SubI)( PDAT *pdat, void *val );	// 演算子 -
+	void (*MulI)( PDAT *pdat, void *val );	// 演算子 *
+	void (*DivI)( PDAT *pdat, void *val );	// 演算子 /
+	void (*ModI)( PDAT *pdat, void *val );	// 演算子 \
+
+	void (*AndI)( PDAT *pdat, void *val );	// 演算子 &
+	void (*OrI)( PDAT *pdat, void *val );	// 演算子 |
+	void (*XorI)( PDAT *pdat, void *val );	// 演算子 ^
+
+	void (*EqI)( PDAT *pdat, void *val );	// 演算子 =
+	void (*NeI)( PDAT *pdat, void *val );	// 演算子 !=
+	void (*GtI)( PDAT *pdat, void *val );	// 演算子 <
+	void (*LtI)( PDAT *pdat, void *val );	// 演算子 >
+	void (*GtEqI)( PDAT *pdat, void *val );	// 演算子 <=
+	void (*LtEqI)( PDAT *pdat, void *val );	// 演算子 >=
+
+	void (*RrI)( PDAT *pdat, void *val );	// 演算子 >>
+	void (*LrI)( PDAT *pdat, void *val );	// 演算子 <<
+
+	それぞれの演算子に対応した演算用関数です。
+	PDATで渡されるデータは、自分との型の一致が保障されます。
+	演算用関数は、pdatとvalの演算結果をpdatに返します。
+
+
+HSPヘッダ情報について
+
+	HSPHED構造体は、HSPファイルオブジェクトに含まれている情報をまとめて
+	いるもので、HSPCTX構造体のhsphedから参照することができます。
+	HSPHED構造体は、hsp3struct.hに以下のように定義されています。
+
+	typedef struct HSPHED
+	{
+	//		HSP3.0 header structure
+	//
+
+	char	h1;					// magic code1
+	char	h2;					// magic code2
+	char	h3;					// magic code3
+	char	h4;					// magic code4
+	int		version;			// version number info
+	int		max_val;			// max count of VAL Object
+	int		allsize;			// total file size
+
+	int		pt_cs;				// ptr to Code Segment
+	int		max_cs;				// size of CS
+	int		pt_ds;				// ptr to Data Segment
+	int		max_ds;				// size of DS
+
+	int		pt_ot;				// ptr to Object Temp
+	int		max_ot;				// size of OT
+	int		pt_dinfo;			// ptr to Debug Info
+	int		max_dinfo;			// size of DI
+
+	int		pt_linfo;			// ptr to LibInfo(2.3)
+	int		max_linfo;			// size of LibInfo(2.3)
+	int		pt_finfo;			// ptr to FuncInfo(2.3)
+	int		max_finfo;			// size of FuncInfo(2.3)
+
+	int		pt_minfo;			// ptr to ModInfo(2.5)
+	int		max_minfo;			// size of ModInfo(2.5)
+	int		pt_finfo2;			// ptr to FuncInfo2(2.5)
+	int		max_finfo2;			// size of FuncInfo2(2.5)
+
+	int		pt_hpidat;			// ptr to HPIDAT(3.0)
+	int		max_hpi;			// size of HPIDAT(3.0)
+	int		bootoption;			// bootup options
+	int		runtime;			// ptr to runtime name
+
+	} HSPHED;
+
+
+配列変数の取得と設定
+
+	変数名を取得するcode_getvaにより、配列要素も同時に取得されます。
+	基本的に変数名は、PValポインタとして、配列要素は、APTRの値として
+	取得されます。
+	APTRの値が0の場合は、配列要素が指定されていないことを示しています。
+	APTRは配列要素のインデックスを示しています。
+	上限は、すべての次元を1次元に直した上での最大インデックス値になります。
+	1次元配列であれば、APTRの0,1,2…がそのまま配列要素と同じだと
+	考えて問題ありません。
+
+	code_getvaで取得されるAPTRは範囲チェックされているので、
+	通常の使用ではプラグイン側で範囲チェックを行なう必要はありません。
+
+	もし、プラグイン側で任意に配列要素を設定したい場合には、
+	HspFunc_array関数を使用します。
+
+	次のような形で要素指定を行なうことが可能です。
+	(APTRの値=pval->offsetの値です)
+
+		HspVarCoreReset( pval );// 配列ポインタをリセットする
+		HspFunc_array( pval, 0 );// 1次元目
+		HspFunc_array( pval, 0 );// 2次元目
+		HspFunc_array( pval, 0 );// 3次元目
+		HspFunc_array( pval, 0 );// 4次元目
+
+	また、配列の拡張はHspFunc_redim関数で行なうことが可能です。
+
+		void (*HspFunc_redim)( PVal *pval, int lenid, int len );
+
+	この関数では、指定した変数の配列を拡張します。
+	pval変数の、指定した次元数lenid(1～4)に対してlenの大きさに拡張します。
+
+
+code_getprmの注意点
+
+	型の不定なパラメーターを取得するためのcode_getprm関数では、
+	一時的なパラメーター保管を行なうmpval変数を介して行なわれます。
+	mpvalは、スクリプトで指定されている変数のPValポインタ
+	(code_getvaで取得されるPValポインタ)とは異なるので注意してください。
+	また、mpvalポインタはシステムが管理しているため、値の修正や、
+	型の変更など、構造体の内容が変更される処理は避けて下さい。
+
+
+関数を作成する上での注意点
+
+	もし、DLLの関数内で長くループすることがあると、Windows全体のタスクを
+	奪ってしまうので、なるべく早く帰るように心がけてください。
+	このあたりは、HSPのタスクに関する注意点と同様です。
+	HSP自体は、シングルスレッドで動作していますが、プラグイン側を
+	マルチスレッドで動作させることも可能です。その場合でも、HSP側の
+	値が実行中に書き換わるようなことのないように注意してください。
+
+
+最後に
+
+	このドキュメントに関するお問い合わせ、感想、ご意見などは以下のメール
+	アドレスまでお願い致します。(お問い合わせの返信については、時間が
+	かかることがありますので、ご了承下さい。)
+	運用のライセンスについては、readme.txtを参照してください。
+
+	Homepage: http://www.onionsoft.net/
+        e-mail  : onitama@onionsoft.net
+
+------------------------------------------------------------------------------
+                                                     HSPDLL.TXT / end of file 
+------------------------------------------------------------------------------

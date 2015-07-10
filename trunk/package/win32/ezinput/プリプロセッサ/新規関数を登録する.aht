@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#defcfunc"
+
+#define 登録する関数の名前	""	;;str
+#define パラメータタイプ名・エイリアス名	""	;;str
+
+#ahtmes "#defcfunc "+登録する関数の名前+" "+パラメータタイプ名・エイリアス名+

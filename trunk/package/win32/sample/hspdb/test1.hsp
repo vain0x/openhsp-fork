@@ -1,0 +1,61 @@
+;
+;	SQL serverのバージョンと現在時刻を得る
+;	(MySQL+MyODBCで確認)
+;
+#include "hspdb.as"
+
+sdim buf,1024
+sdim dsn,256
+dsn="TEST"
+
+;	ODBC環境の初期化
+dbini
+if stat : dialog "ODBC環境がありません。終了します。("+stat+")" : end
+
+screen 0,320,200:cls 1
+objmode 1,1:objsize 320,24
+mes "DSN名:"
+input dsn
+button "接続",*start
+stop
+
+*start
+
+clrobj 1
+
+;	DBドライバに接続します
+;	ODBCのDSN設定であらかじめデータベースを準備しておく必要があります。
+dbopen "DSN="+dsn
+if stat : dialog "DB接続できませんでした。終了します。("+stat+")" : end
+
+;	接続が成功したら、後はSQLを自由に送信することができます。
+;	SQLの送信はdbsend、結果はdbgetsで取得してください。
+
+mes "QUERY VERSION:"
+dbsend "SELECT VERSION();"
+if stat : dialog "SQL送信に失敗しました。("+stat+")" : goto *over
+gosub *resput
+
+mes "QUERY NOW:"
+dbsend "SELECT NOW();"
+if stat : dialog "SQL送信に失敗しました。("+stat+")" : goto *over
+gosub *resput
+
+*over
+
+dbclose		; DBとの接続を切ります
+
+stop
+
+*resput		; 結果の表示
+
+;	SQLの結果を取得します。多くの場合すぐに終了します。
+;	結果が長い場合やネットワーク越しの場合は時間がかかることがあります。
+;
+repeat
+	dbgets buf		; 結果の取得
+	if stat : break		; すべて取得したらループから抜ける
+	mes buf
+loop
+return
+

@@ -1,0 +1,260 @@
+
+;============================================================
+;                                                 2006/--/--
+	title "S.Programs 花火窓 Verge"
+;	version 1.0/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+・花火窓 Verge
+
+空中移動する視点から打ち上げ花火を見るスクリプトです。
+水上花火をさまざまな角度から眺めることができます。
+
+[Enter] : フルスクリーン切り替え
+[Esc] : 終了
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+;	main
+;============================================================
+
+; 参考数値 : 10 号玉
+; h = 300m
+; d = 300m
+
+#const	INSTMAX	5	; インスタンス数
+
+#const	PTCS_SH	40	; shooter 粒子数
+#const	PTCS_FR	200	; fire, bgstar 粒子数
+
+#const	MODELS	6		; モデル数
+#const	MDLSFT	PTCS_FR / 2	; モデルシフタ
+
+
+;------------------------------------------------------------
+; init
+
+	;------------------------------------------------------------
+	; mkparticle
+
+	arr = 6, 2, 133, 60 ; *over-frame 133%
+
+	d3mkparticle 0,  224, 224, 224,  arr	; 0 white
+	d3mkparticle 1,  128, 128, 255,  arr	; 1 blue
+	d3mkparticle 2,  255, 255, 128,  arr	; 2 yellow
+	d3mkparticle 3,  128, 192, 255,  arr	; 3 skyblue
+
+
+	;------------------------------------------------------------
+	; mkinstance
+
+	dim s_iph, 16 ; >= INSTMAX
+	memset s_iph, 1, 64
+
+
+	randomize
+
+
+;------------------------------------------------------------
+*mainloop
+
+
+	;------------------------------------------------------------
+	; full-screen ctrlr (toggle : Enter)
+
+	stick ky_inp
+	if ky_inp & 128 : end
+	if ky_inp & 32 {
+		mode_fsc ^= 1
+		chgdisp mode_fsc ; (default : 640, 480)
+		if mode_fsc {
+			bgscr 2
+			gsel 2, 2
+			mouse -1
+		} else {
+			gsel 2, -1
+			gsel
+			mouse
+		}
+	}
+
+
+	;------------------------------------------------------------
+	; setup
+
+	redraw 0
+	hsvcolor 112, 128, 32 + lup : boxf
+
+	lup = 0
+	time = d3timer()
+
+
+	;------------------------------------------------------------
+	; setcam
+
+	f = 0.00005 * time
+	r = sin(f)*300 + 400	; r-rng : 100 -- 700
+	z = 70000.0/r - 90	; z-rng : 600 -- 0
+	d3setcam cos(f)*r, sin(f)*r, z,  0, 0, z*2/3
+
+
+	;------------------------------------------------------------
+	; play sequence
+
+	repeat INSTMAX
+
+		; duplicate
+		dup	iph,	s_iph(cnt)
+		dup	it0,	s_it0(cnt)
+		dup	it1,	s_it1(cnt)
+		dup	icx,	s_icx(cnt)
+		dup	icz,	s_icz(cnt)
+		dup	imod,	s_imod(cnt)
+
+		; phase change (phase++)
+		if it1 <= time {
+			iph++			; phase inc
+			it0	= time		; t_start
+			it1	= time + 5000	; t_end (default)
+
+			lup	|= (iph = 2) * 40	; thunder (if phase 1 -> 2)
+		}
+
+		; re-setup (phase 3 -> 0)
+		if iph >= 3 {
+			iph	= 0			; reset phase
+			imod	= rnd(MODELS)		; model no.
+			icx	= rnd(400) - 200	; x-pos
+			icz	= rnd(100) + 230	; height
+			it1	= time + rnd(7000)	; sleep time
+		}
+
+		; draw (phase : 1-shoot, 2-exp)
+		if iph {
+			; setup
+			ts	= 0.001 * (time - it0)
+
+			; prms for *starptc
+			ds_x	= icx
+			ds_z	= ts*ts*-5	; ts*ts*5 = 落下項 (g = 10m/s2; z = (1/2)gt2)
+			ds_r	= logf(ts + 0.9)
+			ds_stg	= 1.0 - ts / 5
+
+			; Phase 1 shoot
+			if iph = 1 {
+				ds_mode	= 2	; mode shoot
+				ds_r	*= icz
+				ds_stg	/= 2
+				ds_cnt	= PTCS_SH
+
+			; Phase 2 explosion
+			} else {
+				ds_z	+= icz
+				ds_r	*= 90
+				ds_cnt	= PTCS_FR
+				ds_seed	= imod * MDLSFT
+			}
+
+			; draw
+			gosub *starptc
+		}
+	loop
+
+
+	;------------------------------------------------------------
+	; stars
+
+	; prms for *starptc
+	ds_x	= 0
+	ds_z	= 0
+	ds_cnt	= PTCS_FR
+	ds_r	= 720
+	ds_stg	= 0.5
+
+	gosub *starptc
+
+
+	;------------------------------------------------------------
+	redraw
+	await ;10
+
+	goto *mainloop
+
+
+
+;------------------------------------------------------------
+*starptc
+	; pre-calc
+	sqstg = sqrt(ds_stg)
+
+
+	; generate vector / draw particles
+	repeat ds_cnt, ds_seed
+
+		; vector -> pos
+
+		pid = cnt / PTCS_FR  + ds_mode
+		f = cnt
+		g = cnt * 1013
+
+		; r
+	;	z = 1.0
+		z = 0.001 * (1000 - cnt\PTCS_FR*(pid=3))
+
+		if ds_mode {	; vector : shooter
+
+			z /= (cnt + 3)
+			x = cos(f) / z / 1000
+			y = sin(g) / z / 1000 * ds_r
+
+		} else {	; vector : fire
+
+			; pid
+			; 0 : model O (default)	white
+			; 1 : model O (default)	blue
+			; 2 : model o (r = 0.5)	yellow
+			; 3 : model - (f = 0)	skyblue
+
+			; fire-shift
+			z /= (pid = 2) + 1
+			f *= (pid ! 3)
+
+			x = cos(f) * cos(g) * z
+			y = cos(f) * sin(g) * z * ds_r
+			z *= sin(f)
+		}
+
+		x = x * ds_r + ds_x
+		z = z * ds_r + ds_z
+
+		z *= (z > 0) ; clip
+
+
+		; draw
+
+		gmode 5, , , sqstg * 256
+		d3particle  pid, x, y, z, ds_stg * 4
+
+		gmode 5, , , sqstg * 90
+		d3particlem pid, ds_stg * 7 + 2
+
+		gmode 5, , , sqstg * 60
+		z = -0.9 * z - 4
+		d3particle  pid, x, y, z, ds_stg * 10
+	loop
+
+
+	; set default
+	ds_mode	= 0	; fire
+	ds_seed	= 0
+
+
+	return
+
+
+
+

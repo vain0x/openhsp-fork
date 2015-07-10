@@ -1,0 +1,36 @@
+#include "hsptv.as"
+
+	score=1000
+	sdim comm,64
+	mes "HSPTVデータの更新登録テスト"
+	hsptv_up -1,""				; 最初に情報を更新しておく
+	gosub *update				; ランキング情報の表示
+
+	pos 500,32:objsize 120,24
+	mes "スコア"
+	input score
+	mes "コメント"
+	input comm
+	button "更新",*send
+	button "終了",*ok
+	stop
+
+*send
+	hsptv_up score, comm
+	gosub *update
+	stop
+*ok
+	end
+
+*update
+	color 255,255,255
+	boxf 0,32,500,480			; 背景をクリア
+	color 0,0,0
+	pos 0,32
+	repeat 10				; 上位10位のみ表示
+	hsptv_getrank rscore,ruser,rcomm,cnt	; 情報を取得する
+	rank=cnt+1
+	mes "#"+rank+":"+rscore+"("+ruser+") "
+	mes "    コメント:"+rcomm
+	loop
+	return

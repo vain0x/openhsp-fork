@@ -1,0 +1,80 @@
+#include "hgimg3.as"
+
+	;	2Dスプライトのサンプル
+	;	(カーソルキーで移動、スペースで発射)
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,0
+	cls 4
+
+	;	初期設定
+	;
+	hgsetreq SYSREQ_MAXOBJ,2048	; オブジェクト最大数を増やす
+	hgini
+
+	;	スプライトモデルを登録
+	;
+	setuv 64,64,127,127
+	addspr pchr,1		; プレイヤーキャラ
+	regobj mychr,pchr, OBJ_LATE
+	setuv 0,64,63,127	; リンゴ
+	addspr mchr,1
+	texload "testchr.bmp"	; テクスチャの登録
+
+	;	イベントリストを登録
+	;
+	newevent ev1			; 新しいイベントIDを取得
+	event_efx ev1, 80, 0		; 80フレーム後に透明度0%
+	event_wait ev1, 80		; 80フレーム待つ
+	event_delobj ev1
+
+	;	エミッターを登録
+	;
+	newemit em1, EMITMODE_CIRCLE, 20
+	;newemit em1, EMITMODE_RANDOM
+	emit_angmul em1, 0,0,1
+	emit_speed em1, 4,0
+	emit_model em1, pchr, 0, OBJ_MOVE|OBJ_BORDER ; model,modelnum,objmode,efx 
+	emit_event em1, ev1
+
+	;	準備
+	;
+	clscolor 128			 ; 背景色の設定
+	setborder 740.0f, 580.0f, 200.0f ; クリップ範囲
+
+	rotbase = 0.0
+	frame=0
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	カーソルキーで移動
+	;
+	if k&1 : addpos mychr, -2, 0
+	if k&4 : addpos mychr, 2, 0
+	if k&2 : addpos mychr, 0, -2
+	if k&8 : addpos mychr, 0, 2
+
+	if k&16 {			; リンゴ発射
+		if (frame&7)=0 {
+			emit_angopt em1, 0,0,rotbase
+			getpos mychr,x,y,z
+			hgemit em1, x,y,z
+			rotbase += 0.04
+		}
+	}
+
+	frame++
+	goto *main
+
+*owari
+	end
+

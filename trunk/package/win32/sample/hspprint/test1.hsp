@@ -1,0 +1,25 @@
+#include "hspprint.as"
+
+	enumprn plist
+	pnum=stat
+	mes "プリンタの数="+pnum
+
+	if pnum=0 : goto *noprn
+
+	mes "プリンタ一覧"
+
+	notesel plist
+	repeat notemax
+	noteget s1,cnt
+	mes "ID"+cnt+" : "+s1
+	loop
+
+	getdefprn kitei
+	mes "規定のプリンタ="+kitei
+
+	stop
+
+*noprn
+	mes "プリンタはありません。"
+	stop
+

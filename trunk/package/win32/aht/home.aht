@@ -1,0 +1,20 @@
+#aht name "ホーム"
+#aht class "hsp3.std.system.home"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 7
+#aht exp "実行の開始地点を指定します。"
+#aht exp "１つのプロジェクトに１つのホームを指定することができます。"
+
+#define home_label	ホーム		;;help="ラベル名",refname
+#define home_title	"タイトル"	;;help="タイトル名",pure
+#const home_sx	640			;;help="横ウィンドウサイズ"
+#const home_sy	480			;;help="縦ウィンドウサイズ"
+
+#ahtout _ahtstart =  *home_label
+#ahtout _ahtgbuf = 2			; buffer画面の開始ID
+
+*home_label
+	screen 0,home_sx,home_sy,0
+	title home_title
+

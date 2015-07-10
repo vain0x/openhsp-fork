@@ -1,0 +1,37 @@
+; クッキーの内容を取得するCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/cookie_get.ax
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+#include "hspinet.as"
+
+	sdim header,$1000
+
+	lf="a":poke lf,0,$0a			; 改行コード(LF)
+
+	header = "Status: 200 OK"+lf
+	header += "Cache-Control: no-cache, no-store, must-revalidate, private"+lf
+	header += "Pragma: no-cache"+lf
+	header += "Content-type: text/html; charset=Shift_JIS"+lf+lf
+
+	mes header
+
+	getenv a,"HTTP_COOKIE"			; クッキーの内容を変数aに取得
+
+	mes "<html>"
+	mes "<title>HSPCGI TEST</title>"
+	mes "<body>"
+	mes "環境変数を表示します。<br>"
+	mes "HTTP_COOKIE ["+a+"]"		; クッキーの内容を表示
+	mes "<br>"
+
+	prmname="hspver="
+	getenvprm prm, a, prmname, ';'		; prmnameの項目だけを取得
+	mes prmname+"["+prm+"]"
+
+	mes "</body>"
+	mes "</html>"
+
+	end
+

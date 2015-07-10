@@ -1,0 +1,18 @@
+
+	;	Excelを使う
+	;	(MicrosoftExcelがインストールされている必要があります)
+	;
+	newcom xlApp, "Excel.Application"
+	xlApp("Visible") = 1 ; ウィンドウを表示
+	xlApp("DisplayAlerts") = 0 ; 警告メッセージを表示させない
+	xlBooks = xlApp("Workbooks") ; Workbooks コレクション取得
+	xlBook = xlBooks("Add") ; ワークブックを追加
+	xlSheet = xlBook("Worksheets","sheet1") ; Sheet取得
+
+	xlRange = xlSheet("Range","A1")	; "A1"を取得
+	xlRange("Value") = "123"	; 値の設定
+
+	mes "セル A1 に値 123 を格納しました。"
+
+	stop
+

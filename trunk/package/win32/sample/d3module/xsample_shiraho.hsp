@@ -1,0 +1,258 @@
+
+;============================================================
+;                                                 2006/--/--
+	title "S.Programs Golden Harp"
+;	version 1.0/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+・金色の海
+
+風になびく金色 (こんじき) の草原を描画する絵描きスクリプトです。
+暖かい光の表現にこだわりました。
+
+↑/↓ : 草の数の増減 (デフォルト 500 本、最大 1000 本)
+マウスドラッグ : 視点移動 (左ボタン押下中のみ)
+[Enter] : フルスクリーン切り替え
+[Esc] : 終了
+
+PC によっては動作が重いので、適当に草の数を変えて負荷調整してみてください。
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+;	main
+;============================================================
+
+; 畑半径
+#const	FLD_R	1000
+#const	FLD_D	FLD_R * 2
+#const	FLD_R3	FLD_R * 3
+#const	FLD_R4	FLD_R * 4
+
+; 背景色
+#const	BG_R 200
+#const	BG_G 140
+#const	BG_B 80
+
+	;------------------------------------------------------------
+	; init basic
+
+	winx = ginfo_winx,  0, 0, winx
+	winy = ginfo_winy,  winy, 0, 0
+
+	d3mkparticle 0, 72, 72, 72
+
+
+	;------------------------------------------------------------
+	; init bg-screen
+
+	buffer 4, winx, winy
+
+	color BG_R, BG_G, BG_B
+	boxf
+
+	d3setcam 0, 10, 0
+	gmode 5, , , 256
+	d3particle 0, 0, 0, 0, 16
+
+	gsel
+
+
+	;------------------------------------------------------------
+	; init scene
+
+	num = 640 ; 描画本数 (500 * 円周補正 1.28)
+	t_start = d3timer()
+
+
+;------------------------------------------------------------
+*mainloop
+
+
+	;------------------------------------------------------------
+	; full-screen ctrlr (toggle : Enter)
+
+	stick ky_inp, 256
+	if ky_inp & 128 : end
+	if ky_inp & 32 {
+		mode_fsc ^= 1
+		chgdisp mode_fsc ; (default : 640, 480)
+		if mode_fsc {
+			bgscr 2
+			gsel 2, 2
+			mouse -1
+		} else {
+			gsel 2, -1
+			gsel
+			mouse
+		}
+	}
+
+
+	;------------------------------------------------------------
+	; ctrl
+
+	randomize 0
+	redraw 0
+
+	; ループタイマー
+	time = d3timer()
+	div = (time - t_start + 1000) // start-efct divisor
+
+	; up/dn key
+	num = limit( num + ((ky_inp=2)-(ky_inp=8)) * 128, 0, 1280) ; n = num / 1.27
+
+
+	;------------------------------------------------------------
+	; background
+
+	gmode , winx, winy
+	pos 0, 0
+	gcopy 4 ; from bg-screen
+
+
+	;------------------------------------------------------------
+	; setcam
+
+	if ky_inp & 256 {
+		f = 1.4 * (mousex*2-winx)/winx
+		z = winy - mousey
+	} else {
+		f = sin(0.0001 * time)
+		z = sin(0.0002 * time) * 100 + 200
+	}
+	d3setcam sin(f)*1400, cos(f)*-1400, z + 400000/div,  0, 0, z + 400000/div
+
+
+	;------------------------------------------------------------
+	; sunlight
+
+	repeat 3, 1
+		gmode 5, , , 256
+		d3particle 0, 0, 2000 * cnt, 300 * cnt, 1500
+
+		if cnt = 1 { // ...
+
+
+	; <-<-
+	;------------------------------------------------------------
+	; main obj
+
+
+	;------------------------------------------------------------
+	; cloud flow
+
+	repeat 40
+		x = (rnd(32768) + time/5 & 16383) - 8192
+		gmode 6, , , sqrt( 1.0 - absf(x) / 8192 ) * 56
+		d3particle 0, x, rnd(8192), 2000, 1000
+	loop
+
+
+	;------------------------------------------------------------
+	; kusa
+
+	y_top = winy
+	y_btm = 0
+
+	repeat num
+
+		; calc pos
+		bpz = 0.0
+		bpx = bpz + rnd(FLD_D) - FLD_R
+		bpy = bpz + FLD_R - FLD_D * cnt / num
+
+		r = d3dist(bpx, bpy)
+		if r > FLD_R : continue
+
+		bpd = 50 + rnd(10)
+
+		dang = 0.08 * ( sin( 0.003 * bpx - 0.00047 * time ) + 1.5)
+
+
+		; draw
+		if bpy > 0 : r = absf(bpx)
+		f = 2.2 - r / FLD_R
+
+		color limit(f * BG_R, 0, 255), limit(f * BG_G, 0, 255), limit(f * BG_B, 0, 255)
+
+		d3vpos bpx, bpy, bpz
+
+		if dy@d3m > y_btm : y_btm = dy@d3m ; - softer bottom
+
+		repeat cnt\3+3, 5
+			bpz += cos(dang * cnt) * bpd
+			bpx += sin(dang * cnt) * bpd
+			d3lineto bpx, bpy, bpz
+		loop
+
+		if dy@d3m < y_top : y_top = dy@d3m ; - softer top
+
+		gosub *draw_ptc
+	loop
+
+
+	;------------------------------------------------------------
+	; softer
+	gmode 3, , , 128
+	pos 0, y_top
+	repeat 2
+		gcopy ginfo_sel, cnt=0, y_top + (cnt=1), winx, y_btm-y_top
+	loop
+
+;	color
+;	boxf , y_top, , y_top
+;	boxf , y_btm, , y_btm
+
+
+	;------------------------------------------------------------
+	; ->->
+
+
+		}
+	loop
+	;------------------------------------------------------------
+
+
+	;------------------------------------------------------------
+	; particles
+
+	repeat 150
+		x = (rnd(32768) + time/17 & 2047) - 1024
+		f = sqrt( 1.0 - absf(x) / 1024 )
+		if x < 0 : x = 0
+
+		d3vpos rnd(FLD_R4)-FLD_R3 + x*3, (rnd(FLD_D)-FLD_R), x
+		gosub *draw_ptc
+	loop
+
+
+	;------------------------------------------------------------
+	; f-up
+
+	a = 224000/div - 32
+	if a > 0 {
+		gmode 5, winx, winy, a
+		hsvcolor , , 255
+		gsquare -1, winx, winy
+	}
+
+
+	;------------------------------------------------------------
+	redraw
+	await ;10
+
+	goto *mainloop
+
+
+;------------------------------------------------------------
+*draw_ptc
+	gmode 5, , , f * 64
+	d3particlem 0, 28
+	gmode 5, , , f * 256
+	d3particlem 0, 10
+
+	return

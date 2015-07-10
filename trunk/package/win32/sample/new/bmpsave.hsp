@@ -1,0 +1,21 @@
+; 読み込んだ画像を加工してBMPで出力するプログラム
+;
+;
+	mydir=dir_cur			; 現在のディレクトリを保存
+
+	;	ファイルを選択
+	dialog "bmp;*.jpg;*.gif",16
+	if stat = 0 : end
+	fname=refstr
+	picload fname
+
+	;	@を画面に書く
+	font msgothic,160
+	color 0,0,255:mes "@"
+
+	;	保存
+	sname=getpath(fname,1+8)+"_mod_bmp"
+	chdir mydir
+	bmpsave sname
+	title sname+"を保存しました。"
+	stop

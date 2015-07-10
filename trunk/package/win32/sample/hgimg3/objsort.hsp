@@ -1,0 +1,133 @@
+#include "hgimg3.as"
+
+	;	オブジェクトソート・サンプル
+	;	(スペースキーでソートON/OFFを切り替えられます)
+	;
+	randomize
+	screen 0,640,480,0
+	cls 4
+
+	smode=0
+	sdim sortprt,64,2
+	sortprt(0)="SORT:OFF"
+	sortprt(1)="SORT:ON"
+	fobj=-1
+	lobj=-1
+
+*boot
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_a.x"	; モデルを読み込む
+	z=10.0
+	repeat 5
+	regobj xobj, m_xmodel		; オブジェクトの登録
+	setpos xobj, rnd(20)-10, rnd(20)-10, z	; 初期座標を設定
+	setefx xobj, $80
+	z-=1.5
+	if cnt=0 : fobj=xobj
+	loop
+
+	;	モデル登録
+	;
+	setuv 0,0,256,256
+	addplate m_plate,1,3,3
+	texload2 "tree.tga"
+
+	;	オブジェクトの登録
+	;
+	z=20.0
+	repeat 50
+	regobj obj, m_plate	; オブジェクトの登録
+	setpos obj, rnd(20)-10, rnd(20)-10, rnd(30)-10	; 初期座標を設定
+	;setpos obj, rnd(20)-10, rnd(20)-10, z	; 初期座標を設定
+	;setefx obj, $2ff
+	z-=0.5
+	lobj=obj
+	loop
+
+	;	表示の準備
+	;
+	clscolor $80			; 背景色の設定
+	setpos HGOBJ_CAMERA, 0,-5,30	; カメラ位置の設定
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+
+*main
+	gosub *alldraw
+	stick key,15+64
+	if key&128 : goto *main2
+	if key&$30 : gosub *excmode
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : addpos HGOBJ_CAMERA, -0.2, 0.0
+	if key&1 : addpos HGOBJ_CAMERA, 0.2, 0.0
+	if key&64 {
+		if key&2 : addpos HGOBJ_CAMERA, 0,0, 0.2
+		if key&8 : addpos HGOBJ_CAMERA, 0,0, -0.2
+	} else {
+		if key&2 : addpos HGOBJ_CAMERA, 0, 0.2
+		if key&8 : addpos HGOBJ_CAMERA, 0, -0.2
+	}
+
+	goto *main
+
+*excmode
+	smode=smode^1
+	obj=fobj
+	repeat lobj-fobj+1
+	if smode {
+		setobjmode obj, OBJ_SORT, 0
+	} else {
+		setobjmode obj, OBJ_SORT, 1
+	}
+	obj++
+	loop
+	return
+
+*main2
+	gosub *fadeout
+	repeat
+	gosub *alldraw
+	if scfadev=256 : break
+	loop
+
+*owari
+	end
+
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt sortprt(smode),8,8
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,640,480,scfadev
+		hgrect 320,240,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return
+
+
+

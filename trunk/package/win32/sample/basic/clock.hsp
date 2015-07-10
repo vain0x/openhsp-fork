@@ -1,0 +1,17 @@
+
+#include "hsp3util.as"	; gettimestr,getdatestrを使うため
+
+	t1="":t2=""
+	objsize 120,20
+	mesbox t1,160,32,0		; メッセージボックスを表示
+					; (オブジェクトID0になります)
+	mesbox t2,160,32,0		; メッセージボックスを表示
+					; (オブジェクトID1になります)
+*tmprt
+	gettimestr t1
+	getdatestr t2
+	objprm 0,t1			; メッセージボックスID0の内容を更新
+	objprm 1,t2			; メッセージボックスID1の内容を更新
+	wait 100			; 1秒ウエイトする
+	goto *tmprt			; 無限ループ
+

@@ -1,0 +1,28 @@
+
+	;
+	;	10進数<->16進数変換サンプル
+	;
+	a=0
+	b=""
+	pos 0,0:input a
+	pos 0,30:input b
+	pos 70,2:mes "10進数"
+	pos 70,32:mes "16進数"
+	pos 0,60
+	objsize 200,24
+	button "10進->16進変換",*in10
+	button "16進->10進変換",*in16
+	button "終了",*owari
+	stop
+*in10
+	n=strf("%x",a)
+	objprm 1,n
+	stop
+*in16
+	a=0+("$"+b)
+	objprm 0,a
+	stop
+*owari
+	end
+
+

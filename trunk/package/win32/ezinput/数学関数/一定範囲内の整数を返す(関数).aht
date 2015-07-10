@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "limit"
+
+#define 対象となる値	""	;;str
+#define 最小値	""	;;str
+#define 最大値	""	;;str
+
+#ahtmes "limit( "+対象となる値+" , "+最小値+" , "+最大値+" )"+

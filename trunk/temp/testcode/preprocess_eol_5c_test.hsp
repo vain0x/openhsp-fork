@@ -1,0 +1,24 @@
+dim chk, 5
+
+#define mac0 \
+chk.0 = 1
+
+#define mac1 ƒ\
+chk.1 = 1
+
+#define mac2 ƒƒ\
+chk.2 = 1
+
+#define mac3 ƒƒƒ\
+chk.3 = 1
+
+#define mac4 ƒƒƒƒ\
+chk.4 = 1
+
+#define OK(%1) if %1 { mes "OK" } else { mes "NG" }
+
+OK chk.0 == 0
+OK chk.1 == 1
+OK chk.2 == 0
+OK chk.3 == 1
+OK chk.4 == 0

@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "listbox"
+
+#define リストボックスの状態を保持する数値型変数	""	;;str
+#define 拡張Yサイズ	"100"	;;str
+#define リストボックスの内容を示す文字列	""	;;str
+
+#ahtmes "listbox "+リストボックスの状態を保持する数値型変数+" , "+拡張Yサイズ+" , "+リストボックスの内容を示す文字列+

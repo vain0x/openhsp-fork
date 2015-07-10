@@ -1,0 +1,161 @@
+------------------------------------------------------------------------------
+HSP3IMP.DLL ver3.3                                  HSP : Hot Soup Processor  
+ＨＳＰ拡張DLLリファレンス             copyright 1999-2011 (c) onion software  
+------------------------------------------------------------------------------
+
+・はじめに
+
+	このDLLは、Hot Soup Processor ver3.3相当の機能を外部から呼び出すために
+	利用するものです。
+	HSP3IMP.DLLには、HSP3ランタイムと同等の機能が組み込まれています。
+	HSPだけでなく、C/C++といった一般的な言語で作成されたアプリケーションに
+	HSPの機能を付加することができます。
+	HSP3IMP.DLLの動作画面は、指定されたウィンドウの子ウィンドウとして
+	機能するので、パーツを貼り付ける要領で、HSP3の画面を利用することが
+	可能です。
+
+	また、HSP3IMP.DLL自体をHSPのプラグインとして使用することも可能です。
+	その場合は、HSP3IMP.DLLを、HSP3.EXEと同じディレクトリに置いて
+	お使い下さい。
+
+
+・スクリプトからの呼び出し
+
+	HSPスクリプトからDLLを呼び出すには、以下の行をスクリプトの先頭に追加
+	して下さい。
+
+	#include "hsp3imp.as"
+
+	その後は、命令が追加されHSP3IMP.DLLの機能が使用できるようになります。
+
+
+・命令詳細
+
+	hspini mode,xsize,ysize,handle
+
+		mode : 初期化モード($100=子ウィンドウとして初期化)
+		       bit0 = window非表示(ON/OFF)
+		       bit1 = カレントディレクトリ変更禁止(ON/OFF)
+
+		xsize  : HSPの初期化ウィンドウサイズ(X)
+		ysize  : HSPの初期化ウィンドウサイズ(Y)
+		handle : 親のウィンドウハンドル(HWND)
+
+		HSP3IMP.DLLを初期化します。
+		HSP3の初期化と、オブジェクトファイルの読み込みを行ないます。
+		hspiniを実行する前に、hspprm命令によって各種設定を行なって
+		おく必要があります。
+	hspbye
+
+		hspini命令によって初期化されたHSP3のインスタンスを破棄します。
+		最後に必ず実行して、HSP3の終了処理を行なう必要があります。
+
+	hspexec
+
+		hspini命令によって初期化されたHSP3のタスクを実行します。
+		hspexec命令は、実行したコードが終了するか、エラーが発生するまで
+		戻ってきません。(その間は、HSP3のタスクが動作します。)
+		HSP3IMP.DLLは、あくまでもシングルタスクとして動作することを
+		前提としているので注意してください。
+
+	hspprm p1,p2,p3,p4
+
+		HSP3IMP.DLLに関する設定および、情報の取得を行ないます。
+		p1の値によって、p2～p4までに指定する内容が変わります。
+		設定されるパラメーターは、以下を参考にしてください。
+
+		p1(mode)
+		-----------------------------------------------------------
+		    0        親ウィンドウからの表示オフセット指定
+		             (p2,p3でX,Yオフセット値を設定します)
+		    1        起動パラメーター指定(HSPTVでのみ使用します)
+		0x100        HSPCTX構造体のポインタを取得
+		             (結果がp4で指定されたアドレスに書き込まれます)
+		0x101        拡張命令を初期化するための関数指定
+		             (p4にHSP3TYPEINFOポインタを引数とする関数を登録します)
+		0x102        HSP3オブジェクトファイル名を指定
+		             (p4にファイル名が格納されているアドレスを設定)
+
+
+・C/C++からの呼び出し
+
+	以下のようなコードにより、Cからの呼び出しが可能です。
+
+	typedef BOOL (CALLBACK *HSP3FUNC)(int,int,int,int);
+	typedef BOOL (CALLBACK *HSP3FUNC2)(int,int,int,void *);
+	HINSTANCE h_hspimp;
+	HSP3FUNC hspini;
+	HSP3FUNC hspbye;
+	HSP3FUNC hspexec;
+	HSP3FUNC2 hspprm;
+
+	//	System Initalize(COMを使用する場合)
+	if ( FAILED( CoInitializeEx( NULL, COINIT_APARTMENTTHREADED) ) ) {
+		Alertf( "OLEの初期化に失敗しました" );
+		goto cleanup;
+	}
+	OleInitialize( NULL );
+	InitCommonControls();
+
+	h_hspimp = LoadLibrary( "hsp3imp.dll" );
+	if ( h_hspimp != NULL ) {
+		hspini = (HSP3FUNC)GetProcAddress( h_hspimp, "_hspini@16" );
+		hspbye = (HSP3FUNC)GetProcAddress( h_hspimp, "_hspbye@16" );
+		hspexec = (HSP3FUNC)GetProcAddress( h_hspimp, "_hspexec@16" );
+		hspprm = (HSP3FUNC2)GetProcAddress( h_hspimp, "_hspprm@16" );
+	}
+
+	関数の呼び出しは、以下のようなコードになります。
+
+	hspprm( 0, offsetx, offsety, NULL );				// X,Yオフセット
+	hspini( 0x100, sizex, sizey, (int)hWnd );			// HSP初期化
+	hspprm( 0x100, 0, 0, &hspctx );					// HSPCTX取得
+	hspexec( 0,0,0,0 );						// HSP実行
+	hspbye( 0,0,0,0 );						// HSP終了処理
+
+	if ( h_hspimp != NULL ) {
+		FreeLibrary( h_hspimp );
+		h_hspimp = NULL;
+	}
+
+
+・注意点
+
+	HSP3IMP.DLLは、HSP3とほぼ同等の機能を提供します。
+	一部、サポートしていない部分がありますので、以下の点にご注意下さい。
+
+	■HSP3IMP.DLL内部では、COMの初期化(CoInitializeEx等)を行なっていません。
+	COM関連の命令を使用する場合には、「C/C++からの呼び出し」にあるような
+	初期化コードが必要になります。(HSP3のプラグインとして使用する場合は、
+	問題ありません。)
+
+	■run命令はサポートされません
+	■mouse命令によってマウスカーソルを消去する機能はサポートされません。
+	■delete命令はサポートされません
+	■windowsなどシステム関連フォルダにアクセスすることはできません
+
+	このバージョンについてお気づきのことや、ご意見などありましたら、
+	メールやHSPの掲示板の方にお寄せ下さい。
+
+
+・ライセンス
+
+	HSP3IMP.DLLの著作権はonion softwareにあります。
+	onion softwareは本プログラムによって生じた、いかなる損害についても
+	保証いたしません。自己の責任の範囲で使用してください。
+
+	HSP3IMP.DLLは、基本的にBSDライセンスのもと有償・無償を問わず添付、
+	複製、改編、再配布することができます。
+	ただし、HSP3.EXEと同様のランタイムが使用されているため、
+	配布の際には、HSPのライセンス表記(hsplicense.txt)を明示する
+	必要がありますので注意してください。
+	(ライセンス表記の明示は、配布物の中にhsplicense.txtを含めるか、
+	またはドキュメント内にhsplicense.txtと同じ内容を含めるようにしてください。)
+
+	HSP3IMP.DLLに対応したスクリプトおよび、ソフトは自由に開発していただいて
+	結構です。商用、非商用を問わず公開、配布することができます。
+
+
+-------------------------------------------------------------------------------
+                                                HSP users manual / end of file 
+-------------------------------------------------------------------------------

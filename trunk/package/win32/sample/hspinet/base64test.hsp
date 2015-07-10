@@ -1,0 +1,32 @@
+#include "hspinet.as"
+
+;
+;	BASE64TEST
+;
+base="abc123"
+key="password"
+b64encode res,base
+
+mes "‚à‚Æ‚Ì•¶š—ñ:"+base
+mes "BASE64•¶š—ñ:"+res
+
+sdim bres,512
+b64decode bres,res
+
+mes "Ä•ÏŠ·‚µ‚½•¶š—ñ:"+bres
+
+rc4encode bres, key
+
+mes "RC4ˆÃ†‰»‚µ‚½•¶š—ñ:"+bres
+
+len=strlen(bres)
+repeat len
+mes strf("#%d : %02x",cnt,peek(bres,cnt))
+loop
+
+rc4encode bres, key
+
+mes "RC4•¡†‰»‚µ‚½•¶š—ñ:"+bres
+
+stop
+

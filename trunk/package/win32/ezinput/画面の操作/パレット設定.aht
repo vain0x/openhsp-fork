@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "palette"
+
+#define パレットコード	"0"	;;str
+#define 色コード	"0"	;;str
+#define 更新スイッチ	"0"	;;str
+
+#ahtmes "palette "+パレットコード+" , "+色コード+" , "+更新スイッチ+

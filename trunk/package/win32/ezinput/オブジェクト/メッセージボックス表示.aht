@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "mesbox"
+
+#define 表示メッセージが代入された文字列型変数	""	;;str
+#define メッセージボックスのサイズ	""	;;str
+#define メッセージボックスのスタイル	"1"	;;str
+#define 入力できる最大文字数	"-1"	;;str
+
+#ahtmes "mesbox "+表示メッセージが代入された文字列型変数+" , "+メッセージボックスのサイズ+" , "+メッセージボックスのスタイル+" , "+入力できる最大文字数+

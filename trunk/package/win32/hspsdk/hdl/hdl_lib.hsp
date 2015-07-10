@@ -1,0 +1,226 @@
+
+;============================================================
+;                                                 2008/xx/xx
+;	S.Programs HDL
+;	汎用ライブラリ (HSP 3.0)
+;                               http://sprocket.babyblue.jp/
+;============================================================
+
+#define HDL_LIB_INCLUDED  1
+
+
+;============================================================
+; BENCH macro
+
+#ifndef B_ST
+#uselib "winmm"
+#cfunc global d3timer "timeGetTime"
+#define global B_ST(%1="test")	bench_ot = d3timer() : bench_titl = %1
+#define global B_EN	dialog bench_titl + " - " + (d3timer() - bench_ot) + "ms"
+#define global B_I1	bench_i = 0
+#define global B_I2	bench_iot = d3timer()
+#define global B_I3	bench_i += d3timer() - bench_iot
+#define global B_I4	dialog "B_I - " + bench_i + "ms"
+#endif
+
+
+
+;============================================================
+; get_hsp_appdata_path
+;  HSP が使う Application Data の Path
+
+#module
+; winapi
+#uselib "kernel32"
+#func GetEnvironmentVariable	"GetEnvironmentVariableA" sptr, sptr, sptr
+;--------------------------------------------------
+#deffunc get_hsp_appdata_path array v1
+	org_dir = dir_cur
+	sdim v1, 1000
+	GetEnvironmentVariable "APPDATA", varptr(v1), 990
+
+	if "" ! v1 {
+		subdir = "Hot Soup Processor"
+		chdir v1
+		dirlist astr, subdir, 5 : if stat = 0 : mkdir subdir // MAKEDIR subdir
+		chdir org_dir
+		v1 += "\\" + subdir
+	}
+
+	if "" = v1 : v1 = org_dir
+	return
+#global
+
+
+
+;============================================================
+; ステータスバー モジュール
+
+#module
+; winapi
+#uselib "comctl32"
+#func InitCommonControlsEx "InitCommonControlsEx" var
+#uselib "user32"
+#func GetWindowRect "GetWindowRect" int, var
+#func DestroyIcon "DestroyIcon" int
+#uselib "shell32"
+#func ExtractIconEx "ExtractIconExA" sptr, sptr, sptr, sptr, sptr
+
+; const
+#define ctype objhwnd(%1)  objinfo(%1, 2)
+#const  WS_CHILD	0x40000000
+#const  WS_VISIBLE	0x10000000
+#define RECT_LEFT	0
+#define RECT_TOP	1
+#define RECT_RIGHT	2
+#define RECT_BOTTOM	3
+;--------------------------------------------------
+#deffunc status_mes int i, str inp
+	if hwnd_status {
+		a = inp
+		sendmsg hwnd_status, 0x0401, i, varptr(a) ; SB_SETTEXT
+		; アイコン消去
+		if icon.i {
+			sendmsg hwnd_status, 0x040F, i, 0 ; SB_SETICON
+			DestroyIcon icon.i
+			icon.i = 0
+		}
+	}
+	return
+;--------------------------------------------------
+#deffunc status_icon int i, str fn, int id
+	if hwnd_status {
+		; アイコン設定
+		if icon.i : DestroyIcon icon.i : icon.i = 0
+		ExtractIconEx fn, id, 0, varptr(icon.i), 1
+		if icon.i : sendmsg hwnd_status, 0x040F, i, icon.i ; SB_SETICON
+	}
+	return
+;--------------------------------------------------
+#deffunc status_resize
+	if hwnd_status {
+		a = ginfo_winx*70/100, ginfo_winx*85/100, -1 ; パーツ位置 (70:15:15 固定)
+		sendmsg hwnd_status, 0x0404, 3, varptr(a) ; SB_SETPARTS
+		sendmsg hwnd_status, 0x0005, 0, 0 ; WM_SIZE
+	}
+	return
+;--------------------------------------------------
+#defcfunc status_height
+	dim a, 4 ; RECT
+	if hwnd_status {
+		GetWindowRect hwnd_status, a
+	}
+	return (a.RECT_BOTTOM - a.RECT_TOP)
+;--------------------------------------------------
+#deffunc status_create
+	; init (4.70 以上の comctl32.dll が必要)
+	a = 8, 0x00000004 ; ICC_BAR_CLASSES
+	InitCommonControlsEx a
+	winobj "msctls_statusbar32", "", 0, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0
+	hwnd_status = objhwnd(stat)
+	dim icon, 3 ; 各パーツのアイコンハンドル格納
+	status_resize ; パーツ初期化
+	return
+#global
+; icon sample
+;	status_icon 0, "explorer.exe", 7 ; (i)
+;	status_icon 0, "explorer.exe", 8 ; <!>
+;	status_icon 0, "explorer.exe", 9 ; (X)
+;	status_icon 0, "shell32.dll", 22 ; ○━
+;	status_icon 0, "shell32.dll", 23 ; (?)
+
+
+
+;============================================================
+; ウィンドウ操作・ウィンドウ情報/設定データのセーブ/ロード
+;  ウィンドウ情報 : cfgdat(0-10)
+;  ユーザーエリア : cfgdat(11-127)
+;  設定ファイルサイズ 512 bytes
+
+; global var cfgdat
+#define global cfgdat cfgdat_@
+
+#module
+; config
+#define CFG_SIZE 512
+
+; winapi
+#uselib "user32"
+#func	ShowWindow		"ShowWindow" int, int
+#func	GetWindowPlacement	"GetWindowPlacement" int, var
+#func	SetWindowPlacement	"SetWindowPlacement" int, var
+#cfunc	GetForegroundWindow	"GetForegroundWindow"
+#cfunc	GetWindowThreadProcessId	"GetWindowThreadProcessId" int, int
+#func	SetForegroundWindow	"SetForegroundWindow" int
+#func	BringWindowToTop	"BringWindowToTop" int
+#func	AttachThreadInput	"AttachThreadInput" int, int, int
+#func	SetWindowLongA		"SetWindowLongA" sptr, sptr, sptr
+#uselib "kernel32"
+#cfunc	GetCurrentThreadId	"GetCurrentThreadId"
+
+; const
+#const  SW_HIDE			0
+#const  SW_SHOWNORMAL		1	; 通常
+#const  SW_SHOWMINIMIZED	2	; アイコン化
+#const  SW_SHOWMAXIMIZED	3	; 最大
+#const  GWL_STYLE		-16
+#const  WS_OVERLAPPEDWINDOW	0x00CF0000
+#const  WS_CLIPCHILDREN		0x02000000
+;--------------------------------------------------
+#deffunc Window_resizable
+	SetWindowLongA hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN
+	return
+;--------------------------------------------------
+#deffunc Window_top	; ウィンドウを通常化
+	; get wp
+	dim wp, 11
+	wp = 44  ; WINDOWPLACEMENT.length
+	GetWindowPlacement hwnd, wp
+
+	if (wp.2 & 3) = SW_SHOWMINIMIZED {
+		ShowWindow hwnd, SW_SHOWNORMAL
+	}
+
+	; force foreground
+	hwt = GetForegroundWindow()
+	if hwt ! hwnd {
+		a = GetWindowThreadProcessId(hwt, 0)
+		b = GetCurrentThreadId()
+		AttachThreadInput a, b, 1
+		SetForegroundWindow hwnd
+		AttachThreadInput a, b, 0
+		BringWindowToTop hwnd
+	}
+	return
+;--------------------------------------------------
+#deffunc Config_restore_window
+	; default window pos
+	if cfgdat ! 44 : cfgdat = 44, 0, 1, -1, -1, -1, -1, ginfo_dispx*10/100, ginfo_dispy*15/100, ginfo_dispx*85/100, ginfo_dispy*90/100
+
+	; restore window
+	SetWindowPlacement hwnd, cfgdat
+	Window_top
+	return
+;--------------------------------------------------
+#deffunc Config_open str p1
+	; set filename
+	get_hsp_appdata_path cfgfile
+	cfgfile += "\\" + p1
+
+	; load config
+	dim cfgdat, 128
+	exist cfgfile
+	if strsize = CFG_SIZE : bload cfgfile, cfgdat
+	return
+;--------------------------------------------------
+#deffunc Config_close
+	cfgdat = 44 ; WINDOWPLACEMENT.length
+	GetWindowPlacement hwnd, cfgdat
+
+	bsave cfgfile, cfgdat, CFG_SIZE
+	return
+#global
+
+
+
+

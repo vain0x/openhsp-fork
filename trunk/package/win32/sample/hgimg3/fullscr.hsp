@@ -1,0 +1,99 @@
+#include "hgimg3.as"
+
+	;	フルスクリーンサンプル
+	;	[ESC]キーで終了します。
+	;
+	fullscr=1		; スルスクリーンか? (1=yes/0=no)
+	_dispx=640:_dispy=480	; 画面サイズ
+	;
+	randomize
+	if fullscr=0 {
+		screen 0,_dispx,_dispy,0
+	} else {
+		bgscr 0,_dispx,_dispy,0
+		hgsetreq SYSREQ_DXMODE,1	; フルスクリーンモードを指定
+		hgsetreq SYSREQ_DXWIDTH,_dispx	; フルスクリーン解像度X
+		hgsetreq SYSREQ_DXHEIGHT,_dispy	; フルスクリーン解像度Y
+	}
+	cls 4
+	hgini
+	if fullscr {
+		wait 100
+		mouse -1
+		gsel 0,2
+	}
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	モデル登録
+	;
+	setuv 0,0,128,128
+	addmesh m_mesh,8,8,16,30,30
+	texload "btex.bmp"
+	regobj obj, m_mesh
+
+	;	表示の準備
+	;
+	clscolor $80			; 背景色の設定
+	cammode CAM_MODE_LOOKAT
+	setpos HGOBJ_CAMERA, 0,-10,30	; カメラ位置の設定
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+
+*main
+	gosub *alldraw
+	stick key,$3ff
+	if key&128 : goto *main2
+
+	;	カーソルキーで動かす
+	;
+	if key&1 : addpos HGOBJ_CAMERA, -0.2, 0.0
+	if key&4 : addpos HGOBJ_CAMERA, 0.2, 0.0
+	if key&8 : addpos HGOBJ_CAMERA, 0.0, 0.2
+	if key&2 : addpos HGOBJ_CAMERA, 0.0, -0.2
+
+	goto *main
+
+*main2
+	gosub *fadeout
+	repeat
+	gosub *alldraw
+	if scfadev=256 : break
+	loop
+
+*owari
+	end
+
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt "Frame:"+frame,8,8
+	fprt "[ESC] key to abort.",8,30
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,640,480,scfadev
+		hgrect 320,240,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return
+
+
+

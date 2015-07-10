@@ -1,0 +1,78 @@
+#include "obaq.as"
+
+	;
+	;	パチンコ風のフィールドをランダムに作成します
+	;	[ESC]で終了します
+	;
+	randomize
+	wx=480:wy=600
+	divx=8:divy=8
+	sx=wx/4/divx:sy=wy/4/divy
+
+	screen 0,wx,wy
+	celload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+*start
+	qreset
+	frame=0
+
+	;	GOALを登録
+	;
+	qaddpoly goal, 4, 60,120
+	qtype goal, type_bind
+	qgroup goal,2,1,1
+
+	;	釘を出す
+	;
+	repeat 5
+		left=3
+*reput
+		a=cnt&1:x=rnd(divx-1)*sx+(sx/2)*a
+		y=(cnt+2)*sy
+		qaddpoly i, 3, x,y,0.01*rnd(628),2,2
+		if i<0 : goto *reput
+		qtype i, type_bind
+		qgroup i,1,2
+		left--
+		if left>0 : goto *reput
+	loop
+
+*main
+	;	メインループ
+	;
+	stick key,0x4f
+	if key&128 : end
+
+	;	玉を振らせる
+	;
+	if (frame\40)=0 {
+		qaddpoly my, 12, rnd(wx/4),16,0,4,4
+	}
+
+	redraw 0
+	gradf ,,,,1,0,128	; 画面クリア
+
+	color 255,255,255
+	pos 0,0:mes "Frame:"+frame
+
+	qexec
+	qdraw
+
+	gmode 2:pos wx-160,40	; ロゴ表示
+	celput logoid
+
+	redraw 1
+	await 12
+
+	;	GOALとの接触判定
+	qcollision goal
+	qgetcol i,colx,coly
+	if i>=0 {
+		qdel i	; GOALに触れた玉は消す
+	}
+
+	frame++
+	if frame<1000 : goto *main
+	goto *start
+

@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "strtrim"
+
+#define 元の文字列が代入された変数	""	;;str
+#define 除去する位置の指定	"0"	;;str
+#define 文字コード	"32"	;;str
+
+#ahtmes "strtrim( "+元の文字列が代入された変数+" , "+除去する位置の指定+" , "+文字コード+" )"+

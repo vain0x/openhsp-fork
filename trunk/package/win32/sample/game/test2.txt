@@ -1,0 +1,11 @@
+$mapedit data
+%mapsx
+16
+%mapsy
+16
+%celname
+mapbg.bmp
+%cx
+64
+%cy
+64

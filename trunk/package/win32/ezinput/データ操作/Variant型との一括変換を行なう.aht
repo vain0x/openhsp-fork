@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "sarrayconv"
+
+#define 結果を格納する変数	""	;;str
+#define 変換元の変数	""	;;str
+#define 変換のモード	""	;;str
+#define バイナリーデータのサイズ	""	;;str
+
+#ahtmes "sarrayconv "+結果を格納する変数+" , "+変換元の変数+" , "+変換のモード+" , "+バイナリーデータのサイズ+

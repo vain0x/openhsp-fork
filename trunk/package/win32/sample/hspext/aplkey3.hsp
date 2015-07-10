@@ -1,0 +1,101 @@
+#include "hspext.as"
+
+	;
+	;	アプリケーション・キャプチャー サンプルスクリプト3
+	;		すべてのウインドゥと、それに対応するオブジェクト
+	;		(コントロール)の一覧を表示する。
+	;		上のリストボックスで、ウインドゥを選び、[CHECK]
+	;		を押すと、下のリストボックスにオブジェクト一覧とIDが
+	;		表示されます。
+	;		オブジェクトが階層化されている場合は、下のリストボックス
+	;		からオブジェクトを選び、[MORE]を押すとさらにその下の階層に
+	;		あるオブジェクトが表示されます。
+	;
+	sdim buf,30000
+	sdim buf2,30000
+	sdim idnam,512
+	dim subid,16
+	wwstr=""
+
+	objsize 600,210
+	pos 0,0
+	listbox num,0,buf
+	objsize 600,200
+	pos 0,240
+	listbox ctrl,0,buf2
+	objsize 100,24
+	pos 0,210
+	button "CHECK",*chk
+	pos 120,210
+	button "MORE",*more
+	pos 240,210
+	button "REFRESH",*start
+	pos 360,210
+	button "END",*owari
+
+*start
+	subobj=0
+	buf=""
+	wt=""
+	a=0
+	repeat
+	aplsel "",a
+	if stat : break
+	wt=refstr
+	if wt="" : wt="???"	
+	buf+="("+a+") "+wt+"\n"
+	a++
+	loop
+	objprm 0,buf
+	stop
+
+*more
+	if ctrl=-1 : goto *chk2
+	subid.subobj=ctrl
+	subobj++
+	goto *chk2
+
+*chk
+	subobj=0
+*chk2
+	buf2=""
+	wt=""
+	idnam="WINID ("+num+")"
+
+	if subobj=0 : goto *chk2ov
+	repeat subobj
+	idnam+=" OBJID("+subid.cnt+")"
+	loop
+*chk2ov
+
+	a=0
+	repeat
+	aplsel "",num			; select window
+
+	if subobj=0 : goto *chk3
+	repeat subobj
+	aplobj "",subid.cnt		; more object select
+	loop
+*chk3
+	aplobj "",a			; object select
+	if stat : break
+	wt=refstr
+	aplget wwstr
+
+	if wt="" : wt="???"	
+	buf2+="("+a+") "+wt
+	if wwstr!="" : buf2+=" \""+wwstr+"\""
+	buf2+="\n"
+
+	a++
+	loop
+	objprm 1,buf2
+
+	color 255,255,255:boxf 0,430,639,479
+	color 0,0,0:pos 0,430
+	mes idnam
+	stop
+
+*owari
+	end
+

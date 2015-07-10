@@ -1,0 +1,133 @@
+#include "hspinet.as"
+
+	;
+	;	メール送信サンプル
+	;	※すべてのメールサーバーに対応しているわけではありません
+	;	※メール本文はSJIS文字列として送信されます
+	;
+#module
+#include "hspsock.as"
+#define SVR_TIMEOUT 100		; タイムアウト時間(1/10sec)
+
+#deffunc svrwait
+	sdim reslog,1024
+	repeat SVR_TIMEOUT
+	sockcheck 0
+	if stat=0 : break
+	await 10
+	loop
+	sockget reslog,1024,0
+	rescode=strmid(reslog,0,3)
+	return
+
+#deffunc setmail str _p1, int _p2, str _p3, str _p4
+
+	;	メールサーバーの設定(メールを送る前に設定してください)
+	;	setmail "サーバーアドレス", ポート番号, "認証ユーザー名", "認証パスワード"
+	;
+	svradr = _p1
+	svrport = _p2
+	svruser = _p3
+	svrpass = _p4
+	return
+
+#deffunc sendmail str adrfrom, str adrto, str subject, str txdata
+
+	;	メール送信
+	;	sendmail "送信元アドレス","送信先アドレス","タイトル","本文"
+	;	(statが0ならば送信成功、1以上ならばエラーが発生しています)
+	;	(先にsetmailでサーバーの設定を行なっておいてください)
+	;
+	sockopen 0,svradr,svrport
+	svrwait
+	if rescode!="220" : return 1
+	sockput "ehlo "+svradr+"\n",0
+	svrwait
+	if rescode!="250" : return 2
+	sockput "auth login\n",0
+	svrwait
+	if rescode!="334" : return 3
+	srcbuf=svruser
+	b64encode@ res,srcbuf
+	sockput res+"\n",0
+	svrwait
+	if rescode!="334" : return 4
+	srcbuf=svrpass
+	b64encode@ res,srcbuf
+	sockput res+"\n",0
+	svrwait
+	if rescode!="235" : return 5
+
+	sockput "mail from:"+adrfrom+"\n",0
+	svrwait
+	if rescode!="250" : return 6
+	sockput "rcpt to:"+adrto+"\n",0
+	svrwait
+	if rescode!="250" : return 7
+	sockput "data\n",0
+	svrwait
+	if rescode!="354" : return 8
+
+	srcbuf=subject
+	b64encode@ res,srcbuf
+	sockput "from:"+adrfrom+"\nto:"+adrto+"\nsubject:=?Shift_Jis?B?"+res+"?=\n\n"+txdata+"\n.\n",0
+	svrwait
+	if rescode!="250" : return 9
+
+	sockput "quit",0
+	return 0
+
+#global
+
+	;	メール送信テスト
+	;
+	syscolor 15
+	boxf
+	color 0,0,0
+
+	sdim m_adr,256
+	sdim m_user,256
+	sdim m_pass,256
+	sdim m_from,256
+	sdim m_to,256
+	sdim m_title,256
+	sdim m_text,$4000
+	m_port=587
+	m_adr="smtp.mail.yahoo.co.jp"
+	m_from="????@yahoo.co.jp"
+	m_to="????@yahoo.co.jp"
+	m_title="メール送信テストです"
+	m_text="本文です。"
+
+	objsize 320,24
+	mes "SMTPサーバー"
+	input m_adr
+	mes "SMTPポート"
+	input m_port
+	mes "認証ユーザー名"
+	input m_user
+	mes "認証パスワード"
+	input m_pass
+	mes "送信元アドレス"
+	input m_from
+	mes "送信先アドレス"
+	input m_to
+	mes "タイトル"
+	input m_title
+	mes "本文"
+	mesbox m_text,640,160
+
+	pos 490,10:objsize 140,140
+	button "メール送信",*go
+	stop
+
+*go
+	setmail m_adr, m_port, m_user, m_pass
+	sendmail m_from, m_to, m_title, m_text
+	ires=stat
+	if ires=0 {
+		dialog "メールを送信しました。"
+	} else {
+		dialog "エラーが発生しました。(エラー="+res+")"
+	}
+	stop

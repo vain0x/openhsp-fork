@@ -1,0 +1,56 @@
+
+;============================================================
+;                                                 2010/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; マウス座標から 3D ワールドでの平面座標を得るサンプルです。
+;
+; d3ribbonto 命令で X 座標、Y 座標をそれぞれ　R, G 成分として
+; 描画しておき、マウスポインタの位置でその色成分を読み取って
+; 指し示す位置を検出します。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+
+*mainloop
+	redraw 0
+	color : boxf
+
+	d3setcam sin(0.0005 * d3timer()) * 50 + 50, -30, 30,  50, 50, 0
+	gmode 5, 0, 0, 256
+
+	; X グラデーション
+	d3initlineto
+	repeat 101
+		color cnt, 0, 0
+		d3ribbonto cnt, 0, 0, cnt, 100, 0
+	loop
+
+	; Y グラデーション
+	d3initlineto
+	repeat 101
+		color 0, cnt, 0
+		d3ribbonto 0, cnt, 0, 100, cnt, 0
+	loop
+
+	pget mousex, mousey ; マウスポインタ位置のカラーコードで座標判別
+	px = ginfo_r
+	py = ginfo_g
+	if (px >= 1) & (py >= 1) {
+		color 255, 255, 255
+		d3arrow px, py, 2,  50, 50, 50
+		d3box px - 1, py - 1, 0, px, py, 1
+		d3mes "(" + px + ", " + py + ")", px, py, 10
+	}
+
+	redraw
+	await
+
+	goto *mainloop

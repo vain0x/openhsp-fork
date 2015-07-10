@@ -1,0 +1,263 @@
+
+;============================================================
+;                                                 2005/10/--
+	title "S.Programs grgr-gimbal 1.01"
+;	version 1.01/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+・グルグル・ジンバル
+
+光るジンバルをグルグルして遊ぶソフトです。
+画面上をマウスでドラッグするとジンバルが動きます。
+勢いをつけてマウスボタンを離すとそのまま回転します。
+
+マウスドラッグ : ジンバル回転
+↑/↓ : ポリゴン数 増加 / 減少
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+	vx = 0.023
+	vy = 0.0245
+	th = 0.0
+	ph = 0.0
+	vv = 0.0
+
+	d3mkparticle 0, 100, 100, 255
+	d3mkparticle 1, 255, 127, 127
+	d3mkparticle 2,  80, 255,  80
+	d3mkparticle 3, 255, 255, 127
+
+	POLYS = 20
+
+
+
+;-----------------------------------------------------------
+*mainloop
+	ct++
+
+	rr = limitf( 3300 - 2900.0 / (0.05 * ct + 1), 0, 3000 )
+	d3setcam 0, rr, 0
+
+
+
+	; key inp
+	if ct > 10 : stick ka, 1023
+
+
+
+	; パラメータ変更
+	POLYS += (ka & 2) ! 0
+	POLYS -= (ka & 8) ! 0
+	POLYS = limit(POLYS, 6, 64)
+
+	LOOPS = POLYS + 1
+	dh = 6.2831853 / POLYS
+
+
+
+	; ドラッグ
+	if ka & 256 {
+		vx = 0.002 * (mousex - bmx)
+		vy = 0.002 * (mousey - bmy)
+		vv = 0.0
+	}
+	bmx = mousex
+	bmy = mousey
+
+
+	th += vx + vv
+	ph += vy
+
+	vv = vv * 0.999 + 0.00001 ; 徐々に増加
+
+	vx *= 0.995
+	vy *= 0.995
+
+
+
+	redraw 0
+	hsvcolor 32, 64, limit(2000 / (1 | bkr), 24, 127) : boxf
+
+
+
+
+	; inner-rotor
+
+	color 127, 127, 255
+	r = 800
+	pid = 0
+
+	repeat LOOPS
+		gosub *default_setup
+
+		d3rotate y1, z1,  y1, z1,  ph
+		d3rotate y2, z2,  y2, z2,  ph
+
+		d3rotate x1, y1,  x1, y1,  th
+		d3rotate x2, y2,  x2, y2,  th
+
+		gosub *default_draw
+	loop
+
+
+
+
+	; outer-rotor
+
+	color 255, 100, 100
+	r = 900
+	pid = 1
+
+	repeat LOOPS
+		gosub *default_setup
+
+		d3rotate  x1, y1,  x1, y1,  th
+		d3rotate  x2, y2,  x2, y2,  th
+
+		gosub *default_draw
+	loop
+
+
+
+
+	; case
+
+	color 100, 255, 100
+	r = 1000
+	pid = 2
+
+	repeat LOOPS
+		gosub *default_setup
+		gosub *default_draw
+	loop
+
+
+
+
+	; inner
+
+	gmode 5, , , 20
+	color 255, 255, 128
+
+	repeat 7, 3
+		r  = rr / 12 * cnt
+		h  = rr / 1000 * cnt * cnt
+
+		repeat 3
+			y =   r, 0.0,   r, r * 1.25
+			x =  -h, 0.0,   h, 0.0
+			z = 0.0, 0.0, 0.0, 0.0
+			c = cnt
+
+			repeat 4
+				dup xc, x(cnt)
+				dup yc, y(cnt)
+				dup zc, z(cnt)
+
+				d3rotate xc, zc,  xc, zc,  1.04719755 * c
+				d3rotate yc, zc,  yc, zc,  ph
+				d3rotate xc, yc,  xc, yc,  th
+
+				; mirror
+				xa(cnt) = -xc
+				ya(cnt) = -yc
+				za(cnt) = -zc
+			loop
+
+
+			d3square x, y, z
+
+			; 最終描画時のライト中心距離を保存
+			gosub *default_getrr_f
+			bkr = f
+
+
+			d3square xa, ya, za
+
+			gosub *default_getrr_f
+			if f < bkr : bkr = f
+		loop
+	loop
+
+
+	gmode 5, , , 192
+	d3particle 3,  0, 0, 0,  50
+	d3particle 3,  0, 0, 0,  200
+
+
+
+
+	redraw
+	await 30
+
+	goto *mainloop
+
+
+;-----------------------------------------------------------
+; subroutines
+
+
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+*default_getrr_f
+
+	f = d3dist(dx@d3m - wincx@d3m, dy@d3m - wincy@d3m)
+	return
+
+
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+*default_setup
+	; set pos
+
+	x1 = sin(dh * cnt) * r
+	y1 = 80
+	z1 = cos(dh * cnt) * r
+
+	x2 = x1
+	y2 = -80
+	z2 = z1
+
+	return
+
+
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+*default_draw
+	; draw
+
+	if cnt {
+		d3initlineto
+		d3lineto ox1, oy1, oz1
+		d3lineto x1, y1, z1
+		d3lineto ox2, oy2, oz2
+		d3lineto x2, y2, z2
+		d3lineto x1, y1, z1
+
+		gmode 5, , , 128
+		x = ox1, ox2, x2, x1
+		y = oy1, oy2, y2, y1
+		z = oz1, oz2, z2, z1
+		d3square x, y, z
+
+		gmode 5, , , 64
+		d3particle pid,  x2, y2, z2,  120
+		d3particle pid,  x1, y1, z1,  120
+	}
+
+
+	; bklup
+
+	ox1 = x1
+	oy1 = y1
+	oz1 = z1
+
+	ox2 = x2
+	oy2 = y2
+	oz2 = z2
+
+	return
+
+
+

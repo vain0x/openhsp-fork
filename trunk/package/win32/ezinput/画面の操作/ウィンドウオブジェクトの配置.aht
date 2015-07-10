@@ -1,0 +1,18 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "winobj"
+
+#define ウィンドウクラス名	""	;;str
+#define ウィンドウ名	""	;;str
+#define 拡張ウィンドウスタイル	""	;;str
+#define ウィンドウスタイル	""	;;str
+#define Xサイズ	""	;;str
+#define Yサイズ	""	;;str
+#define メニューハンドルまたは子ウィンドウID	""	;;str
+#define ウィンドウ作成データ	""	;;str
+
+#ahtmes "winobj "+ウィンドウクラス名+" , "+ウィンドウ名+" , "+拡張ウィンドウスタイル+" , "+ウィンドウスタイル+" , "+Xサイズ+" , "+Yサイズ+" , "+メニューハンドルまたは子ウィンドウID+" , "+ウィンドウ作成データ+

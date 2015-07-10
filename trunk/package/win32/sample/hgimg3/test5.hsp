@@ -1,0 +1,55 @@
+#include "hgimg3.as"
+
+	;	トゥーンシェーディング
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+	;
+	clscolor $80
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_b.x"
+	settoonedge m_xmodel, $000000, 0.1, 1.0
+	loadtoon m_xmodel,"toon.bmp"
+	regobj obj, m_xmodel
+	setangr obj,0,128,0
+	setpos obj,0,1.5,30
+
+	setang HGOBJ_LIGHT, 2.4, 0.8, 0.0
+*main
+	stick key,$3ff
+
+	hgdraw
+
+	fprt "HGIMG3 Test",8,8
+
+	hgsync 15
+
+	if key&128 : goto *owari
+
+	if key&64 {
+		if key&1 : addang HGOBJ_LIGHT, -0.2, 0.0
+		if key&4 : addang HGOBJ_LIGHT, 0.2, 0.0
+		if key&2 : addang HGOBJ_LIGHT, 0.0, 0.2
+		if key&8 : addang HGOBJ_LIGHT, 0.0, -0.2
+		getang HGOBJ_LIGHT, x1,y1,z1
+		title "("+x1+","+y1+","+z1+")"
+	} else {
+		if key&2 : addang obj, -0.05, 0.0
+		if key&8 : addang obj, 0.05, 0.0
+		if key&4 : addang obj, 0.0, 0.05
+		if key&1 : addang obj, 0.0, -0.05
+	}
+
+	goto *main
+
+*owari
+	hgbye
+	end

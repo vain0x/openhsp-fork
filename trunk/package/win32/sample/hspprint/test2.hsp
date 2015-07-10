@@ -1,0 +1,98 @@
+#include "hspprint.as"
+
+*start
+	cls
+	enumprn plist
+	pnum=stat
+	mes "プリンタの数="+pnum
+
+	if pnum=0 : goto *noprn
+
+	getdefprn def_printer		; 規定のプリンター
+
+	mes "プリンタ一覧"
+
+	useid = 0
+	notesel plist
+	repeat notemax
+	noteget s1,cnt
+		mes "ID"+cnt+" : "+s1
+		if s1=def_printer : useid=cnt
+	loop
+
+	sdim gr_path,1024
+	gr_path=""
+	objsize 160,24
+
+	mes "----------------------------------"
+	mes "プリンタID: (規定="+useid+")"
+	input useid
+
+	objsize 320,24
+	mes "画像ファイル"
+	input gr_path
+
+	button "画像選択",*selpic
+	button "プリント",*ok
+	button "設定",*opt
+
+	stop
+
+*noprn
+	mes "プリンタはありません。"
+	stop
+
+*selpic
+	dialog "jpg;*.bmp;*.png;*.gif",16,"画像ファイル"
+	if stat=0 : stop
+	gr_path=refstr
+	objprm 1,gr_path
+	stop
+
+*ok
+	exist gr_path
+	if strsize<=0 : dialog "画像がありません" : stop
+
+	cls
+	notesel plist
+	noteget s1,useid
+	mes "["+s1+"]に出力を開始します。"
+
+	propprn sx,sy,useid,0
+	mes "プリンタの解像度=("+sx+","+sy+")"
+
+	buffer 3
+	picload gr_path
+	
+	xapp =ginfo_sx
+	yapp =ginfo_sy
+	zoom = double(sx) / xapp
+
+	gsel 0
+	mes "画像の解像度=("+xapp+","+yapp+")"
+	mes "ZOOM="+zoom
+
+	ysize = int( zoom * yapp )
+	mes "出力解像度=("+sx+","+ysize+")"
+
+	mes "----------------------------------"
+
+	objsize 320,24
+	button "プリント開始",*ok2
+	stop
+
+*ok2	
+	cls
+	mes "プリント中..."
+	objsize 320,24
+	button "戻る",*start
+
+	gsel 3
+	execprn useid, 0,0, sx,ysize, 0,0, xapp,yapp, "HSPDoc"
+	gsel 0
+
+	stop
+
+*opt
+	prndialog useid
+	stop

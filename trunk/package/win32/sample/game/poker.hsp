@@ -1,0 +1,139 @@
+	title "ポーカーゲーム"
+	randomize
+	celload "trump.bmp"
+	trump=stat
+	screen 0,640,480
+	gosub *creset
+	sdim ylist,1024
+	dim ybai,16
+	dim hand,16
+	dim hand2,16
+	ylist={"0 なし
+1 ツーペア
+2 スリーカード
+3 ストレート
+4 フラッシュ
+5 フルハウス
+6 フォーカード
+7 ストレートフラッシュ
+8 ロイヤルストレートフラッシュ
+"}
+	ybai=0,2,5,10,20,30,50,100,500
+	credit=30
+	bet=1
+*main
+	cls 1
+	if credit=0 {
+	  dialog "コインがありません" : end
+	}
+	sdim s1,256
+	dim cbox,5
+	pos 480,24
+	color 0,0,120
+	font msgothic,18,1
+	mes "残りコイン="+credit
+	yaku=0:gosub *putlist
+
+	ibet=bet
+	credit=credit-bet
+	objsize 90,24
+	repeat 5
+	gosub *cdraw:hand.cnt=a
+	pos cnt*100+22,430
+	chkbox "そのまま",cbox.cnt
+	loop
+	pos 530,430
+	button "交換",*change
+*turn
+	gosub *csort
+	repeat 5
+	x=cnt*100+20:y=300
+	a=hand.cnt:gosub *cput
+	loop
+	stop
+*change
+	clrobj
+	repeat 5
+	if cbox.cnt=0 {
+	  x=cnt*100+20:y=300
+	  gosub *cdraw
+	  hand.cnt=a:gosub *cput
+	}
+	loop
+	gosub *csort
+	gosub *putlist
+	plus=ybai.yaku * ibet
+	if plus>0 : dialog "コイン"+plus+"枚が増えました"
+	credit+=plus
+	pos 530,430
+	button "スタート",*main
+	stop
+*putlist
+	notesel ylist
+	repeat 9:y=cnt*30+24
+	noteget s1,cnt:a=ybai(cnt)
+	color 0,0,0
+	if cnt=yaku : color 255,0,0
+	pos 24,y:mes s1
+	pos 320,y:mes "x"+a
+	loop
+*csort
+	; 手札をソート
+	dim count,14
+
+	mark=hand.0&3:markc=0
+	yaku=0:pair=0:lastnum=-10:st=0
+	repeat 5:hand2.cnt=hand.cnt:loop
+	i=0:repeat 52:chk=cnt
+	repeat 5
+	if hand2.cnt=chk {
+	  a=chk/4:count.a++
+	  if lastnum+1=a : st++
+	  lastnum=a
+	  a=chk&3:if a=mark : markc++
+	  hand2.cnt=-1
+	  hand.i=chk:i++
+	}
+	loop
+	if i>=5 : break
+	loop
+	repeat 14:a=count.cnt
+	if a=2 : pair++
+	if a=3 : yaku=2
+	if a=4 : yaku=6
+	loop
+	if (yaku=2)&(pair=1) : yaku=5
+	if pair=2 {
+	  if yaku=0 : yaku=1
+	}
+	if markc=5 : yaku=4
+	if (st=3)&(yaku=4) {
+	  if lastnum=12 {
+	    if hand.0/4=0 : yaku=8 : return
+	  }
+	}
+	if st=4 {
+	  if yaku=0 : yaku=3
+	  if yaku=4 : yaku=7
+	}
+	return
+*creset
+	; カードをシャッフル
+	dim card,52:cnum=0
+	repeat 52:card.cnt=cnt:loop
+	repeat 52
+	a=rnd(52):b=card.cnt
+	card.cnt=card.a:card.a=b
+	loop
+	return
+*cdraw
+	; カード１枚を引く
+	if cnum>=52 : gosub *creset
+	a=card.cnum:cnum=cnum+1
+	return
+*cput
+	; カード１枚を表示するサブルーチン
+	px=a/4*96:py=(a&3)*128
+	gmode 2,96,128
+	pos x,y:gcopy trump,px,py
+	return

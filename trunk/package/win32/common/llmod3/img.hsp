@@ -1,0 +1,280 @@
+	;================================================================================
+	;モジュール img
+	;ver 2.2
+	;	イメージ(主にアイコン)関連
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; imgモジュール命令一覧
+	;
+	; get_icon			アイコンの取得
+	; draw_icon			アイコンの描画
+	; get_fileicon			ファイルに使用されているアイコンの取得
+	;
+	; 計	4個
+
+
+	;使い方
+	;================================================================================
+	; get_icon v1,"s2",n3,n4		アイコンの取得
+	;
+	;  v1 : 取得したアイコンを入れる数値変数
+	;  s2 : アイコンを含むファイル名
+	;  n3 : アイコンの番号
+	;  n4 : 小さいアイコンを取得するかどうかのフラグ
+	;================================================================================
+	;
+	;<>説明
+	; s2に指定したファイルから、n3番目のアイコンを取得します。
+	; もしn3番目のアイコンが小さいアイコンをもっているときはn4を1にすると
+	; 小さいアイコンの方を取得します。
+	; 取得したアイコンはdraw_iconで描画できます。
+	; アイコン取得に失敗したときは変数に0が代入されます。
+	;
+	; n3を-1にすると、s2がもっているアイコンの数がstatに代入されます。
+	; n3を-2にすると、s2がもっているアイコン全てを取得します。ただしファイルs2が
+	; 16個以上のアイコンを持っているときは、変数v1を
+	;	alloc v1,'アイコンの数'×4
+	; として拡張しておかないとエラーになります。
+	; 
+
+	;================================================================================
+	; draw_icon n1,n2,n3,n4		アイコンの描画
+	;
+	;  n1 : 描画するアイコン(get_iconで取得したもの)
+	;  n2 : x座標
+	;  n3 : y座標
+	;  n4 : redrawしないかどうかのフラグ
+	;================================================================================
+	;
+	;<>説明
+	; n1で指定したアイコンを座標(x,y)に描画します。
+	; この命令を使うたびにredrawを行います。複数のアイコンを描画するときは効率が悪いので
+	; n4を1にして、全てのアイコンを書き終えたらredrawを実行してください。
+	;
+
+	;================================================================================
+	; get_fileicon v1,"s2",n3		ファイルに使用されているアイコンの取得
+	;
+	;  v1 : 取得したアイコンを入れる変数
+	;  s2 : ファイル名
+	;  n3 : 取得するもの
+	;================================================================================
+	;
+	;<>説明
+	; s2に指定したファイルに使われるアイコンを取得します。
+	;
+	;<>n3の値
+	; 0	s2のファイルに使われているアイコン
+	; 1	s2のファイルに使われている小さいアイコン
+	; 2	ツリービューで選択されているときのアイコン(s2がフォルダなどの場合)
+	; 4	リストビューで選択されている状態のアイコン
+	; 8	アイコンにリンクのマークを付ける
+	; $10	s2のファイルに使われるアイコンが含まれているファイル名
+	; $20	s2のファイルが表示されるときに使われる名前(s2に"B:\\"などを使ったとき)
+	; $40	s2のファイルの種類
+	;
+	; 0,1,2,4,8は組み合わせて使うことができます。
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "img"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;get_icon
+	;iconの抽出
+	;................................................................................
+	#deffunc get_icon var v1,str v2,int v3,int v4
+
+	a = strlen(v2) : if(a >= 64) : sdim lcl_s,a + 1
+	lcl_s = v2
+	getptr p,lcl_s
+	prm.0 = p
+	prm.1 = v3
+
+	prm.2 = 0 : prm.3 = 0
+	if(v3 != -1) {
+		getptr p,v1
+		if(v4) {	;flagが0でないなら小さいアイコンを取得
+			prm.3 = p
+		} else {		;flagが0なら大きいアイコンを取得
+			prm.2 = p
+		}
+	}
+
+	dll_getfunc func,"ExtractIconExA",D_SHELL
+
+	;indexを-2にすると全てのアイコンを取る
+	if(v3 != -2) {
+		prm.4 = 1
+	} else {
+		a = prm,-1,0,0,0
+		getptr a,lcl_s
+		ll_callfunc a,5,func
+		prm.4 = dllret
+		prm.1 = 0
+	}
+
+	ll_callfunc prm,5,func
+	alloc lcl_s,64
+	return dllret
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;draw_icon
+	;iconの描画
+	;................................................................................
+	#deffunc draw_icon int v1,int v2,int v3,int v4
+
+	_v1 = v1
+	alloc prm,68
+	prm.0 = hdc,v2,v3,v1,0,0,0,0,3
+	dllproc "DrawIconEx",prm,9,D_USER
+	_v1 = stat
+	if(v4 == 0) : redraw
+	alloc prm,64
+
+	return _v1
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;get_fileicon
+	;ファイルに使用されているアイコンの取得
+	;................................................................................
+	#deffunc get_fileicon var v1,str v2,int v3
+
+	;#define SHGFI_ICON		0x100
+
+	;#define SHGFI_LARGEICON	0
+	;#define SHGFI_SMALLICON	1
+	;#define SHGFI_OPENICON		2
+	;#define SHGFI_SELECTED		0x10000
+	;#define SHGFI_LINKOVERLAY	0x8000
+	;#define SHGFI_ICONLOCATION	0x1000
+	;#define SHGFI_DISPLAYNAME	0x200
+	;#define SHGFI_TYPENAME		0x400
+
+	;#define SHGFI_ATTRIBUTES	0x800
+	;#define SHGFI_EXETYPE		0x2000
+	;#define SHGFI_SYSICONINDEX	0x4000
+	;#define SHGFI_SHELLICONSIZE	4
+	;#define SHGFI_PIDL		8
+	;#define SHGFI_USEFILEATTRIBUTES	16
+	;#define SHGNLI_PIDL		1
+	;#define SHGNLI_PREFIXNAME	2
+
+	; 1 2 4      8     $10   $20  $40
+	a = 1,2,$10000,$8000,$1000,$200,$400
+
+	_v2 = v2
+	_v3 = v3
+
+	if(_v3 < $10) {
+		prm = 0
+		repeat 5
+			if((1 << cnt) & _v3) : prm += a(cnt)
+		loop
+		_v3 = prm | $100
+	} else {
+		repeat 3,4
+			if((_v3 >> cnt) & 1) : _v3 = cnt : break
+		loop
+		_v3 = a(_v3)
+	}
+
+	#define SIZE_OF_SHFILEINFO	352
+
+	alloc a,SIZE_OF_SHFILEINFO		;SHFILEINFO
+	prm.0 = 0,0,0,SIZE_OF_SHFILEINFO,_v3
+	getptr prm.0,_v2
+	getptr prm.2,a
+
+	dllproc "SHGetFileInfoA",prm,5,D_SHELL
+
+	if(_v3 & $1000) | (_v3 & $200) {
+		memcpy v1,a,260,0,12
+	} else {
+		if(_v3 & $400) {
+			memcpy v1,a,80,0,272
+		} else {
+			v1 = lpeek(a,0)
+		}
+	}
+
+	alloc a,64
+	return
+
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;create_imglist
+	;Image listの作成
+	;................................................................................
+	#deffunc create_imglist int v1,int v2,int v3,int v4
+
+	prm = v1,v2,v3,v4,0
+	dllproc "ImageList_Create",prm,5,D_COMCTL	;return handle of image list
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;destroy_imglist
+	;Image listの消去
+	;................................................................................
+	#deffunc destroy_imglist array v1,int v2
+
+	_v2 = v2
+	if(_v2 == 0) : _v2 = 1
+	dll_getfunc a,"ImageList_Destroy",D_COMCTL
+	repeat _v2
+		prm = v1(cnt)
+		ll_callfunc prm,1,a
+	loop
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;addicon_imglist
+	;Image listにアイコンを加える
+	;................................................................................
+	#deffunc addicon_imglist int v1,int v2
+
+	prm = v1,v2
+	dllproc "ImageList_AddIcon",prm,2,D_COMCTL
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;draw_imglist
+	;Image listの描画
+	;................................................................................
+	#deffunc draw_imglist int v1,int v2,int v3,int v4
+
+	prm = v1,v2,hdc,v3,v4,0
+	dllproc "ImageList_Draw",prm,6,D_COMCTL
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;getinfo_imglist
+	;Image listの情報取得
+	;................................................................................
+	#deffunc getinfo_imglist var v1,int v2,int v3,int v4
+
+	_v4 = v4
+	prm = v2,v3
+	getptr prm.2,a		;a:IMAGEINFO
+
+	dllproc "ImageList_GetImageInfo",prm,3,D_COMCTL
+
+	if(_v4) : _v4-- : v1 = a(_v4) : else : v1 = a(6),a(7)
+	return
+
+
+	#undef SIZE_OF_SHFILEINFO
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */

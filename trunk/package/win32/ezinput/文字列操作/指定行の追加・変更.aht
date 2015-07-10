@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "noteadd"
+
+#define 追加・変更をする文字列または変数名	""	;;str
+#define 追加するインデックス	"-1"	;;str
+#define 上書きモード指定	"0"	;;str
+
+#ahtmes "noteadd "+追加・変更をする文字列または変数名+" , "+追加するインデックス+" , "+上書きモード指定+
