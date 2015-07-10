@@ -1,0 +1,16 @@
+
+	syscolor 15:boxf	; オブジェクトの表面色で背景を塗りつぶす
+	mes "Check box test"
+	a1=1:a2=0
+	objsize 80,24
+	chkbox "変数a1",a1
+	chkbox "変数a2",a2
+	button "OK",*chkok
+	stop
+*chkok
+	m="現在の状態\na1="+a1+"/a2="+a2
+	dialog m
+	stop
+
+
+

@@ -1,0 +1,11 @@
+#include "hspinet.as"
+
+	sdim buf,4096
+	getenv buf,"path"
+
+	mes "ŠÂ‹«•Ï”\"path\"‚ğæ“¾‚µ‚Ü‚·"
+	mesbox buf,640,400,1
+
+	stop
+
+

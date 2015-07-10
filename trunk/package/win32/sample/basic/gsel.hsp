@@ -1,0 +1,29 @@
+
+	;	gsel命令サンプル
+	;	(３つのボタンで、もう１つのウインドゥの状態をコントロール)
+	;
+	width 320,200
+	mes "MAIN"
+	button "OFF",*sc0
+	button "ON1",*sc1
+	button "ON2",*sc2
+	;
+	screen 2,320,200
+	cls 4
+	mes "screen2"
+	;
+	gsel 0,1
+	stop
+	;
+*sc0
+	gsel 2,-1
+	stop
+*sc1
+	gsel 2,1
+	stop
+*sc2
+	gsel 2,2
+	stop
+
+
+

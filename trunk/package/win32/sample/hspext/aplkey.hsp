@@ -1,0 +1,70 @@
+#include "hspext.as"
+
+	;
+	;	アプリケーション・キャプチャー サンプルスクリプト
+	;		メモ帳を起動して、あれこれ文字を入力した後、
+	;		aplkey.asというファイルを読み込む。
+	;
+	;
+	width 200,64,0,0
+	mes "AplCapture Test"
+
+	;	メモ帳を起動、ウインドゥを探す
+	;
+	exec "notepad"
+
+	wait 10
+
+	tx1="ﾒﾓ帳"					; Windows95/NTの場合
+	tx2="ﾌｧｲﾙを開く"
+	aplsel "無題 - "+tx1
+	if stat=0 : goto *gogo
+
+	tx1="メモ帳"					; Windows98の場合
+	tx2="開く"
+	aplsel "無題 - "+tx1
+	if stat : dialog "メモ帳を開けませんでした。":end
+
+
+*gogo
+	;	メモ帳のEDITコントロールを検索して文字を送る
+	;
+	aplobj "EDIT"
+	wait 150
+	aplstr "自動入力中...."
+	wait 150
+
+	;	ファイル(F)メニューの新規(N)を選ぶ
+	;
+	aplkey 'F',4
+	wait 50
+	aplkey 'N'
+	wait 150
+
+	;	警告ダイアログを探して、[N]を選ぶ
+	;
+	aplsel tx1
+	aplobj "BUTTON"
+	aplkey 'N'
+	wait 50
+
+	;	再びメモ帳に戻って、ファイル読み込みを選ぶ
+	;
+	aplsel "無題 - "+tx1
+	aplkey 'F',4
+	wait 50
+	aplkey 'O'
+	wait 150
+
+	;	「ファイルを開く」ダイアログを探して
+	;	ファイル名を入力する
+	;
+	aplsel tx2
+	aplobj "EDIT"
+	aplstr "aplkey.as"		; ファイル名
+	wait 150
+	aplkey 13			; [Enter]
+	wait 150
+	end
+
+

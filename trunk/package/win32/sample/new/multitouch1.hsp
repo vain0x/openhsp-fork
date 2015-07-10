@@ -1,0 +1,67 @@
+	;
+	;	Windows7のマルチタッチ入力を取得するサンプルです。
+	;	マルチタッチに対応したデバイスでのみ実行できます。
+
+#uselib "user32.dll"
+#cfunc GetSystemMetrics "GetSystemMetrics" int
+#func GetGestureInfo "GetGestureInfo" int,int
+#func ScreenToClient "ScreenToClient" int,int
+
+#define NID_MULTI_INPUT		0x40	; マルチタッチ可能フラグ
+#define NID_READY		0x80	; タッチ入力可能フラグ
+
+#define WM_GESTURE		0x0119
+#define WM_TOUCH		0x0240
+#define SM_DIGITIZER		94
+#define SM_MAXIMUMTOUCHES	95
+
+#enum G_SIZE=0
+#enum G_FLAGS
+#enum G_ID
+#enum G_TARGET
+#enum G_POSXY
+#enum G_INST
+#enum G_SEQ
+#enum G_PAD
+#enum G_ARGL
+#enum G_ARGH
+#enum G_EXT
+
+	title "ジェスチャー入力テスト"
+
+	size_ginput=12
+	dim ginput,size_ginput		; GESTUREINFO構造体のバッファ
+	dim posxy,4
+	ginput(G_SIZE)=size_ginput*4
+
+	sdim idstr,64,8
+	idstr(1)="GID_BEGIN"
+	idstr(2)="GID_END"
+	idstr(3)="GID_ZOOM"
+	idstr(4)="GID_PAN"
+	idstr(5)="GID_ROTATE"
+	idstr(6)="GID_TWOFINGERTAP"
+	idstr(7)="GID_PRESSANDTAP"
+
+	sysm=GetSystemMetrics(SM_DIGITIZER)
+	i=NID_MULTI_INPUT|NID_READY
+	if (sysm&i)!=i {
+		dialog "マルチタッチに対応していません。" : end
+	}
+
+	onexit *bye
+	oncmd gosub *OnGesture, WM_GESTURE		; メッセージ割り込み
+	stop
+*bye
+	end
+
+*OnGesture
+	;	ジェスチャー割り込み
+	GetGestureInfo lparam, varptr(ginput)
+	if stat {
+		posxy(0)=ginput(G_POSXY)&0xffff
+		posxy(1)=ginput(G_POSXY)>>16
+		ScreenToClient hwnd,varptr(posxy)
+		mes strf( "%s:%x:%x:%d,%d",idstr( ginput(G_ID) ), ginput(G_ARGL), ginput(G_ARGH), posxy(0), posxy(1) )
+	}
+	return

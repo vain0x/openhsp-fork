@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "strmid"
+
+#define 取り出すもとの文字列が格納されている変数名	""	;;str
+#define 取り出し始めのインデックス	""	;;str
+#define 取り出す文字数	"0"	;;str
+
+#ahtmes "strmid( "+取り出すもとの文字列が格納されている変数名+" , "+取り出し始めのインデックス+" , "+取り出す文字数+" )"+

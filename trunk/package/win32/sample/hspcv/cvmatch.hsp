@@ -1,0 +1,19 @@
+#include "hspcv.as"
+
+cvload "bgsamp.jpg",0
+cvload "bgparts.jpg",1
+cvgetimg 0,1
+
+cvmatch x,y,CV_TM_SQDIFF,1,0
+
+color 255,0,0
+
+cvgetinfo sx, 1, CVOBJ_INFO_SIZEX
+cvgetinfo sy, 1, CVOBJ_INFO_SIZEY
+
+boxf x,y,x+sx,y+1
+boxf x,y+sy,x+sx,y+sy+1
+boxf x,y,x+1,y+sy
+boxf x+sx,y,x+sx+1,y+sy
+
+stop

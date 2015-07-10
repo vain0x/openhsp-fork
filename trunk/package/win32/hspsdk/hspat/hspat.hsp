@@ -1,0 +1,857 @@
+
+#define APP_TITLE "HSP assistant "
+#define APP_VER "ver1.21"
+#define APP_CONF "\\hspat.cfg"
+#define APP_CACHE ".hat"
+#define APP_INDEX "index.hat"
+#packopt name "hspat"
+#packopt hide 1
+#pack "hspat_info.bmp"
+#pack "hspat_icon.bmp"
+
+#include "hspcmp.as"
+#include "mod_appconfig.as"
+#include "hspinet.as"
+
+#uselib "shell32.dll"
+#cfunc SHBrowseForFolder "SHBrowseForFolder" int
+#func SHGetPathFromIDList "SHGetPathFromIDList" int,int
+#uselib "ole32.dll"
+#func CoTaskMemFree "CoTaskMemFree" int
+
+	;
+	;	HSP assistant tool
+	;	onion software/onitama 2009/7
+	;
+	goto *boot
+
+#deffunc initalize
+	;	tool初期化
+	;
+	sdim s1,256:sdim s2,256
+	;
+	app_winx=-1
+	app_winy=-1
+	app_mode=0
+	app_ahtman="ahtman.exe"
+	app_hdl="hdl.exe"
+	app_hsed3="hsed3.exe"
+	app_proxy=""
+	app_proxyport=0
+	app_neturl="hsp.tv/atdata/\n"
+	app_netstart=0
+	app_downdir=""
+
+	celload "hspat_info.bmp"
+	tex_info=stat
+	celload "hspat_icon.bmp"
+	tex_icon=stat
+	celdiv tex_icon,16,16
+
+	get_hsp_appdata_path app_dir
+	cfg_init app_dir+APP_CONF
+	cfg_load:appcfg=stat
+	if appcfg {	; cfg読み込み
+		app_winx=0+cfg_getvar("winx")
+		app_winy=0+cfg_getvar("winy")
+		app_mode=0+cfg_getvar("mode")
+		app_ahtman=cfg_getvar("ahtman")
+		app_hdl=cfg_getvar("hdl")
+		app_hsed3=cfg_getvar("hsed3")
+		app_proxy=cfg_getvar("proxy")
+		app_proxyport=0+cfg_getvar("proxyport")
+		app_downdir=cfg_getvar("downdir")
+		app_notice=0+cfg_getvar("notice")
+		sdim app_neturl,$1000
+		repeat
+			cfg_getdata s1
+			if s1="" : break
+			app_neturl+=s1+"\n"
+		loop
+	}
+
+	sx=280:sy=16		; 1行のサイズ
+	isx=280:isy=100		; 情報エリア
+	bsx=isx/3:bsy=40	; 情報ボタンエリア
+	yt=25			; 行数
+	xofs=4:yofs=2		; X,Yオフセット
+	wx=sx:wy=sy*yt+isy	; ウィンドウサイズ
+
+	if app_winx<0 : app_winx = 0
+	if app_winy<0 : app_winy = 0
+	if app_winx>=ginfo_dispx : app_winx = ginfo_dispx-wx
+	if app_winy>=ginfo_dispy : app_winy = ginfo_dispy-wy
+
+	screen 0,wx,wy,0,app_winx,app_winy
+	title APP_TITLE+APP_VER
+	gsel 0,1
+
+	ezdir=dir_exe+"\\ezinput\\"
+	sdim ezfolder,4096
+	dirlist ezfolder,ezdir+"*.*",5
+
+	smpdir=dir_exe+"\\sample\\"
+	sdim smpfolder,4096
+	dirlist smpfolder,smpdir+"*.*",5
+
+	netfolder="設定\n"+app_neturl
+	treset app_mode
+
+	;	ネットワーク初期化
+	;
+	netinit
+	if stat : app_update=-1
+	if app_proxy!="" : netproxy app_proxy,app_proxyport,1
+
+	return
+
+
+#deffunc initsub int _p1, int _p2
+	;	サブウィンドウ初期化
+	;	_p1 = Y axis
+	;	_p2 = Y Size
+	;
+	sw=1
+	swy=_p1:swsy=_p2
+	;
+	redraw 0
+	color 128,128,128:boxf swx,swy,swx+swsx,swy+swsy
+	syscolor 15:boxf swx+2,swy+2,swx+swsx-2,swy+swsy-2
+	redraw 1
+	return
+
+
+#deffunc tezreset int _p1
+	;	ezinput項目をリセット
+	;	_p1=open項目ID
+	;
+	dim tlicon,256
+	dim tlpx,256
+	dim tlopt,256
+	sdim tlist,$10000
+	tsel=-1
+
+	notesel ezfolder
+	i=0:ezopen=_p1
+	repeat notemax
+		noteget s1,cnt
+		tlist+=s1+"\n"
+		tlopt(i)=cnt
+		if cnt=ezopen {
+			dirlist ezsub,ezdir+s1+"\\*.aht",1
+			notesel ezsub
+			repeat notemax
+				i++
+				noteget s2,cnt
+				a=instr(s2,0,".aht"):if a>=0 : poke s2,a,0
+				tlist+=s2+"\n"
+				tlicon(i)=1:tlpx(i)=20
+			loop
+			notesel ezfolder
+		}
+		i++
+	loop
+	;
+	sdim ezsub,64
+	tmaxupd
+	;
+	return
+
+
+#deffunc tsmpreset int _p1
+	;	sample項目をリセット
+	;	_p1=open項目ID
+	;
+	dim tlicon,256
+	dim tlpx,256
+	dim tlopt,256
+	sdim tlist,$10000
+	tsel=-1
+	;
+	notesel smpfolder
+	i=0:smpopen=_p1
+	repeat notemax
+		noteget s1,cnt
+		tlist+=s1+"\n"
+		tlopt(i)=cnt
+		if cnt=smpopen {
+			dirlist smpsub,smpdir+s1+"\\*.hsp",1
+			notesel smpsub
+			repeat notemax
+				i++
+				noteget s2,cnt
+				a=instr(s2,0,".hsp"):if a>=0 : poke s2,a,0
+				tlist+=s2+"\n"
+				tlicon(i)=1:tlpx(i)=20
+			loop
+			notesel smpfolder
+		}
+		i++
+	loop
+	;
+	sdim smpsub,64
+	tmaxupd
+	;
+	return
+
+
+#defcfunc tnetdir str _p1
+	;	networkキャッシュディレクトリ名を得る
+	;	_p1=ファイル名
+	;	_vi=ディレクトリ名
+	tmp_fn="\\"+_p1
+	tmp_fn=strtrim(tmp_fn,3,'/')
+	tmp_fn=strtrim(tmp_fn,3,'.')
+	return tmp_fn
+
+
+#deffunc tnetget var _p1, int _p2
+	;	networkフォルダ内容を取得
+	;	_p1=結果
+	;	_p2=フォルダID
+	;
+	sdim _p1,4096
+	if _p2=0 {
+		_p1="3 ネットワークURL\n4 ダウンロードフォルダ\n5 ツール\n7 プロキシ\n"
+		return
+	}
+
+	notesel netfolder
+	noteget s1,_p2
+	curnethed=app_dir+tnetdir(s1)
+	cfname=curnethed+APP_CACHE
+	cururl="http://"+s1
+	neturl cururl
+
+	exist cfname
+	if strsize<=0 {
+		tover "Loading..."
+		netdlname cfname
+		netload APP_INDEX
+	}
+	cfg_init cfname
+	cfg_load
+	if stat=0 : return
+
+	repeat
+		cfg_getdata s1
+		if s1="" : break
+		s2=s1
+		a1=instr(s1,0,",")
+		if a1>=0 : poke s2,a1,0
+		hatid(cnt)=0+s2	
+		_p1+=strmid(s1,a1+1,128)+"\n"
+	loop
+	return
+
+#deffunc tnetreset int _p1
+	;	network項目をリセット
+	;	_p1=open項目ID
+	;
+	dim tlicon,256
+	dim tlpx,256
+	dim tlopt,256
+	dim hatid,256
+	sdim tlist,$10000
+	tsel=-1
+	;
+	notesel netfolder
+	i=0:netopen=_p1
+	repeat notemax
+		noteget s1,cnt
+		tlist+=s1+"\n"
+		tlopt(i)=cnt
+		if cnt=netopen {
+			tnetget netsub, netopen
+			notesel netsub
+			repeat notemax
+				i++
+				noteget s2,cnt
+				getstr s1,s2,2
+				poke s2,1,0
+				tlist+=s1+"\n"
+				tlicon(i)=0+s2:tlpx(i)=20
+				tlopt(i)=hatid(cnt)
+			loop
+			notesel netfolder
+		}
+		i++
+	loop
+	;
+	sdim netsub,64
+	tmaxupd
+	;
+	return
+
+
+#deffunc tsubwindow int _p1
+	;	サブウィンドウ表示
+	;	_p1:0=OFF/1=ON
+	;
+	if _p1=0 {
+		sw=0
+		tsel=-1
+		clrobj
+		return
+	}
+
+	if tsel<0 : return
+
+	i=tsel-tcur
+	y=isy+i*sy+sy
+	if (y+swmaxy)>(wy-sy) {	; 一定位置以上は上側に出す
+		y=isy+i*sy-swmaxy	
+	}
+	initsub y,swmaxy
+	pos swx+8,swy+8
+	color 64,64,64
+	objsize 80,20
+	return
+
+
+#deffunc tmaxupd
+	;	tmaxをアップデート
+	;
+	notesel tlist
+	tmax = notemax
+	i=tmax-yt:if i<1 : i=1
+	if tcur>=i : tcur=i-1
+	dy=double(wy-isy-tssy)/i
+	return
+
+
+#deffunc treset int _p1
+	;	ツール表示タイプをリセット
+	;	0=ezinput,1=sample,2=browser
+	;
+	tmode=_p1
+	tcur=0:tsel=-1			; 表示スタート行、選択行
+	tscy=isy:tssx=12:tssy=48	; スクロールバー
+	sw=0				; サブウィンドウ表示SW
+	swx=0:swy=isy:swsx=wx:swsy=100	; サブウィンドウ座標
+	swmaxy=100			; サブウィンドウ最大Yサイズ
+	clrobj				; 配置オブジェクトを消去
+
+	redraw 0
+	gmode 0,isx,isy:pos 0,0:gcopy tex_info
+	gmode 0,bsx,bsy:pos tmode*bsx,0
+	gcopy tex_info,tmode*bsx,isy
+	color 32,32,32
+	;sysfont 17
+	font msgothic,10,1
+	pos 16,46
+
+	if tmode=0 {
+		tezreset -1
+		mes "HSPの命令を目的の処理から探して入力します。"
+		mes "下のグループから機能を選択してください。"
+		mes "エディタのカーソル位置に追加されます。"
+	}
+	if tmode=1 {
+		tsmpreset -1
+		mes "サンプルスクリプトを参照します。"
+		mes "下のリストからグループを選択してください。"
+		mes "アイコンを実行(run)、閲覧(edit)できます。"
+	}
+	if tmode=2 {
+		tnetreset -1
+		mes "ネットワークから画像、音声、スクリプト等の"
+		mes "素材を取得し、使えるように準備します。"
+		mes "下のリストからサイトを選択してください。"
+	}
+
+	redraw 1
+	return
+
+
+#deffunc tover str _p2
+	;	オーバーレイ
+	;
+	redraw 0
+	y=wy-isy
+	gmode 3,wx,y,192:color 0,0,0
+	grect wx/2,isy+y/2
+
+	color 255,255,255
+	pos 8,isy+8:mes _p2
+
+	redraw 1
+	return
+
+
+#deffunc update
+	;	画面の更新
+	;
+	if sw : return
+	;
+	redraw 0
+	gradf 0,isy,wx,wy,1,$cbe0ed,$f8fbfd	; 画面クリア
+	sysfont 17
+
+	i=tcur:y=isy
+	notesel tlist
+	gmode 2,16,16
+	repeat yt
+		if i>=notemax : break
+		if i=tsel {
+			color 171,202,221
+			boxf 0,y,wx-tssx,y+sy
+		}
+		x=xofs+tlpx(i)
+		pos x,y
+		celput tex_icon,tlicon(i)
+		noteget s1,i
+		color 32,32,32
+		pos x+20,y+yofs
+		mes s1
+		i++:y+=sy
+	loop	
+
+	x=wx-tssx
+	color 77,86,91
+	boxf x,tscy,x+tssx,tscy+tssy
+	color 101,132,151
+	boxf x+3,tscy+3,x+tssx-3,tscy+tssy-3
+
+	redraw 1
+	return
+
+
+#deffunc selfolder array fpath
+	;	フォルダ選択
+	;
+	dim prm,16
+	sdim stitle,260
+	sdim fname,260
+	sdim fpath,260
+
+	SubTitle="保存するフォルダを選択してください"
+	prm(0)=hwnd,0,varptr(fname),varptr(stitle)
+	prm(4)=0x01,0,0,0
+	res = SHBrowseForFolder(varptr(prm))
+	if res = 0 : return -1
+
+	SHGetPathFromIDList res,varptr(fpath)
+	CoTaskMemFree res
+	return 0
+
+;--------------------------------------------------------------------------------
+
+*boot
+	;	アプリケーション開始
+	;
+	initalize
+	if app_notice : goto *boot3		; noticeがある場合(2回目以降の起動)
+
+	color 203,224,237:boxf
+	y=80
+	color 128,0,0:font msgothic,16,1
+	pos 28,y+26:mes "HSPアシスタントにようこそ!"
+	pos 12,y+60
+	color 0,0,0:font msgothic,12
+	mes "HSPアシスタントは、各種機能の検索、"
+	mes "サンプルスクリプトのブラウズ及びネット上の"
+	mes "素材を取得する役割を持つHSP専用ツールです。"
+	mes "HSPスクリプトエディタと連携した便利な"
+	mes "アシスタントとして、是非ご活用ください。"
+	mes "HSPアシスタントの詳しい使用方法については、"
+	mes "HSPアシスタントマニュアルをご覧ください。"
+	mes ""
+	mes "(HSPアシスタントの自動起動設定は、"
+	mes "HSPスクリプトエディタのツール→設定メニュー"
+	mes "内の起動オプションで選択できます)"
+
+	pos 36,y+230
+	objsize 200,24
+	button "HSPアシスタントを開始する",*boot2
+	button "マニュアルを参照する",*boot_man
+
+	stop
+*boot_man
+	exec "doclib\\hspat.htm",16
+	stop
+
+*boot2
+	cls 1
+	treset app_mode
+	app_notice=1
+*boot3
+	onexit *terminate
+	onclick goto *clk_mode
+	oncmd goto *mousewheel,$20A
+*main0
+	tscy = 	isy+int(dy*tcur)		; tcurからスクロールバー位置を割り出す
+*main1
+	update
+	stop
+
+
+*terminate
+	;	アプリケーション終了
+	;
+	get_hsp_appdata_path app_dir
+	cfg_init app_dir+APP_CONF
+	cfg_seti "winx",ginfo_wx1
+	cfg_seti "winy",ginfo_wy1
+	cfg_seti "mode",tmode
+	cfg_sets "ahtman",app_ahtman
+	cfg_sets "hdl",app_hdl
+	cfg_sets "hsed3",app_hsed3
+	cfg_sets "proxy",app_proxy
+	cfg_seti "proxyport",app_proxyport
+	cfg_sets "downdir",app_downdir
+	cfg_seti "notice",app_notice
+
+	notesel app_neturl
+	repeat notemax
+		noteget s1,cnt
+		cfg_data s1
+	loop
+
+	cfg_save
+
+#ifndef _DEBUG
+	;	ネットワークキャッシュ削除
+	;
+	cfname=app_dir+"\\*"+APP_CACHE
+	dirlist s1,cfname
+	notesel s1
+	repeat notemax
+		noteget s2,cnt
+		delete app_dir+"\\"+s2
+	loop
+#endif
+
+	end
+
+
+*clk_mode
+	;	マウスクリック時
+	x=mousex:y=mousey
+	if y>=isy : goto *clk_list
+	if y<0 | y>bsy : goto *main1
+	i=x/bsx:if i=tmode : goto *main1
+	treset i
+	goto *main0
+*clk_list
+	;	リストクリック時
+	if sw : goto *clk_subw
+	if x>(wx-tssx) : goto *tscbar
+*clk_list2
+	i=((y-isy)/sy)+tcur
+	if tlicon(i)=0 {
+		on tmode goto *clk_folder0,*clk_folder1,*clk_folder2
+	}
+	tsel = i
+	notesel tlist
+	noteget s1,tsel
+	on tmode goto *clk_mode0,*clk_mode1,*clk_mode2
+	goto *main1
+*clk_folder0
+	;	フォルダ選択(ezinput)
+	clkfolder=tlopt(i)
+	if clkfolder=ezopen : clkfolder=-1
+	tezreset clkfolder
+	goto *main0
+*clk_folder1
+	;	フォルダ選択(sample)
+	clkfolder=tlopt(i)
+	if clkfolder=smpopen : clkfolder=-1
+	tsmpreset clkfolder
+	goto *main0
+*clk_folder2
+	;	フォルダ選択(network)
+	clkfolder=tlopt(i)
+	if clkfolder=netopen : clkfolder=-1
+	tnetreset clkfolder
+	goto *main0
+*clk_mode0
+	;	選択(ezinput)
+	notesel ezfolder
+	noteget s2,ezopen
+	exec dir_exe+"\\"+app_ahtman+" "+ezdir+s2+"\\"+s1+".aht"
+	goto *main1
+*clk_mode1
+	;	選択(sample)
+	update
+	tsubwindow 1
+	button "run",*push_smprun
+	;
+	pos swx+88,swy+8
+	button "edit",*push_smpedit
+	pos swx+180,swy+8
+	button "back",*push_back
+	;
+	notesel tlist
+	noteget s1,tsel
+	notesel smpfolder
+	noteget s2,smpopen
+	fname = smpdir+s2+"\\"+s1+".hsp"
+	notesel buf
+	noteload fname,4096
+	;
+	pos swx+8,swy+32
+	color 0,0,0
+	i=5
+	repeat
+		if i<=0 : break
+		if cnt>=notemax : break
+		noteget s1,cnt
+		s2=strtrim(s1,3,9)	; tab消去
+		if s2!="" {
+			mes s2
+			i--
+		}
+	loop
+	;
+	goto *main1
+
+*clk_mode2
+	;	選択(network)
+	update
+	tsubwindow 1
+	pos swx+180,swy+8
+	button "back",*push_back
+	pos swx+8,swy+32
+	;
+	if netopen=0 : goto *clk_mode2a
+
+	;	選択(hat)
+	;
+	curnetid=tlopt(tsel)
+	cfname=curnethed+"_id"+curnetid+APP_CACHE
+	exist cfname
+	if strsize<=0 {
+		;tover "Loading..."
+		netdlname cfname
+		netload "id"+curnetid+APP_CACHE
+	}
+	cfg_init cfname
+	cfg_load
+	if stat=0 : goto *main1
+
+	pos swx+8,swy+8
+	button "get",*push_netget
+	pos swx+8,swy+40
+	color 0,0,0
+	hat_title=cfg_getvar("title")
+	hat_author=cfg_getvar("author")
+	hat_license=cfg_getvar("license")
+	hat_exp=cfg_getvar("exp")
+	hat_open=cfg_getvar("open")
+
+	mes hat_title
+	mes hat_exp
+	mes "作者:"+hat_author
+	mes "許諾:"+hat_license
+
+	goto *main1
+
+*push_netget
+	;	ファイル取得(hat)
+	;
+	if app_downdir="" {
+		dialog "ダウンロードフォルダが指定されていません。\n先にダウンロードフォルダの設定を行なってください。"
+		goto *main1
+	}
+	dialog "ダウンロードフォルダに指定されたファイルを取得します。\n開始してよろしいですか？",2
+	if stat!=6 : goto *main1
+
+	tsubwindow 0
+	tover "Loading..."
+
+	cfg_init cfname
+	cfg_load
+	hat_open=cfg_getvar("open")
+	repeat
+		cfg_getdata s1
+		if s1="" : break
+		num=cnt
+		gosub *sub_netget
+	loop
+	;
+	tnetreset -1
+	dialog "ダウンロードが完了しました。\n"
+	goto *main0
+
+*sub_netget
+	if strmid(s1,0,7)!="http://" {
+		dialog "指定されたURLは無効です。" : return
+	}
+	lastid=-1
+	cururl=s1
+	repeat
+		a1=peek(cururl,cnt)
+		if a1=0 : break
+		if a1='/' : lastid=cnt
+	loop
+	s2=strmid(cururl,lastid+1,255)
+	poke cururl,lastid+1,0
+
+	netgethed = strtrim( app_downdir, 2, '\\' )+"\\"
+	cfname=netgethed+s2
+	exist cfname
+	if strsize>=0 {
+		dialog "同じ名前のファイルが存在します("+s2+")\n上書きしてよろしいですか？",2
+		if stat!=6 : return
+	}
+
+	neturl cururl
+	netdlname cfname
+	netload s2
+
+	if num=0 {
+		if hat_open="yes" {
+			exist cfname
+			if strsize>0 {
+				exec cfname,16
+			}
+		}
+	}	
+
+	return
+
+*clk_mode2a
+	;	設定(URL)
+	if tsel!=1 : goto *clk_mode2b
+	mesbox app_neturl,swsx-16,60,1
+	pos swx+8,swy+12
+	mes "アクセスURLリストを入力"
+	goto *main1
+*clk_mode2b
+	;	設定(DOWN)
+	if tsel!=2 : goto *clk_mode2c
+	objsize swsx-16,20
+	input app_downdir : id_downdir=stat
+	objsize 80,20
+	button "フォルダ選択",*push_downdir
+	pos swx+8,swy+12
+	mes "ダウンロードフォルダ"
+	goto *main1
+*clk_mode2c
+	;	設定(TOOL)
+	if tsel!=3 : goto *clk_mode2d
+	objsize swsx-16,20
+	pos swx+8,swy+28
+	mes "スクリプトエディタ"
+	input app_hsed3
+	mes "AHTマネージャー"
+	input app_ahtman
+	pos swx+8,swy+10
+	mes "各種ツールパスを入力"
+	goto *main1
+*clk_mode2d
+	;	設定(PROXY)
+	objsize swsx-16,20
+	pos swx+8,swy+28
+	mes "PROXYサーバー"
+	input app_proxy
+	mes "PROXYポート"
+	input app_proxyport
+	pos swx+8,swy+10
+	mes "プロキシ設定を入力"
+	goto *main1
+*push_downdir
+	;	フォルダ選択
+	selfolder s1 : if stat : goto *main1
+	app_downdir = s1
+	objprm id_downdir, s1
+	goto *main1
+
+*clk_subw
+	;	サブウィンドウクリック時
+	if x>(wx-tssx) : goto *main1
+	if (y>=swy)&(y<(swy+swsy)) : goto *main1
+	tsubwindow 0
+	goto *clk_list2
+
+*push_back
+	tsubwindow 0
+	goto *main1
+
+
+*tscbar
+	;	スクロールバー部分クリック
+	if y<tscy : goto *tscup
+	if y>(tscy+tssy) : goto *tscdown
+	;
+	tmpy=tscy:lasty=tscy
+	base_x=ginfo_mx:base_y=ginfo_my
+*tscb1
+	stick key,$3ff
+	if (key&$100)=0 : goto *main1
+	tscy = (ginfo_my-base_y)+lasty
+	if tscy<isy : tscy=isy
+	if tscy>(wy-tssy) : tscy = wy-tssy
+	tcur = ((tscy-isy) / dy)		; スクロールバー位置からtcurを割り出す
+	if tmpy!=tscy : update : tmpy=tscy
+	wait 2
+	goto *tscb1
+*tscup
+	if tcur>0 : tcur--
+	goto *main0
+*tscdown
+	tcur++
+*tscadj
+	i=tmax-yt:if i<0 : i=0
+	if tcur>i : tcur=i
+	if tcur<0 : tcur=0
+	goto *main0
+
+
+*mousewheel
+	i=(wparam >> 16)/120
+	tcur-=i
+	goto *tscadj
+
+
+*push_smpedit
+	;	HSPコード編集
+	;
+	notesel tlist
+	noteget s1,tsel
+	notesel smpfolder
+	noteget s2,smpopen
+	;
+	bak_cur = dir_cur
+	chdir  smpdir+s2
+	fname = smpdir+s2+"\\"+s1+".hsp"
+	exec dir_exe+"\\"+app_hsed3+" \""+fname+"\""
+	;exec dir_exe+"\\hsed3f.exe \""+fname+"\""
+	;
+	chdir bak_cur
+	goto *push_back
+	;goto *main1
+
+*push_smprun
+	;	HSPコード実行
+	;
+	notesel tlist
+	noteget s1,tsel
+	notesel smpfolder
+	noteget s2,smpopen
+	;
+	sdim rtname,512
+	fname = smpdir+s2+"\\"+s1+".hsp"
+	objname=app_dir+"\\obj"			; オブジェクトファイル名
+
+	hsc_ini fname
+	hsc_objname objname
+	hsc_comp 0
+	res=stat:if res!=0 : dialog "エラーが発生しました。" : goto *goerror
+
+	hsc3_getruntime rtname, objname
+	if rtname="" : rtname="hsp3.exe"
+	debug_mode=0			; デバッグウィンドウ表示フラグ
+	;
+	bak_cur = dir_cur
+	chdir  smpdir+s2
+	cmdexe = dir_exe+"\\"+rtname+" \""+objname+"\""
+	hsc3_run cmdexe, debug_mode
+	;
+	chdir bak_cur
+*goerror
+	goto *push_back
+	;goto *main1
+
+

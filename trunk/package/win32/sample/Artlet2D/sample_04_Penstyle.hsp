@@ -1,0 +1,54 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; さまざまなペンスタイルのサンプルです。
+;
+; Artlet2D では、線で描画される図形 (alDraw～) の線幅、線の
+; スタイルを選択することができます。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; 仮想イメージ 0 を作成
+	alCreateImage 0, 640, 480
+	if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+
+
+	; ペン幅の設定
+	alPenWidth 1
+	alDrawEllip 0, 0, 240, 120
+
+	alPenWidth 2
+	alDrawRect 50, 50, 240, 120
+
+	alPenWidth 4
+	alDrawEllip 100, 100, 240, 120
+
+
+	; グラデーションブラシとの組み合わせ
+	alGradientColor 0, 0, 30, 30, RGBA(255, 255, 0), RGBA(0, 0, 255), WrapModeTileFlipX
+
+
+	; ペンスタイルの設定
+	alPenStyle DashStyleDash
+	alDrawRect 150, 150, 240, 120
+
+	alPenStyle DashStyleDot
+	alDrawEllip 200, 200, 240, 120
+
+	alPenStyle DashStyleDashDot
+	alDrawRect 250, 250, 240, 120
+
+	alPenStyle DashStyleDashDotDot
+	alDrawEllip 300, 300, 240, 120
+
+
+	; 仮想イメージ 0 から HSP スクリーンにコピー
+	alCopyImageToScreen 0, 0
+	redraw
+

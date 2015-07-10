@@ -1,0 +1,40 @@
+	cls 4
+	color 255,155,55
+	boxf 0,84,640,90
+	boxf 0,0,640,40
+	font "Arial",20,17
+	pos 20,8
+	color 0,0,0
+	mes "HSP ver3.0 font test"
+
+	font "Arial",20,16
+	color 255,255,255
+	pos 40,60
+	mes "Non-Anti-aliased"
+	pos 360,60
+	mes "Anti-aliased"
+
+	color 255,255,255
+	pos 20,100:opt=0
+	gosub *mesput
+	pos 340,100:opt=16
+	gosub *mesput
+
+	stop
+
+*mesput
+	font "Arial",60,0+opt
+	mes "Normal"
+	font "Arial",60,1+opt
+	mes "Bold"
+	font "Arial",60,2+opt
+	mes "Italic "
+	font "Arial",60,4+opt
+	mes "Underline"
+	font "Arial",60,8+opt
+	mes "StrikeOut"
+
+
+	return
+
+

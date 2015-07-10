@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "split"
+
+#define 元の文字列が代入された変数	""	;;str
+#define 区切り用文字列	""	;;str
+#define 分割された要素が代入される変数	""	;;str
+
+#ahtmes "split "+元の文字列が代入された変数+" , "+区切り用文字列+" , "+分割された要素が代入される変数+

@@ -1,0 +1,19 @@
+#include "hspext.as"
+
+	;
+	;	デスクトップのファイル一覧を見る
+	;
+
+	a=""
+	fxdir a,$10
+	if stat : dialog "fxdir命令のエラーです。" : end
+
+	mes "dir="+a
+
+	sdim buf,32000
+	dirlist buf,a+"\\*.*"
+	mesbox buf,600,400,1
+
+	stop
+
+

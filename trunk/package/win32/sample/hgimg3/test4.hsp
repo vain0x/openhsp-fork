@@ -1,0 +1,51 @@
+#include "hgimg3.as"
+
+	;	日本語フォント描画サンプル
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,0
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+
+	;	テクスチャの準備
+	;
+	texmake 256,128
+	mest = stat
+	rot = 0.0
+	texcls mest,0
+	font "ＭＳ ゴシック",22
+	color 255,255,255
+	texmes "メッセージを表示中。",mest,0,0
+	texmes "日本語メッセージです。",mest,0,20
+
+	;	背景色の設定
+	;
+	clscolor $40
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+
+	;	テクスチャの描画
+	;
+	color 255,0,0:gmode 2,256,128
+	pos 320,240
+	hgrotate mest,0,0,rot
+	rot+=0.02
+
+	hgsync 16			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	goto *main
+
+*owari
+	end
+

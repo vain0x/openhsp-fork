@@ -1,0 +1,827 @@
+------------------------------------------------------------------------------
+HSPCV ver3.4 REFERENCE MANUAL                       HSP : Hot Soup Processor  
+ＨＳＰ拡張拡張DLLリファレンス         Copyright 2007-2014 (c) onion software  
+------------------------------------------------------------------------------
+
+・はじめに
+
+	このDLLは、Hot Soup Processor ver3.3以降とともに使用することで、
+	OpenCV(Intel Open Source Computer Vision Library)が持つ機能を手軽に
+	利用することができるプラグインです。
+	HSPCVは、プラグインDLL内にすべての機能を内包しており、基本的に
+	Windows98以降の環境で動作します。
+	追加のモジュールやDLLをインストールする必要はありません。
+
+
+・HSPCVの機能概要
+
+	HSPCVを使用することにより、高度な画像処理やアルゴリズムを扱うことが
+	できます。他にも、各種フォーマット(PNG、JPEG、TIFF等)の読み書き及び、
+	ムービー(avi)ファイル操作やUSBカメラ等のキャプチャデバイス読み込みなど
+	映像に関する多くの機能を提供しています。
+
+	HSPCVでサポートされる主な機能は以下の通りです。
+
+	・任意サイズの画像イメージ操作(コピー、加算、減算、乗算ほか)
+	・画像イメージの高品質なリサイズ、スムージング、回転
+	・画像イメージからの閾値による抽出、反転、色変換
+	・画像ファイルの読み込み、及び保存(対応フォーマットは以下の通り)
+
+		Windows bitmaps - BMP, DIB
+		JPEG files - JPEG, JPG, JPE
+		Portable Network Graphics - PNG
+		Portable image format - PBM, PGM, PPM
+		Sun rasters - SR, RAS
+		TIFF files - TIFF, TIF
+		OpenEXR HDR images - EXR
+		JPEG 2000 images - JP2
+
+	・USBカメラ等のキャプチャデバイス経由の画像取得
+	・avi動画ファイルの読み込み、及び保存
+	・顔抽出等の画像認識
+	・任意の画像に近い領域を抽出するテンプレートマッチング
+
+
+・使用方法の概要
+
+	拡張プラグインのファイル、HSPCV.DLLは、HSED3.EXEおよび、HSP3.EXEのある
+	ディレクトリと同じ場所に置いてください。
+	(実行に使われているHSP3.EXEと同じディレクトリに、HSPCV.DLLがない場合は
+	エラーになります)
+	また、HSPCV.ASをスクリプトと同じディレクトリか、またはcommonフォルダ内に
+	コピーされている必要があります。
+	HSPCVを使用する場合は、スクリプトの先頭に必ず「#include "hspcv.as"」
+	という行を追加してください。以上で、HSPの機能が拡張され、この
+	リファレンスで説明をしている命令を使用することができるようになります。
+	まず最初に、試しにサンプルスクリプト(sample/hspcvフォルダ内)を実行
+	してみてください。
+	拡張された機能の簡単な使用例を見ることができるはずです。
+
+
+・更新履歴
+
+	2010/10/18 ver3.22
+
+	cvsmooth命令でメモリリークが発生する不具合を修正
+
+
+	2009/6/24 ver3.2beta4
+
+		cvfacedetect命令のメモリリークをさらに修正
+		cvgetimgのデフォルトパラメーターのヘルプを修正
+		グレースケールバッファでcvthresholdを実行すると失敗する不具合に対応 
+		JPEG-2000保存オプションを設定するcvj2opt命令を追加
+
+
+	2009/3/9 ver3.2beta2
+
+		cvfacedetect命令でメモリリークが発生する不具合を修正
+
+
+	2007/4/1 ver3.1
+
+		最初のバージョン。
+
+
+・注意点
+
+	HSPCV.DLLは、HSP3.EXEと同時に使用されるプラグインファイルです。
+	使用するHSPは、ver3.1以上をお使い下さい。ver2.61やそれ以前のHSPには
+	対応していませんのでご注意下さい。
+	EXEファイルを作成した場合でも、HSPCV.DLLをEXEファイルと同じディレクトリ
+	に置かないと動作しません。また、packfileにDLLを追加することはできません。
+
+
+・著作権とライセンス
+
+	ユーザーがHSPCV.DLLを使って作成したオリジナルのソフトウェア(実行ファイル)
+	の権利は、それを作成したユーザーに属します。
+
+	HSPCVに含まれるOpenCVライブラリ(1.0)は、BSD Licenseとなっており、
+	以下に列挙するライブラリ部分の著作権表示を明示する必要があります。
+	(組み込みや配布に関しての制限はありません。また、ソースコードの公開義務
+	はありません。)
+
+	-----------------------------------------------------------------------
+	HSPCVに含まれるOpenCVライブラリ(1.0)は、Intel Corporationの著作物です。
+
+	Open Source Computer Vision Library 
+	Copyright (C) 2000-2006, Intel Corporation, all rights reserved.
+
+	OpenCVライブラリ(1.0)に含まれるlibjpegライブラリはIJGの著作物です。
+	Copyright (C) 1991-1998, Thomas G. Lane.
+	this software is based in part on the work of the Independent JPEG Group
+
+	OpenCVライブラリ(1.0)に含まれるlibpngライブラリは以下の著作物です。
+
+	libpng version 1.2.8 - December 3, 2004
+	Copyright (c) 1998-2004 Glenn Randers-Pehrson
+	(Version 0.96 Copyright (c) 1996, 1997 Andreas Dilger)
+	(Version 0.88 Copyright (c) 1995, 1996 Guy Eric Schalnat, Group 42, Inc.)
+
+	OpenCVライブラリ(1.0)に含まれるzlibライブラリは以下の著作物です。
+
+	Copyright (C) 1995-2004 Jean-loup Gailly and Mark Adler
+
+	OpenCVライブラリ(1.0)に含まれるJasPerライブラリは以下の著作物です。
+
+	JasPer Version 2.0
+
+	Copyright (c) 1999-2000 Image Power, Inc.
+	Copyright (c) 1999-2000 The University of British Columbia
+	Copyright (c) 2001-2003 Michael David Adams
+
+	同梱されている以下のxmlファイルは、Rainer Lienhart氏が製作したものです。
+	haarcascade_frontalface_default.xml
+	haarcascade_frontalface_alt.xml
+	haarcascade_frontalface_alt2.xml
+
+	HSPCV.DLL
+	Copyright (C) 2007, Onion Software, all rights reserved.
+	This software is provided by the copyright holders and contributors "as is" and
+	any express or implied warranties, including, but not limited to, the implied
+	warranties of merchantability and fitness for a particular purpose are disclaimed.
+	-----------------------------------------------------------------------
+
+	(ライセンス表記は、配布物の中に上記の内容を含むテキストを含めるようにしてください。)
+
+	以上の項目を満たしていれば、ユーザーがHSPCV.DLLを使って作成したオリジナルの
+	ソフトウェア(実行ファイル)を、自由に通信、即売会、店頭などで展示、配布、販売
+	することができます。ライセンス料は必要ありません。
+
+	HSPCV.DLLの著作権はonion softwareにあります。
+	onion softwareは本プログラムによって生じた、いかなる損害についても保証いたしません。
+	自己の責任の範囲で使用してください。
+	また、付属のサンプルスクリプトも自由に改変、公開していただいて構いません。
+
+	HSPCV.DLLは、基本的にBSDライセンスのもと有償・無償を問わず
+	添付、複製、改編、再配布することができます。
+	ただし、その際には必ずライセンス表記も含めるようにしてください。
+
+
+・命令一覧
+
+	cvreset					HSPCVの初期化
+	cvsel					対象CVバッファの設定
+	cvbuffer				CVバッファを初期化
+	cvresize				画像のリサイズ
+	cvgetimg				画像の取得
+	cvputimg				CVバッファに書き込み
+	cvload					画像ファイル読み込み
+	cvsave					画像ファイル書き込み
+	cvj2opt					JPEG-2000保存オプション設定
+	cvgetinfo				CVバッファ情報を取得
+	cvsmooth				画像のスムージング
+	cvthreshold				画像を閾値で取得
+	cvrotate				画像の回転
+	cvarea					コピー元領域の指定
+	cvcopy					画像のコピー
+	cvxors					画像のXOR演算
+	cvflip					画像の反転
+	cvloadxml				XMLファイルの読み込み
+	cvfacedetect				画像の顔認識
+	cvgetface				認識された座標の取得
+	cvmatch					画像のマッチング検査
+	cvconvert				色モードの変換
+
+	cvcapture				カメラキャプチャの開始
+	cvgetcapture				キャプチャ画像の取得
+	cvendcapture				カメラキャプチャの終了
+	cvopenavi				aviファイル取得の開始
+	cvgetavi				aviファイル画像の取得
+	cvcloseavi				aviファイル取得の終了
+	cvmakeavi				aviファイル出力の開始
+	cvputavi				aviファイルに画像を出力
+	cvendavi				aviファイル出力の終了
+
+
+・使い方の概要
+
+	HSPCVでは、プラグイン側が管理する画像バッファを複数持っており、
+	これを「CVバッファ」と呼び0から63までの番号(ID)で管理しています。
+	HSPが管理する画面バッファと同じようなものですが、HSP側の画面情報とは
+	独立しているので、HSPの画面バッファ番号(ID)と混同しないように注意して
+	ください。
+	「CVバッファ」は、任意のサイズで画像情報を保存しておくことができます。
+	「CVバッファ」は、最初に初期化を行なってから使用します。
+
+		cvbuffer 0,640,480
+
+	は、「CVバッファ」のID0を640x480ドットのサイズで初期化します。
+	また、
+
+		cvload "test.jpg",0
+
+	では、「test.jpg」という画像ファイルの内容で「CVバッファ」のID0を
+	初期化します。
+	初期化のための命令は、cvbufferとcvloadしかありません。
+	また、初期化した段階では必ずフルカラー(RGB24bit)となります。
+
+	初期化された「CVバッファ」は、コピーやリサイズ、画像加工などの操作を
+	行なうことができます。
+	「CVバッファ」の内容は、HSPの画面とは連動していないため、画面上に
+	表示させるためには、「CVバッファ」から「HSPの画面バッファ」にデータを
+	転送する必要があります。そのための命令が、cvgetimgです。
+
+		cvgetimg 0
+
+	は、「CVバッファ」ID0の内容を、現在の操作先ウィンドウ(gselで指定した
+	画面)に転送します。
+	「CVバッファ」のサイズに、現在のウィンドウサイズを合わせる場合は、
+
+		cvgetimg 0,1
+
+	のように指定します。
+	逆に、HSPの画面を「CVバッファ」側に転送することも可能です。
+
+		cvputimg 0
+
+	は、現在の操作先ウィンドウ(gselで指定した画面)を「CVバッファ」ID0に
+	転送します。(「CVバッファ」はあらかじめ初期化されている必要があります)
+
+	以上が、基本的な使い方になります。
+	HSPCVは、OpenCVが持つ膨大な機能の一部を、HSPから手軽に呼び出せるように
+	したものです。それぞれの機能は、リファレンスを参照してください。
+
+
+・CVバッファ関連命令
+
+	OpenCVを経由して画像及び画像ファイルを操作するための命令セットです。
+
+	cvreset					HSPCVの初期化
+
+		HSPCVが持つ「CVバッファ」をすべて破棄して、初期状態に戻します。
+		HSPCVの開始、終了時には自動的に初期化が行なわれます。
+		明示的に初期化したい時にcvreset命令を使用してください。
+
+
+	cvbuffer p1,p2,p3			CVバッファを初期化
+
+		p1(0)   : CVバッファID
+		p2(640) : 横のピクセルサイズ
+		p3(480) : 縦のピクセルサイズ
+
+		指定したサイズでCVバッファを初期化します。
+		バッファを初期化することにより、各種画像処理が可能になります。
+		CVバッファは、フルカラーモード(RGB各8bit)で初期化されます。
+
+
+	cvsel p1				対象CVバッファの設定
+
+		p1 : CVバッファID
+
+		標準の操作先CVバッファIDを設定します。
+		パラメーターで、CVバッファIDを指定する時に省略した場合には、
+		標準の操作先CVバッファIDが使用されます。
+
+
+	cvresize p1,p2,p3,p4			画像のリサイズ
+
+		p1(0) : 横のピクセルサイズ
+		p2(0) : 縦のピクセルサイズ
+		p3 : CVバッファID
+		p4(1) : 補間アルゴリズム
+
+		CVバッファを(p1,p2)で指定したサイズに変更します。
+		p3で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+		p4で補間アルゴリズムを指定します。
+		p4で指定する内容は以下から1つ選ぶことができます。
+
+			CV_INTER_NN - ニアレストネイバー
+			CV_INTER_LINEAR - バイリニア(デフォルト)
+			CV_INTER_AREA - ピクセル周辺をリサンプリング
+			                (モアレを低減することができます)
+			CV_INTER_CUBIC - バイキュービック
+
+
+	cvgetimg p1,p2				画像の取得
+
+		p1 : CVバッファID
+		p2(0) : 取得モード
+
+		CVバッファの内容をHSPのウィンドウバッファに転送します。
+		転送先となるHSPのウィンドウバッファは、gsel命令で指定されている
+		現在の操作先ウィンドウIDとなります。
+		p1で転送元となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+		p2で、転送時の方法を指定することができます。
+		p2が0の場合は、HSPのウィンドウバッファサイズはそのままで転送を
+		行ないます。p2に1を指定した場合は、CVバッファと同じサイズに
+		HSPのウィンドウバッファサイズを変更した上で転送を行ないます。
+
+
+	cvputimg p1				CVバッファに書き込み
+
+		p1 : CVバッファID
+
+		HSPのウィンドウバッファ内容をCVバッファに転送します。
+		転送元となるHSPのウィンドウバッファは、gsel命令で指定されている
+		現在の操作先ウィンドウIDとなります。
+		p1で転送先となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+
+	cvload "filename",p1			画像ファイル読み込み
+
+		"filename" : 画像ファイル名
+		p1 : CVバッファID
+
+		CVバッファを指定された画像ファイルの内容で初期化します。
+		p1で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		画像ファイルのフォーマットはファイル拡張子によって判断されます。
+		使用できるフォーマットと拡張子は以下の通りです。
+
+			Windows bitmaps - BMP, DIB
+			JPEG files - JPEG, JPG, JPE
+			Portable Network Graphics - PNG
+			Portable image format - PBM, PGM, PPM
+			Sun rasters - SR, RAS
+			TIFF files - TIFF, TIF
+			OpenEXR HDR images - EXR
+			JPEG 2000 images - JP2
+
+		処理が正常に終了した場合には、システム変数statが0になります。
+		何らかのエラーが発生した場合には、システム変数statが0以外の
+		値となります。
+
+		#pack、#epack等で実行ファイル及びDPMファイルに埋め込まれた
+		ファイルは読み込むことができませんので注意してください。
+
+
+	cvsave "filename",p1,p2			画像ファイル書き込み
+
+		"filename" : 画像ファイル名
+		p1 : CVバッファID
+		p2 : オプション値
+
+		CVバッファの内容を指定された画像ファイル名で保存します。
+		p1で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		画像ファイルのフォーマットはファイル拡張子によって判断されます。
+		使用できるフォーマットと拡張子は以下の通りです。
+
+			Windows bitmaps - BMP, DIB
+			JPEG files - JPEG, JPG, JPE
+			Portable Network Graphics - PNG
+			Portable image format - PBM, PGM, PPM
+			Sun rasters - SR, RAS
+			TIFF files - TIFF, TIF
+			OpenEXR HDR images - EXR
+			JPEG 2000 images - JP2
+
+		p2で指定するオプション値は、フォーマットごとの設定を
+		指定するためのものです。
+		現在は、JPEGフォーマット保存時の品質(0～100)のみ指定可能です。
+		p2の指定を省略した場合は、JPEGフォーマット保存時に、
+		品質95が使用されます。
+
+		処理が正常に終了した場合には、システム変数statが0になります。
+		何らかのエラーが発生した場合には、システム変数statが0以外の
+		値となります。
+
+
+	cvj2opt	"format","option"		JPEG-2000保存オプション設定
+
+		"format" : フォーマット文字列
+		"option" : オプション文字列
+
+		cvsave命令でJPEG-2000形式(.jp2)を指定した際の詳細設定を
+		行ないます。フォーマット文字列には、以下のいずれかを
+		指定することができます。(JPEG以外のフォーマットを指定した
+		場合でも、拡張子はjp2のままになるので注意してください)
+
+		フォーマット文字列     形式
+		----------------------------------------
+			mif	    My Image Format
+			pnm	    Portable Graymap/Pixmap
+			bmp	    Microsoft Bitmap
+			ras	    Sun Rasterfile
+			jp2	    JPEG2000 JP2 File Format Syntax
+			jpc	    JPEG2000 Code Stream Syntax
+			jpg	    JPEG
+			pgx	    JPEG2000 VM Format
+
+		オプション文字列により、付加設定を行なうことができます。
+
+			例:
+				cvj2opt "jp2","rate=0.1"
+				cvsave "test2000.jp2"
+
+		オプション文字列は、フォーマットごとに設定方法が異なります。
+		詳しくは、jasperライブラリに含まれる、コマンドラインツール
+		jasperのオプションを参照してください。
+		http://www.ece.uvic.ca/~mdadams/jasper/
+
+
+	cvgetinfo p1,p2,p3			CVバッファ情報を取得
+
+		p1 : CVバッファ情報が取得される変数
+		p2 : CVバッファID
+		p3 : CVバッファ情報ID
+
+		CVバッファに関する情報を取得してp1の変数に代入します。
+		p2で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		p3で取得する情報の種類を指定することができます。
+		p3に指定できるマクロは以下の通りです。
+
+			マクロ               内容
+			-------------------------------------------
+			CVOBJ_INFO_SIZEX     横方向サイズ
+			CVOBJ_INFO_SIZEY     縦方向サイズ
+			CVOBJ_INFO_CHANNEL   チャンネル数
+			CVOBJ_INFO_BIT       チャンネルあたりのビット数
+
+
+	cvsmooth p1,p2,p3,p4,p5			画像のスムージング
+
+		p1 : スムージングのタイプ
+		p2 : param1
+		p3 : param2
+		p4 : param3
+		p5 : CVバッファID
+
+		CVバッファにスムージングを適用します。
+		p5で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		p1で指定することのできるマクロは以下の通りです。
+
+		CV_BLUR_NO_SCALE
+		(param1×param2の領域でピクセル値を足し合わせる)
+
+		CV_BLUR
+		(param1×param2の領域でピクセル値を足し合わせた後、
+		 1/(param1*param2)でスケーリングする)
+
+		CV_GAUSSIAN
+		(param1×param2ガウシアンフィルタ)
+
+		CV_MEDIAN
+		(param1×param2メディアンフィルタ)
+
+		CV_BILATERAL
+		(3×3バイラテラルフィルタ(param1=色分散, param2=空間分散))
+		http://www.dai.ed.ac.uk/CVonline/LOCAL_COPIES/MANDUCHI1/Bilateral_Filtering.html 
+
+		「param1×param2」のパラメーターは、1以上の奇数を指定する
+		必要があります。
+
+
+	cvthreshold p1,p2,p3,p4			画像を閾値で取得
+
+		p1 : ２値化タイプ
+		p2 : 閾値(実数)
+		p3 : 二値化後の画素値(実数)
+		p4 : CVバッファID
+
+		CVバッファに対して閾値をもとに２値化を行ないます。
+		p4で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+		p1で指定することのできるマクロは以下の通りです。
+
+		CV_THRESH_BINARY     : val = (val > thresh ? MAX:0)
+		CV_THRESH_BINARY_INV : val = (val > thresh ? 0:MAX)
+		CV_THRESH_TRUNC      : val = (val > thresh ? thresh:val)
+		CV_THRESH_TOZERO     : val = (val > thresh ? val:0)
+		CV_THRESH_TOZERO_INV : val = (val > thresh ? 0:val)
+
+
+	cvrotate p1,p2,p3,p4,p5,p6		画像の回転
+
+		p1(0) : 角度(実数)
+		p2(1) : スケール(実数)
+		p3(0) : 中心座標のXオフセット(実数)
+		p4(0) : 中心座標のYオフセット(実数)
+		p5 : 補間アルゴリズム
+		p6 : CVバッファID
+
+		CVバッファ全体を回転させます。
+		p1で角度(360度で一周)を、p2でスケールを設定します。
+		(p3,p4)で中心のオフセットを指定することがてきます。
+		p5で、回転時の補間アルゴリズムを指定します。
+		p5で指定する内容は以下から1つ選ぶことができます。
+
+			CV_INTER_NN - ニアレストネイバー
+			CV_INTER_LINEAR - バイリニア(デフォルト)
+			CV_INTER_AREA - ピクセル周辺をリサンプリング
+			                (モアレを低減することができます)
+			CV_INTER_CUBIC - バイキュービック
+
+		また、p5に同時指定できるオプションが用意されています。
+
+			CV_WARP_FILL_OUTLIERS - 外部ピクセルを埋める
+			CV_WARP_INVERSE_MAP - 回転を逆行列で行なう
+
+		デフォルトでは、CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERSが
+		指定されています。
+		p6で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+
+	cvarea p1,p2,p3,p4			コピー元領域の指定
+
+		p1(0) : コピー元 X座標
+		p2(0) : コピー元 Y座標
+		p3(0) : コピー領域 Xサイズ
+		p4(0) : コピー領域 Yサイズ
+
+		cvcopy命令で画像のコピーを行なう際のコピー元領域を指定します。
+		パラメーターがすべて0の場合や、すべて省略してcvarea命令を
+		実行した場合は、CVバッファ全体が対象になります。
+
+
+	cvcopy p1,p2,p3,p4,p5			画像のコピー
+
+		p1(0) : コピー元CVバッファID
+		p2(0) : コピー先 X座標
+		p3(0) : コピー先 Y座標
+		p4 : コピー先CVバッファID
+		p5(0) : 演算オプション
+
+		CVバッファの内容を別なCVバッファにコピーします。
+		p1で指定されたCVバッファIDがコピー元として使用されます。
+		バッファの一部をコピーする場合には、cvarea命令で位置やサイズを
+		あらかじめ設定しておく必要があります。
+		p5の演算オプションにより、コピー時にいくつかの演算を行なう
+		ことが可能です。p5に指定できるマクロは以下の通りです。
+
+			CVCOPY_SET (上書きコピー)
+			CVCOPY_ADD (加算)
+			CVCOPY_SUB (減算)
+			CVCOPY_MUL (乗算)
+			CVCOPY_DIF (差分)
+			CVCOPY_AND (論理積)
+
+		p4でコピー先となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		CVバッファの色モードは、コピー元とコピー先で合わせておく
+		必要があります。グレイスケール(白黒)画面とフルカラー画面を
+		混在してコピーすることはできません。
+
+
+	cvxors p1,p2,p3,p4			画像のXOR演算
+
+		p1(255) : XOR演算で使用するR値
+		p2(255) : XOR演算で使用するG値
+		p3(255) : XOR演算で使用するB値
+		p4 : コピー先CVバッファID
+
+		CVバッファの内容に対してXOR演算を行ないます。
+		p1～p3までで、RGB値に対する演算値(0～255)を指定します。
+		p4で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+
+	cvflip p1,p2				画像の反転
+
+		p1(0) : 反転のモード
+		p2 : コピー先CVバッファID
+
+		CVバッファの内容を反転させます。
+		p1で反転のモードを指定することができます。
+		p1が0の場合は、上下反転になります。
+		p1が1以上の場合は、左右反転になります。
+		p1がマイナス値の場合は、上下左右ともに反転されます。
+
+		p2で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+
+	cvloadxml "filename"			XMLファイルの読み込み
+
+		"filename" : 読み込むXMLファイル名
+
+		"filename"で指定されたファイルをXMLファイルとして読み込みます。
+		XMLファイルは、画像の顔認識等で必要な場合にあらかじめ
+		読み込んでおく必要があります。
+
+		処理が正常に終了した場合には、システム変数statが0になります。
+		何らかのエラーが発生した場合には、システム変数statが0以外の
+		値となります。
+
+		#pack、#epack等で実行ファイル及びDPMファイルに埋め込まれた
+		ファイルは読み込むことができませんので注意してください。
+
+
+	cvfacedetect p1,p2			画像の顔認識
+
+		p1 : CVバッファID
+		p2(1) : スケール値(実数)
+
+		CVバッファの画像から特定のパターンを認識します。
+		パターンのパラメーターを持つxmlファイルを、あらかじめ
+		cvloadxml命令で読み込んでおく必要があります。
+
+		p1で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		p2で処理時のスケールを設定することができます。
+		ここで1より大きい値を指定すると、処理時にバッファサイズを
+		縮小して処理されるようになります。大きな画像等で時間が
+		かかる場合などに指定するといいでしょう。
+
+		実行後に、システム変数statに認識された数が返されます。
+		statが0の場合は、まったく認識されていないことを示します。
+		statが1以上の場合は、cvgetface命令によって認識された領域を
+		取得することができます。
+
+
+	cvgetface p1,p2,p3,p4			認識された座標の取得
+
+		p1 : 認識されたX座標が代入される変数
+		p2 : 認識されたY座標が代入される変数
+		p3 : 認識されたXサイズが代入される変数
+		p4 : 認識されたYサイズが代入される変数
+
+		cvfacedetect命令によって認識された領域を取得します。
+		p1からp4までの変数に、座標値が整数で代入されます。
+		cvfacedetect命令によって認識された個数だけ、繰り返して
+		領域を取得することができます。
+
+		正常に取得できた場合には、実行後にシステム変数statが
+		0になります。取得できるデータがない場合には、システム変数
+		statは1になります。
+
+
+	cvmatch p1,p2,p3,p4,p5			画像のマッチング検査
+
+		p1 : 認識されたX座標が代入される変数
+		p2 : 認識されたY座標が代入される変数
+		p3 : マッチングのタイプ
+		p4 : マッチング元のCVバッファID
+		p5 : マッチング先のCVバッファID
+
+		マッチング先のCVバッファの中から、マッチング元のCVバッファ
+		に最も近い領域を探し出して結果を返します。
+		実行後、(p1,p2)に指定した変数へ結果となる座標を代入します。
+		p3でマッチングで使用する評価方法のタイプを指定します。
+		p3で指定することのできるマクロは以下の通りです。
+
+		CV_TM_SQDIFF
+			R(x,y)=sumx',y'[T(x',y')-I(x+x',y+y')]^2
+
+		CV_TM_SQDIFF_NORMED
+			R(x,y)=sumx',y'[T(x',y')-I(x+x',y+y')]^2/sqrt[sumx',y'T(x',y')^2・sumx',y'I(x+x',y+y')^2]
+
+		CV_TM_CCORR
+			R(x,y)=sumx',y'[T(x',y')・I(x+x',y+y')]
+
+		CV_TM_CCORR_NORMED
+			R(x,y)=sumx',y'[T(x',y')・I(x+x',y+y')]/sqrt[sumx',y'T(x',y')^2・sumx',y'I(x+x',y+y')^2]
+
+		CV_TM_CCOEFF
+			R(x,y)=sumx',y'[T'(x',y')・I'(x+x',y+y')],
+			where T'(x',y')=T(x',y') - 1/(w・h)・sumx",y"T(x",y")
+			I'(x+x',y+y')=I(x+x',y+y') - 1/(w・h)・sumx",y"I(x+x",y+y")
+
+		CV_TM_CCOEFF_NORMED
+			R(x,y)=sumx',y'[T'(x',y')・I'(x+x',y+y')]/sqrt[sumx',y'T'(x',y')^2・sumx',y'I'(x+x',y+y')^2]
+
+		p5で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		cvmatch命令は、あくまでも最も近い領域を検索するだけで、
+		完全に同じであることを保障するものではありません。
+
+
+	cvconvert p1,p2				色モードの変換
+
+		p1(0) : 変換モード
+		p2 : CVバッファID
+
+		CVバッファをp1で指定された色モードに変換します。
+		p1が0の場合は、フルカラー画面をグレイスケール(白黒)画面に。
+		p1が1の場合は、グレイスケール(白黒)画面をフルカラー画面に、
+		それぞれ変換します。
+		p2で対象となるCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+
+・ビデオ関連命令
+
+	OpenCVを経由してカメラキャプチャ及び動画ファイルを操作するための
+	命令セットです。
+
+	cvcapture p1,p2				カメラキャプチャの開始
+
+		p1(0) : カメラID
+		p2 : CVバッファID
+
+		キャプチャデバイスからの入力を開始します。
+		p1で、カメラを特定するためのカメラIDを指定します。
+		p1で指定できる値は以下の通りです。
+		複数のデバイスが接続されている場合は、1づつ値を加算
+		することで特定することが可能です。
+
+		マクロ          値      内容
+		-------------------------------------------------
+		CV_CAP_ANY      0  	利用可能なデバイスすべて
+		CV_CAP_MIL      100	Matrox Imaging Library
+		CV_CAP_VFW      200	Video for Windows
+		CV_CAP_IEEE1394 300	IEEE1394(現バージョンでは未対応です)
+
+		p2でキャプチャした画像を保存する対象となるCVバッファIDを
+		指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		カメラキャプチャの開始後は、cvgetcapture命令によって
+		フレームごとの画像を取得することができます。
+		また、不要になった場合には必ずcvendcapture命令で
+		キャプチャを終了させる必要があります。
+
+
+	cvgetcapture				キャプチャ画像の取得
+
+		cvcapture命令によって開始されたキャプチャのフレーム画像を
+		取得します。取得されるCVバッファは、cvcapture命令で
+		設定されたIDになります。
+
+
+	cvendcapture				カメラキャプチャの終了
+
+		cvcapture命令によって開始されたキャプチャを終了します。
+
+
+	cvopenavi "filename",p1			aviファイル取得の開始
+
+		"filename" : avi動画ファイル名
+		p1 : CVバッファID
+
+		avi動画ファイルからの入力を開始します。
+		指定されたファイル内のフレームを取得することができる
+		ようになります。
+
+		p1でキャプチャした画像を保存する対象となるCVバッファIDを
+		指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		aviファイル取得の開始後は、cvgetavi命令によって
+		フレームごとの画像を取得することができます。
+		また、不要になった場合には必ずcvcloseavi命令で
+		aviファイル取得を終了させる必要があります。
+
+		cvopenavi命令は、あくまでもaviファイルの内容を簡易的に
+		取り出すための機能で、正常な動画再生を行なうためのものでは
+		ありません。あくまでも、フレームを取り出して処理を行なう
+		ための補助機能だとお考えください。
+		また、cvopenavi命令が扱うことのできるaviファイルは、
+		古い形式のaviフォーマットに限られており、すべてのaviファイルを
+		開くことができるわけではありません。
+
+
+	cvgetavi				aviファイル画像の取得
+
+		cvopenavi命令によって開始されたaviファイルのフレーム画像を
+		取得します。取得されるCVバッファは、cvcapture命令で
+		設定されたIDになります。
+
+
+	cvcloseavi				aviファイル取得の終了
+
+		cvopenavi命令によって開始されたaviファイル取得を終了します。
+
+
+	cvmakeavi "filename",p1,p2,p3		aviファイル出力の開始
+
+		"filename" : 出力するavi動画ファイル名
+		p1(-1) : 32bit Codecコード
+		p2(29.97) : 実数によるフレームレート(fps)
+		p3 : CVバッファID
+
+		avi動画ファイルへの出力を開始します。
+		指定されたファイル名でaviファイルを作成します。
+
+		p1でコーデックが持つ32bitのコード(FOURCC)を指定します。
+		p1に-1を指定した場合は、コーデックを選択するダイアログが開きます。
+		p2で実数によるフレームレート(fps)を指定します。
+		p2の指定が省略された場合には、29.97fpsとなります。
+
+		p3で出力画像を保持するCVバッファIDを指定します。
+		省略された場合は、cvsel命令で設定されたIDが使用されます。
+
+		出力の開始後は、cvputavi命令によってフレームごとの画像を
+		登録して、最後にcvendavi命令を呼び出す必要があります。
+
+
+	cvputavi				aviファイルに画像を出力
+
+		cvmakeavi命令によって開始されたaviファイルに、フレーム画像を
+		追加します。
+		参照されるCVバッファは、cvmakeavi命令で設定されたIDになります。
+
+
+	cvendavi				aviファイル出力の終了
+
+		cvmakeavi命令によって開始されたaviファイル出力を終了します。
+
+
+-------------------------------------------------------------------------------
+                                                HSP users manual / end of file 
+-------------------------------------------------------------------------------

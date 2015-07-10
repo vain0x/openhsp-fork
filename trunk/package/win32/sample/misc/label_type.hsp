@@ -1,0 +1,17 @@
+	;	ラベル型変数のテスト
+	;
+	a=*test
+	a(1)=*test2
+	mes "TYPE="+vartype(a)
+	mes "USE="+varuse(a)
+	gosub a
+	gosub a(1)
+	mes "OK"
+	stop
+*test
+	mes "JUMP OK"
+	return
+*test2
+	mes "JUMP OK2"
+	return
+

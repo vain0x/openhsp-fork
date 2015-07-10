@@ -1,0 +1,231 @@
+
+	;	2Dシューティングゲーム・サンプル2
+	;	(プレイヤーはカーソルキーで移動、スペースかctrlでミサイル発射)
+	;
+
+#include "hgimg3.as"
+#define global _dispx 640
+#define global _dispy 480
+
+	goto *start
+
+;----------------------------------------------------------------------------
+
+	;	ツールで出力したソースを取り込む
+	;	(モジュール空間には置かないでください)
+	;	(スプライン移動(絶対)の例)
+	;
+#include "ene01.hsp"
+
+#define COL_MY 1		; プレイヤーのコリジョンID
+#define COL_SHOT 2		; プレイヤーミサイルのコリジョンID
+#define COL_ENEMY 4		; 敵のコリジョンID
+#define COL_ENESHOT 8		; 敵ミサイルのコリジョンID
+
+#deffunc myinit
+	;	プレイヤー初期化
+	;
+	x1=-288 : y1=-208	; 移動可能範囲 左上XY
+	x2=288 : y2=208		; 移動可能範囲 右下XY
+
+	regobj mychr,pchr(0)
+	msp = 4 		; 移動速度
+	setpos mychr,0,180,0	; デフォルト位置
+	setcoli mychr,COL_MY,COL_ENEMY|COL_ENESHOT
+	myflag=0 : myfire=1 : myfcnt=0 : myftime=0
+	setborder 740.0f, 540.0f, 200.0f ; クリップ範囲
+
+	return
+
+#deffunc mymove
+	;	プレイヤー毎フレーム処理
+	;
+
+	;	プレイヤーのミサイル当たり処理
+	;
+	findobj 0,COL_SHOT
+	repeat:nextobj i:if i<0 : break
+	getcoli res,i,20.0
+	if res>=0 {
+		getposi res,x,y,z
+		delobj i	; 自分のミサイルを消す
+		delobj res	; 敵も消す
+		regobj i, pchr(8)			; 爆発マーク
+		setpos i,x,y,0
+		setevent i,ev_bomb			; 爆発アニメーション
+	}
+	loop
+	;
+	if myflag : return		; 死んでるか?
+
+	;	プレイヤー移動処理
+	;
+	getposi mychr,myx,myy,myz
+	getcoli res,mychr,20.0
+	if res>=0 {
+		getobjcoli i,res
+		delobj i
+		delobj mychr
+		myflag=1		; 死んだ
+		return
+	}
+	;
+	if key&1 : myx=limit( myx-msp, x1, x2 ) : setpos mychr,myx,myy,myz
+	if key&4 : myx=limit( myx+msp, x1, x2 ) : setpos mychr,myx,myy,myz
+	if key&2 : myy=limit( myy-msp, y1, y2 ) : setpos mychr,myx,myy,myz
+	if key&8 : myy=limit( myy+msp, y1, y2 ) : setpos mychr,myx,myy,myz
+
+	if myftime {
+		myftime-
+		if myftime=0 : myfire=1
+	}
+
+	if key&80 : goto *myshot	; 発射
+	myfcnt=0
+	return
+
+*myshot
+	if (myfcnt&15)=0 {
+		regobj i,pchr(myfire),OBJ_MOVE|OBJ_BORDER
+		setpos i,myx,myy,myz
+		setdir i,0,-8,0
+		setcoli i,COL_SHOT,COL_ENEMY
+	}
+	myfcnt+
+	return
+
+
+#deffunc enemyinit
+
+	;	敵の設定初期化
+	;
+	newevent ev_msl			; 敵ミサイル・アニメーション
+	event_uv ev_msl, 0, 0
+	event_wait ev_msl, 4
+	event_uv ev_msl, 64, 0
+	event_wait ev_msl, 4
+	event_jump ev_msl, 0, 0
+
+	newevent ev_bomb		; 爆発マーク・アニメーション
+	event_uv ev_bomb, 0, 0
+	event_wait ev_bomb, 4
+	event_uv ev_bomb, 64, 0
+	event_wait ev_bomb, 4
+	event_uv ev_bomb, 128, 0
+	event_wait ev_bomb, 4
+	event_uv ev_bomb, 192, 0
+	event_wait ev_bomb, 4
+	event_prmset ev_bomb,PRMSET_FLAG,0	; 自分を消去する
+
+	secmsl=1	; 敵ミサイルレート(%)
+	spdmsl=4	; 敵ミサイルスピード
+	return
+
+
+#deffunc enemyexec
+
+	;	敵の毎フレーム処理
+	;
+	i=fr\1000			; グループ出現の単位
+	if i<400 {
+		i=fr\30			; １体出現の単位
+		if i=0 {
+			;	敵オブジェクトの登録
+			regobj ufo,pchr(6)
+			setcoli ufo,COL_ENEMY,COL_MY
+			ene01_setevent ufo
+		}
+	}
+
+	;	敵のミサイル出現処理
+	;
+	findobj 0,COL_ENEMY
+	repeat:nextobj i:if i<0 : break
+	getposi i,x,y,z
+	if rnd(100)<secmsl {
+		; 敵からミサイルを出す
+		regobj res,pchr(2),OBJ_MOVE|OBJ_BORDER
+		setpos res,x,y,0
+		resang=atan( myx-x, myy-y )	; プレイヤーを狙う
+		setdir res, sin(resang)*spdmsl, cos(resang)*spdmsl,0
+		setcoli res,COL_ENESHOT,COL_SHOT
+		setevent res,ev_msl		; ミサイルのアニメーション
+	}
+	loop
+	return
+
+
+
+;----------------------------------------------------------------------------
+
+
+*start
+	;	HGIMG3初期設定
+	;
+	randomize
+	hgini
+	;
+	;	テクスチャフォント表示の準備
+	;
+	setfont 20,22,20,1	; font Tex select(cx,cy,px,mode)
+	texload "atfont.bmp"	; フォントテクスチャの登録
+
+	;	スプライトモデルを登録
+	;
+	dim pchr,40
+	i=0
+	repeat 16 : x=(cnt&3)*64 : y=(cnt>>2)*64
+	setuv x,y,x+63,y+63
+	addspr pchr(i),1	; キャラ登録
+	i+:loop
+	;
+	texload2 "dot.tga"	; テクスチャの登録
+
+	;	ツールで出力したデータの初期化(登録)
+	;
+	ene01_init
+
+	;	背景の設定
+	;
+	setuv 0,0,255,255
+	addspr bgspr,0		; BGモデル登録
+	texload "bg.bmp"
+	bgx=0:bgy=-640
+	regobj bg1,bgspr
+	setscale bg1, 2.5,2.5,2.5
+	regobj bg2,bgspr
+	setscale bg2, 2.5,2.5,2.5
+
+	;	プレイヤー、敵初期化
+	;
+	myinit
+	enemyinit
+
+
+	fr=0
+*gmain
+	;	BGスクロール処理
+	setpos bg1,bgx,bgy
+	setpos bg2,bgx,bgy+640
+	bgy++
+	if bgy>=0 : bgy=-640
+
+	;	キー入力
+	stick key,$3ff
+	if key&128 : goto *owari
+
+	;	処理の呼び出し
+	mymove
+	enemyexec
+	hgdraw
+	fprt "FRAME "+fr,20,16
+	if myflag {
+		fprt "GAME OVER",220,220
+	}
+	hgsync 16
+	fr++
+	goto *gmain
+
+*owari
+	end
+

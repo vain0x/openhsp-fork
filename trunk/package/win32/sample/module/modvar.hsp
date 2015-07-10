@@ -1,0 +1,24 @@
+	;
+	;	モジュール変数のテスト
+	;
+#module ball x,y
+
+#modinit int a
+	x=rnd(a):y=rnd(a)
+	return
+
+#modfunc putprm
+	mes "X="+x+"/Y="+y
+	return
+
+#global
+	repeat 12
+	newmod a,ball,10
+	loop
+
+	foreach a:mes "#"+cnt
+	putprm a.cnt
+	loop
+
+	mes "OK"
+	stop

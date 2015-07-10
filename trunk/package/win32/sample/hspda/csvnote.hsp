@@ -1,0 +1,42 @@
+
+	#include "hspda.as"
+
+	dialog "csv",16,"csvファイル"
+	if stat=0 : end
+	fname=refstr
+
+	sdim data,500			; 表示データバッファ
+	mesbox data,620,240
+
+	button "up",*up
+	button "down",*down
+
+	;	CSVファイルの読み込み
+	;
+	sdim cline,500			; 1行データバッファ
+	sdim csv,10000			; csvデータバッファ
+	bload fname,csv
+
+	notesel csv
+	csvmax = notemax
+
+	num=0
+
+*ok
+	title "num="+num+"/"+csvmax
+	noteget cline,num
+	csvnote data, cline
+	objprm 0,data
+	stop
+
+*up
+	num+
+	if num>=csvmax : num=csvmax-1
+	goto *ok
+
+*down
+	num-
+	if num<0 : num=0
+	goto *ok
+
+

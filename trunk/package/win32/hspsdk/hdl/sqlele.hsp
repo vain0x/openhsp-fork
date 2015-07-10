@@ -1,0 +1,417 @@
+
+;============================================================
+;                                                 2009/05/09
+;    SQLele 1.14 for SQLite3 (UTF-8), HSP3
+;                               http://sprocket.babyblue.jp/
+;============================================================
+
+#ifndef sql_q
+#module sqle
+
+#define BUSY_TIMEOUT	60000
+
+; const
+#define SQLITE_OK           0   /* Successful result */
+#define SQLITE_BUSY         5   /* The database file is locked */
+#define SQLITE_ROW         100  /* sqlite3_step() has another row ready */
+#define SQLITE_DONE        101  /* sqlite3_step() has finished executing */
+
+#define global SQLITE_INTEGER  1
+#define global SQLITE_FLOAT    2
+#define global SQLITE_TEXT     3
+#define global SQLITE_BLOB     4
+#define global SQLITE_NULL     5
+
+; apis
+#uselib "sqlite3"
+#func sqlite3_open		"sqlite3_open"		sptr, var
+#func sqlite3_close		"sqlite3_close"		int
+#func sqlite3_prepare_v2	"sqlite3_prepare_v2"	int, sptr, int, var, int
+#func sqlite3_bind_int		"sqlite3_bind_int"	int, int, int
+#func sqlite3_bind_double	"sqlite3_bind_double"	int, int, double
+#func sqlite3_bind_text		"sqlite3_bind_text"	int, int, int, int, int
+#func sqlite3_bind_blob		"sqlite3_bind_blob"	int, int, int, int, int
+#func sqlite3_clear_bindings	"sqlite3_clear_bindings" int
+#func sqlite3_reset		"sqlite3_reset"		int
+#func sqlite3_step		"sqlite3_step"		int
+#func sqlite3_finalize		"sqlite3_finalize"	int
+#func sqlite3_column_count	"sqlite3_column_count"	int
+#func sqlite3_column_blob	"sqlite3_column_blob"	int, int
+#func sqlite3_column_name	"sqlite3_column_name"	int, int
+#func sqlite3_column_text	"sqlite3_column_text"	int, int
+#func sqlite3_column_bytes	"sqlite3_column_bytes"	int, int
+#func sqlite3_column_type	"sqlite3_column_type"	int, int
+#func sqlite3_errmsg		"sqlite3_errmsg"	int
+#func sqlite3_snprintf		"sqlite3_snprintf"	int, var, sptr, sptr
+#func sqlite3_busy_timeout	"sqlite3_busy_timeout"	int, int
+
+#uselib "kernel32"
+#func kSleep		"Sleep"		int
+#func kRtlMoveMemory	"RtlMoveMemory"	int, int, int
+#func kMultiByteToWideChar "MultiByteToWideChar" sptr, sptr, sptr, sptr, sptr, sptr
+#func kWideCharToMultiByte "WideCharToMultiByte" sptr, sptr, sptr, sptr, sptr, sptr, sptr, sptr
+#func win98chk		"GetLongPathNameA"
+
+#define enddd end:end
+
+;============================================================
+; Shift_JIS <--> UTF-8 / internal
+;------------------------------------------------------------
+; pASCII to vUTF8
+#deffunc pascii_to_vutf int p1, var v1
+	kMultiByteToWideChar 0, 0, p1, -1, 0, 0
+	memexpand wtmp, stat * 4
+	kMultiByteToWideChar 0, 0, p1, -1, varptr(wtmp), stat
+
+	kWideCharToMultiByte 65001, 0, varptr(wtmp), -1, 0, 0, 0, 0
+	memexpand v1, stat + 16
+	kWideCharToMultiByte 65001, 0, varptr(wtmp), -1, varptr(v1), stat, 0, 0
+	return
+
+; pUTF8 to vASCII
+#deffunc putf_to_vascii int p1, var v1
+	kMultiByteToWideChar 65001, 0, p1, -1, 0, 0
+	memexpand wtmp, stat * 4
+	kMultiByteToWideChar 65001, 0, p1, -1, varptr(wtmp), stat
+
+	kWideCharToMultiByte 0, 0, varptr(wtmp), -1, 0, 0, 0, 0
+	memexpand v1, stat + 16
+	kWideCharToMultiByte 0, 0, varptr(wtmp), -1, varptr(v1), stat, 0, 0
+	return
+
+
+;============================================================
+; sql_close
+;------------------------------------------------------------
+#deffunc sql_close  onexit
+	if pdb {
+		gosub *finze_stm
+		sqlite3_close pdb
+		pdb = 0
+	}
+	return
+
+
+;============================================================
+; binding parameter
+; str = prm_bind(val, size, type)
+; str = prm_f(f)
+;------------------------------------------------------------
+#defcfunc prm_bind int p1, int p2, int p3
+	; あとで bind する情報を記録
+	bind_p(binds) = p1
+	bind_n(binds) = p2
+	bind_t(binds) = p3
+	; SQL 文には bind パラメータ ?n が挿入されるようにする
+	binds++
+	return strf(" ?%d ", binds)
+
+#defcfunc prm_f double p1
+	bind_f(binds) = p1
+	bind_t(binds) = SQLITE_FLOAT
+	binds++
+	return strf(" ?%d ", binds)
+
+;------------------------------------------------------------
+; str = prm_i(int)
+; str = prm_text(var)
+; str = prm_blob(var, size)
+;------------------------------------------------------------
+#define global ctype prm_i(%1)		prm_bind(%1, 0, SQLITE_INTEGER)
+#define global ctype prm_text(%1)	prm_bind(varptr(%1), strlen(%1), SQLITE_TEXT)
+#define global ctype prm_blob(%1, %2)	prm_bind(varptr(%1), %2, SQLITE_BLOB)
+
+
+;============================================================
+; sql_q  "SQL statement", arr ; exec query / get values
+;  return : int records
+;------------------------------------------------------------
+#define global sql_q(%1, %2=tmparr)  sql_q_ %1, %2
+#deffunc sql_q_  str p1, array v1
+
+*sql_q_retry
+
+	if pdb = 0 {
+		dialog "DB not opened.", , "SQL ERR"
+		enddd
+	}
+
+	if p1 = sqls {
+		; pstm リサイクル
+		sqlite3_reset pstm
+	} else {
+		; SQL statement をパース
+		gosub *finze_stm
+		sqls = p1
+		pascii_to_vutf varptr(sqls), atmp
+		sqlite3_prepare_v2 pdb, atmp, strlen(atmp), pstm, 0
+		if stat {
+			errsql = "SQL : " + sqls
+			goto *badend
+		}
+	}
+
+	recs = 0
+
+	if pstm {
+		; バインド変数をセット
+		repeat binds
+			if bind_t(cnt) = SQLITE_TEXT {
+				pascii_to_vutf bind_p(cnt), atmp(cnt)
+				sqlite3_bind_text pstm, cnt+1, varptr(atmp(cnt)), strlen(atmp(cnt))
+			} else:if bind_t(cnt) = SQLITE_INTEGER {
+				sqlite3_bind_int pstm, cnt+1, bind_p(cnt)
+			} else:if bind_t(cnt) = SQLITE_FLOAT {
+				sqlite3_bind_double pstm, cnt+1, bind_f(cnt)
+			} else:if bind_t(cnt) = SQLITE_BLOB {
+				sqlite3_bind_blob pstm, cnt+1, bind_p(cnt), bind_n(cnt)
+			}
+		loop
+
+		; SQL statement 実行
+		sqlite3_step pstm
+
+		; BUSY
+		if stat = SQLITE_BUSY : goto *busy_handle
+
+		; 出力がある場合 : レコードセット変数を作成
+		if stat = SQLITE_ROW {
+		/*
+			レコードセット変数データ形式         0            4         8          12
+			v1(0, 0)           : (str)Data (char)0 ? ? ? (int)Type (int)Count (int)0
+			v1(*, [0～recs-1]) : (str)Data (char)0 ? ? ? (int)Type (int)?     (int)0
+			(BLOB) v1(*, *)    :           (char)0 ? ? ? (int)Type (int)?     (int)size  (blob)data
+			v1(*, recs)        : (str)ColName
+		*/
+
+			; 出力アレイ作成  arr(cols, 可変recs )
+			sqlite3_column_count pstm
+			cols = stat
+			sdim v1, 32, cols, 1
+
+			; 全データを回収
+			repeat
+				repeat cols
+					sqlite3_column_type pstm, cnt
+					type = stat
+					if type <= SQLITE_TEXT {
+						; データ取得 (as text)
+						sqlite3_column_text pstm, cnt
+						putf_to_vascii stat, v1(cnt, recs)
+
+						; 型 / BLOB サイズ情報
+						n = strlen(v1(cnt, recs))
+						lpoke v1(cnt, recs), n+4, type
+						lpoke v1(cnt, recs), n+12
+					} else {
+						if type = SQLITE_BLOB {
+							; BLOB 取得
+							sqlite3_column_bytes pstm, cnt
+							n = stat
+							memexpand v1(cnt, recs), n+16
+							sqlite3_column_blob pstm, cnt
+							kRtlMoveMemory varptr(v1(cnt, recs))+16, stat, n
+						} else {
+							; NULL
+							v1(cnt, recs) = ""
+							n = 0
+						}
+						; 型 / BLOB サイズ情報
+						lpoke v1(cnt, recs), 4, type
+						lpoke v1(cnt, recs), 12, n
+					}
+				loop
+				recs++
+
+				sqlite3_step pstm
+				if stat ! SQLITE_ROW : break
+			loop
+
+			; カラム名情報 追加
+			repeat cols
+				sqlite3_column_name pstm, cnt
+				putf_to_vascii stat, v1(cnt, recs)
+			loop
+
+			; レコードカウンタ リセット
+			lpoke v1, strlen(v1) + 8
+		}
+	}
+
+	binds = 0
+	return recs
+
+;------------------------------------------------------------
+; ビジー / ロック タイムアウト時の回復処理
+*busy_handle
+	busy_count++
+
+	if busy_count \ 10 = 0 { ; re-open
+		sql_close
+
+		if busy_count \ 30 = 0 { ; user prompt
+			dialog "Database query timed out.\n\nRetry?", 2, "SQL ERR"
+			if stat = 7 : enddd
+		}
+
+		sqls = dir_cur
+		chdir open_dir
+		pascii_to_vutf varptr(open_fn), atmp
+		sqlite3_open atmp, pdb
+		chdir sqls
+		sqlite3_busy_timeout pdb, BUSY_TIMEOUT
+	}
+
+	kSleep 500
+	goto *sql_q_retry
+
+
+;============================================================
+; sql_open
+;------------------------------------------------------------
+#deffunc sql_open str p1
+	if varptr(win98chk) = 0 {
+		dialog "This program requires Windows 98/2000 or later.", , "SQL ERR"
+		enddd
+	}
+	if varptr(sqlite3_prepare_v2) = 0 {
+		dialog "sqlite3.dll not found.", , "SQL ERR"
+		enddd
+	}
+	; init vars
+	sdim wtmp, 65536
+	sdim atmp, 32, 256
+	ddim bind_f, 1
+
+	; open されたファイルとディレクトリを記憶
+	open_dir = dir_cur
+	open_fn = p1
+
+	; sqlite open
+	sql_close
+	pascii_to_vutf varptr(open_fn), atmp
+	sqlite3_open atmp, pdb
+	if stat {
+		errsql = "FILE : " + open_fn
+		goto *badend
+	}
+	sqlite3_busy_timeout pdb, BUSY_TIMEOUT
+	return
+
+
+;------------------------------------------------------------
+*finze_stm
+	if pstm {
+		; SQL statement 終了
+		sqlite3_finalize pstm
+		pstm = 0
+	}
+	return
+
+
+;------------------------------------------------------------
+*badend
+	sqlite3_errmsg pdb
+	putf_to_vascii stat, atmp
+	dialog "ERR : " + atmp + "\n\n" + strmid(errsql, 0, 999), , "SQL ERR"
+	sqlite3_close pdb
+	enddd
+
+
+;============================================================
+; id = sql_colid("Column name", arr) ; get colid
+;------------------------------------------------------------
+#define global ctype sql_colid(%1, %2=tmparr)  sql_colid_( %1, %2 )
+#defcfunc sql_colid_  str p1, array v1
+	i = -1
+	recs = length2(v1) - 1
+	if recs > 0 {
+		; カラム名からカラム番号を検索
+		repeat length(v1) ;= cols
+			if p1 = v1(cnt, recs) {
+				i = cnt
+				break
+			}
+		loop
+	}
+	if i < 0 {
+		dialog "column [" + p1 + "] does not exist.", , "SQL ERR"
+		enddd
+	}
+
+	; 現在のレコードカウンタを n@sqle に、カラム番号を i@sqle に持っておく
+	; 以降配列アクセスに arr(i@sqle, n@sqle) が使える (undocumented)
+	n = lpeek(v1, strlen(v1) + 8)
+	if n >= recs {
+		dialog "record-counter overflow.", , "SQL ERR"
+		enddd
+	}
+	return i
+
+;------------------------------------------------------------
+; var    sql_v("Column", arr)	; ref var
+; val  = sql_i("Column", arr)	; get int(val)
+; val  = sql_f("Column", arr)	; get double(val)
+; type = sql_type("Column", arr)
+; size = sql_blobsize("Column", arr)
+; sql_next arr		; movenext
+; sql_move id, arr	; moveto
+; sql_blobcopy var, "Column", arr
+;------------------------------------------------------------
+#define global ctype sql_v(%1, %2=tmparr)                %2(sql_colid_(%1,%2),n@sqle)
+#define global ctype sql_i(%1, %2=tmparr)           int( %2(sql_colid_(%1,%2),n@sqle) )
+#define global ctype sql_f(%1, %2=tmparr)        double( %2(sql_colid_(%1,%2),n@sqle) )
+#define global ctype sql_type(%1, %2=tmparr)      lpeek( %2(sql_colid_(%1,%2),n@sqle), strlen(%2(i@sqle,n@sqle))+4 )
+#define global ctype sql_blobsize(%1, %2=tmparr)  lpeek( %2(sql_colid_(%1,%2),n@sqle), strlen(%2(i@sqle,n@sqle))+12 )
+#define global sql_next(%1=tmparr)        lpoke %1, strlen(%1)+8, lpeek(%1,strlen(%1)+8)+1
+#define global sql_move(%1=0, %2=tmparr)  lpoke %2, strlen(%2)+8, %1
+#define global sql_blobcopy(%1, %2, %3=tmparr)  memcpy %1, %3(sql_colid_(%2,%3),n@sqle), lpeek(%3(i@sqle,n@sqle),strlen(%3(i@sqle,n@sqle))+12), 0, 16
+
+
+;============================================================
+; str = sql_collist("str", arr) ; get cols list
+;------------------------------------------------------------
+#define global ctype sql_collist(%1=",", %2=tmparr)  sql_collist_( %1, %2 )
+#defcfunc sql_collist_  str p1, array v1
+	dest = ""
+	recs = length2(v1) - 1
+	if recs > 0 {
+		; カラム名一覧を作成
+		repeat length(v1) ;= cols
+			if cnt : dest += p1
+			dest += v1(cnt, recs)
+		loop
+	}
+	return dest
+
+
+;============================================================
+; str = sqesc("str") ; single-quotation escape ("'" -> "''")
+;------------------------------------------------------------
+#defcfunc sqesc str p1
+	src = p1
+	if instr(src, 0, "'") < 0 : return src
+
+	len = strlen(src)
+	p = 0
+	repeat
+		i = instr(src, p, "'")
+		if i < 0 {
+			a(cnt) = len
+			sdim dest, len * 2 + 1
+			memcpy dest, src, a
+			repeat cnt
+				poke dest, a(cnt)+cnt, 39
+				memcpy dest, src, a(cnt+1)-a(cnt), a(cnt)+cnt+1, a(cnt)
+			loop
+			break
+		}
+		a(cnt) = p + i
+		p += i + 1
+	loop
+	return dest
+
+#global
+#endif
+
+

@@ -1,0 +1,46 @@
+
+	;	クリックした座標にボールを移動させます
+	;
+	x=ginfo_sx/2
+	y=ginfo_sy/2
+	anim=100		; 移動するフレーム数
+
+*start
+	color 0,0,0:boxf	; 画面をクリア
+	color 255,255,255
+	pos 0,0
+	mes "画面をクリックしてください"
+	pos x,y
+	mes "●"
+
+*main
+	stick key
+	await 20
+	if key&256 : goto *main2
+	goto *main
+
+*main2
+	bx=x		; 開始座標X
+	by=y		; 開始座標Y
+	mx=mousex	; 目標座標X
+	my=mousey	; 目標座標Y
+
+	;	イージング関数でボールを移動させる
+	repeat anim
+		redraw 0
+		color 0,0,0:boxf	; 画面をクリア
+		color 255,255,255
+		pos 0,0
+		mes "移動中("+cnt+"/"+anim+")"
+
+		setease bx,mx,ease_quad_inout
+		x = getease(cnt,anim)	; イージング値の取得(整数)
+		setease by,my,ease_quad_inout
+		y = getease(cnt,anim)	; イージング値の取得(整数)
+		pos x,y : mes "●"
+
+		redraw 1
+		await 20
+	loop
+
+	goto *start

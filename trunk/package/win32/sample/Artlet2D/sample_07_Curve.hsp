@@ -1,0 +1,83 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; 折れ線・曲線のサンプルです。
+;
+; 配列でポイントデータを用意し、alTransModeOffsetRotateZoom で
+; オフセット描画位置を変えて描画しています。
+;
+; 曲線は、曲がりの強さを指定して描画することができます。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; 仮想イメージ 0 を作成
+	alCreateImage 0, 640, 480
+	if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+
+	; ポイントデータ
+	points = 0,40,  100,30,  20,110,  60,10, 100,90
+
+	; 折れ線
+	alTransModeOffsetRotateZoom 0, 0 ; 描画位置をオフセット
+	alDrawLines points, 5
+
+	; 多角形
+	alTransModeOffsetRotateZoom 0, 150
+	alDrawPoly points, 5
+
+	; 塗りつぶし多角形
+	alTransModeOffsetRotateZoom 0, 300
+	alFillPoly points, 5
+
+
+	; 曲線
+	alTransModeOffsetRotateZoom 150, 0
+	alDrawCurve points, 5
+
+	; 閉曲線
+	alTransModeOffsetRotateZoom 150, 150
+	alDrawClosedCurve points, 5
+
+	; 塗りつぶし閉曲線
+	alTransModeOffsetRotateZoom 150, 300
+	alFillClosedCurve points, 5
+
+
+	; カーブ強度を変えて描画 (+)
+	alTransModeOffsetRotateZoom 300, 0
+	alDrawClosedCurve points, 5, 0.5
+
+	alTransModeOffsetRotateZoom 300, 100
+	alDrawClosedCurve points, 5, 1.0
+
+	alTransModeOffsetRotateZoom 300, 200
+	alDrawClosedCurve points, 5, 1.5
+
+	alTransModeOffsetRotateZoom 300, 300
+	alDrawClosedCurve points, 5, 2.0
+
+
+	; カーブ強度を変えて描画 (-)
+	alTransModeOffsetRotateZoom 450, 0
+	alDrawClosedCurve points, 5, -0.5
+
+	alTransModeOffsetRotateZoom 450, 100
+	alDrawClosedCurve points, 5, -1.0
+
+	alTransModeOffsetRotateZoom 450, 200
+	alDrawClosedCurve points, 5, -1.5
+
+	alTransModeOffsetRotateZoom 450, 300
+	alDrawClosedCurve points, 5, -2.0
+
+
+	; 仮想イメージ 0 から HSP スクリーンにコピー
+	alCopyImageToScreen 0, 0
+	redraw
+

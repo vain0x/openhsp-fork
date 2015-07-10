@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "dup"
+
+#define クローンを作成する変数名	""	;;str
+#define クローン元の変数名	""	;;str
+
+#ahtmes "dup "+クローンを作成する変数名+" , "+クローン元の変数名+

@@ -1,0 +1,16 @@
+
+	;	HSV sample
+	;
+	y=0
+	repeat 256
+	x=0:px=2
+	repeat 256
+	hsvcolor y,cnt,255
+	boxf x,y,x+px,y
+	x+=px
+	loop
+	y+
+	await 0
+	loop
+	stop
+

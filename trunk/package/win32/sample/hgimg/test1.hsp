@@ -1,0 +1,57 @@
+#include "hgimg.as"
+
+	;	立方体をキーで回転させるサンプル
+	;	(パレットモード)
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,320,240,1
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+	onexit *owari
+
+	;	BOXオブジェクトを登録
+	;
+	setsizef 8.0f, 8.0f	; BOXのXYサイズ
+	setuv 0,0,127,127	; テクスチャUV座標
+	addbox mdid		; BOXモデルを作成
+	texload "btex.bmp"	; テクスチャの登録
+	regobj mychr,mdid	; BOXモデルをオブジェクトとして登録
+
+	;	パレットをコピー
+	;
+	gsel 0
+	;palcopy 3
+
+	;	カメラ位置設定
+	;
+	selcpos
+	objsetf3 0.0f, 0.0f, 20.0f
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	キー操作で回転
+	;
+	selang mychr
+	if k&1 : objaddf3 0.0f, -0.05f, 0.0f
+	if k&4 : objaddf3 0.0f, 0.05f, 0.0f
+	if k&2 : objaddf3 0.05f, 0.0f, 0.0f
+	if k&8 : objaddf3 -0.05f, 0.0f, 0.0f
+
+	goto *main
+
+*owari
+	hgbye
+	end
+

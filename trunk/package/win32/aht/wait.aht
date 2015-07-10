@@ -1,0 +1,19 @@
+#aht name "時間待ち"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "条件を満たすまで停止します。"
+
+#const モード 0	;;combox,prm="0\n1\n",opt="時間待ち\nキー入力待ち"
+#const 待ち時間 100		;;help="x10ms"
+
+#if モード=1
+	repeat:await 10:stick key
+	if key : break
+	loop
+#else
+#if モード=0
+	wait 待ち時間
+#endif
+#endif

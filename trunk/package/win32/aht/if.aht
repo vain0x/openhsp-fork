@@ -1,0 +1,19 @@
+#aht name "条件分岐"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 4
+#aht exp "条件によって処理の分岐を行ないます。"
+#aht exp "条件式の内容が正しい場合は、指定したパーツにジャンプします。"
+
+#const obj_id	0	;;parts,prm="hsp3.std.rsrc.var",help="比較元の変数"
+#define __refvar	;;pprop,prm="変数名",help="変数名",read
+#define 比較方法	;;combox,prm="=\n!\n<\n>\n>=\n<=\n",opt="比較値と同じ\n比較値と違う\n比較値より小さい\n比較値より大きい\n比較値以下\n比較値以上\n"
+#define 比較値	0	;;help="比較の対象となる値",str
+
+#const obj_id2	0	;;parts,prm="hsp3.std.system.label",help="正しい時のジャンプ先"
+#define __reflabel	;;pprop,prm="__label",help="ラベル名",read
+#define 種別 goto	;;combox,prm="goto\ngosub",opt="ジャンプ\nサブルーチン呼び出し"
+
+	if  __refvar 比較方法 比較値 : 種別 *__reflabel
+

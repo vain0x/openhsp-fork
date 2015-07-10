@@ -1,0 +1,39 @@
+
+#module
+#deffunc varchk var _p1
+
+	;	varchk 変数
+	;
+	;	で、変数についての情報を表示する。
+	;
+	fname=""
+	flag = vartype( _p1 )
+	len1 = length( _p1 )
+	len2 = length2( _p1 )
+	len3 = length3( _p1 )
+	len4 = length4( _p1 )	
+	if flag=2 : fname="文字列"
+	if flag=3 : fname="実数"
+	if flag=4 : fname="数値"
+	;
+	msg = "変数情報\n"
+	msg+= "flag="+flag+"["+fname+"]\n"
+	msg+= "配列size.1="+len1+"\n"
+	msg+= "配列size.2="+len2+"\n"
+	msg+= "配列size.3="+len3+"\n"
+	msg+= "配列size.4="+len4+"\n"
+	;
+	dialog msg
+	return
+#global
+
+	;	varchkモジュール呼び出しメイン
+	;
+	a="TEST"
+	varchk a
+	;
+	ddim a,16,32
+	varchk a
+
+	stop
+

@@ -1,0 +1,11 @@
+#include "hspext.as"
+
+	;
+	;	インターネット・ショートカットを作成
+	;
+	a="ONION soft HOMEPAGE"
+	fxlink a,"http://www.onionsoft.net/"
+	dialog "ショートカットを作成しました。"
+	stop
+
+

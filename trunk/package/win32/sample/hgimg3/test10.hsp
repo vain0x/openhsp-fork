@@ -1,0 +1,59 @@
+#include "hgimg3.as"
+
+	;	マテリアル書き換え
+	;	(スペースキーを押すと体のマテリアルを切り替えます)
+	;	(Enterキーを押すと目のテクスチャが別のものに変わります)
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+	;
+	clscolor $80
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_c.x"
+	regobj obj, m_xmodel
+	setangr obj,0,128,0
+	setpos obj,0,0,20
+
+
+	getxinfo info, obj, 0, $1000	; モデルのマテリアル色を取得
+	str2fv fv,info			; もとの色をfvに取得する
+	sw = 0
+
+*main
+	stick key,15
+
+	if key&16 {			; マテリアル色の切り替え
+		sw=sw^1
+		if sw=0 {
+			setxinfo obj,0,$1000,fv.0,fv.1,fv.2
+		} else {
+			setxinfo obj,0,$1000,0,255,0
+		}
+	}
+
+	hgdraw
+
+	fprt "[Space] to Change Color",8,8
+
+	hgsync 15
+
+	if key&128 : goto *owari
+
+	if key&2 : addang obj, -0.05, 0.0
+	if key&8 : addang obj, 0.05, 0.0
+	if key&4 : addang obj, 0.0, 0.05
+	if key&1 : addang obj, 0.0, -0.05
+
+	goto *main
+
+*owari
+	hgbye
+	end

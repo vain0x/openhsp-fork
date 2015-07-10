@@ -1,0 +1,228 @@
+	;================================================================================
+	;モジュール dragdrop
+	;ver 2.0
+	;	ドラッグ&ドロップ
+	;	llmod3.hspが必要です
+	;	( _ddrop.mcn がいらないよう修正:2002/11/13 )
+	;================================================================================
+
+	; dragdropモジュール命令一覧
+	;
+	; dd_accept			ドラッグ&ドロップをできるようにする
+	; dd_reject			ドラッグ&ドロップをできないようにする
+	;
+	; 計	2個
+
+
+
+	;使い方
+	;================================================================================
+	; dd_accept v1,v2,n3		ドラッグ&ドロップをできるようにする
+	;
+	;  v1 : ドラッグ&ドロップされたファイル名を入れる変数
+	;  v2 : ドラッグ&ドロップされたファイル数を入れる変数
+	;  n3 : ウィンドウID
+	;================================================================================
+	;
+	;<>説明
+	; n3で指定したウィンドウにドラッグ&ドロップ(以下D&D)をできるようにします。
+	; ただし、ウィンドウID 1は設定できません。
+	; dd_acceptを実行した後、ウィンドウにファイルがD&Dされるとv1で指定した変数に
+	; D&Dされたファイル名が入ります。
+	; v2にはD&Dされたファイルの数、D&Dされた座標、ウィンドウIDが代入されます。
+	;
+	; D&Dされたファイル名は"\n"で区切られています(D&Dされたファイルが1つの場合でも)。
+	; 1つのファイル名を取り出したいときはノートパッド命令を使うと便利です。
+	;
+	; dd_accept実行後は、v1,v2に設定した変数はalloc,dim,sdimなどに使用しないで下さい。
+	;
+	;<>例
+	;	#include "llmod3.hsp"
+	;	#include "dragdrop.as"
+	;
+	;	alloc buf,1024*64	;ドラッグ&ドロップされたファイル名を入れる変数
+	;	dd_accept buf,a
+	;
+	;*@
+	;	wait 1
+	;	if a {
+	;		cls
+	;		pos 0,0
+	;		mes "ドラッグ&ドロップされたファイル数:"+a
+	;		mes "ドラッグ&ドロップされたファイル位置 x:"+a.1+" y:"+a.2
+	;		mes "ドラッグ&ドロップされたウィンドウID :"+a.3
+	;		mes buf
+	;		a=0		; aをリセットしてください
+	;	}
+	;	goto @b
+	;
+	;<>例2
+	;	#include "llmod3.hsp"
+	;	#include "dragdrop.as"
+	;
+	;	alloc buf,1024*64	;ドラッグ&ドロップされたファイル名を入れる変数
+	;	dd_accept buf,a
+	;
+	;*@
+	;	wait 1
+	;	if a {
+	;		notesel buf
+	;		repeat a
+	;			noteget file,cnt
+	;			exec file,16	;ドラッグ&ドロップされたファイルを実行
+	;		loop
+	;		a=0
+	;	}
+	;	goto @b
+	;
+
+	;================================================================================
+	; dd_reject n1,n2		ドラッグ&ドロップをできないようにする
+	;
+	;  n1 : ウィンドウID
+	;  n2 : フラグ
+	;================================================================================
+	;
+	;<>説明
+	; ドラッグ&ドロップをできないようにします。
+	; dd_acceptを実行していない場合には効果がありません。
+	; n2を1にするともう一度ドラッグ&ドロップをできるようにします。
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "dragdrop"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;_drag_accept_files
+	;................................................................................
+*_drag_accept_files
+	dllproc "DragAcceptFiles",prm,2,D_SHELL
+	return
+
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;dd_accept
+	;
+	;................................................................................
+	#deffunc dd_accept var v1,array v2,int v3
+
+	v2 = 0
+	#define	MCN_FILE_SIZE	192
+	#define	MAX_WND_ID	32
+
+	if(init == 0) {
+		init = 1
+		dim procs,MCN_FILE_SIZE * MAX_WND_ID / 4
+		dim proc_org,MAX_WND_ID
+		;_ddrop_mcn = "_ddrop.mcn"
+	}
+
+	;exist _ddrop_mcn : if strsize=-1 : dialog _ddrop_mcn+"が見つかりません" : return
+
+	if(v3 == 1) : return		;scrren 1は使用しない
+
+	getptr p,v1			;pointer to buffer
+	getptr p.1,v2
+	wnd_id = v3
+
+	mref bmscr,67
+	wnd_id.1 = bmscr.18	;現在アクティブなウィンドウID
+	gsel wnd_id
+
+	;プロシージャが既にセットされていればここでリターン
+	if(proc_org.wnd_id) : return
+
+
+	prm = hwnd,1
+	gosub *_drag_accept_files 
+
+
+	;プロシージャの取得
+	;#define GWL_WNDPROC	-4
+
+	prm.0 = hwnd,-4			;hwnd,GWL_WNDPROC
+	setwndlong prm,1		;GetWindowLong
+	proc_org.wnd_id = stat
+
+
+	;プロシージャの作成
+	a = MCN_FILE_SIZE / 4 * wnd_id
+	dup buf,procs.a
+	getptr p_proc,buf
+
+	dll_getfunc func.0,"CallWindowProcA",D_USER
+	dll_getfunc func.1,"DragQueryFileA",D_SHELL
+	dll_getfunc func.2,"DragFinish",D_SHELL
+	dll_getfunc func.3,"DragQueryPoint",D_SHELL
+
+	;exist _ddrop_mcn
+	;bload _ddrop_mcn,buf,strsize
+
+	dim mcndata,MCN_FILE_SIZE / 4
+	mcndata.0 = $0824448b,$0002333d,$57677500,$7c8b5556,$00be1824,$b8000000,$ffffffff,$57505050
+	mcndata.8 = $000000b8,$8bd0ff00,$0000a3e8,$00b80000,$50000000,$0000b857,$d0ff0000,$000005c7
+	mcndata.16 = $00000000,$684d0000,$00000104,$b8575556,$00000000,$f003d0ff,$0d06c766,$02c6830a
+	mcndata.24 = $e275ed85,$570006c6,$000000b8,$5dd0ff00,$74ff5f5e,$74ff1024,$74ff1024,$74ff1024
+	mcndata.32 = $00681024,$b8000000,$00000000,$10c2d0ff,$00000000
+	a = MCN_FILE_SIZE * wnd_id
+	memcpy procs,mcndata,MCN_FILE_SIZE,a
+
+
+	#define	PK_BUF		19
+	#define	PK_DQF		33
+	#define	PK_BUF_N	42
+	#define	PK_POINT	47
+	#define	PK_DQP		54
+	#define	PK_BUF_W	62
+	#define	PK_WNDID	66
+	#define	PK_DQF2		80
+	#define	PK_DFF		105
+	#define	PK_OPROC	131
+	#define	PK_CWP		136
+
+	lpoke buf,PK_BUF,p					;buffer
+	lpoke buf,PK_DQF,func.1				;DragQueryFiles
+	lpoke buf,PK_BUF_N,p.1				;buffer for count of files dropped
+	lpoke buf,PK_POINT,p.1+4			;buffer for POINT
+	lpoke buf,PK_DQP,func.3				;DragQueryPoint
+	lpoke buf,PK_BUF_W,p.1+12			;buffer for hwnd
+	lpoke buf,PK_WNDID,wnd_id			;HSP window ID
+	lpoke buf,PK_DQF2,func.1			;DragQueryFiles
+	lpoke buf,PK_DFF,func.2				;DragFinish
+	lpoke buf,PK_OPROC,proc_org.wnd_id	;Original WndProc
+	lpoke buf,PK_CWP,func				;CallWindowProc
+
+
+	;プロシージャのセット
+	prm.0 = hwnd,-4,p_proc			;hwnd,GWL_WNDPROC
+	setwndlong prm
+
+	gsel wnd_id.1
+
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;dd_reject
+	;ドラッグ&ドロップをできないようにする
+	;................................................................................
+	#deffunc dd_reject int v1,int v2
+
+	wnd_id = v1
+	mref bmscr,67
+	wnd_id.1 = bmscr.18		;現在アクティブなウィンドウID
+	gsel wnd_id
+
+	if(proc_org.v1 == 0) : return	;dd_acceptが使われていない
+	prm = hwnd,v2
+	gosub *_drag_accept_files
+	gsel wnd_id.1
+	return
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */

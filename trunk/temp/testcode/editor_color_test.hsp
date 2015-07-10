@@ -1,0 +1,12 @@
+; スクリプトエディタ 色分け 動作確認用スクリプト
+
+mes "String "+';'+" String"
+mes "String ; String"  ; Comment
+mes "String // String" ; Comment
+mes "String ; String"  // Comment
+mes "String // String" // Comment
+mes {"Mulitline
+Mulitline
+Mulitline
+Mulitline"} // Comment
+

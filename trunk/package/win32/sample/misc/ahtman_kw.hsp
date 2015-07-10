@@ -1,0 +1,61 @@
+
+;
+;	AHT Manager (HSP3.1以降専用)
+;
+#packopt name "ahtman"
+#packopt hide 1
+
+#include "hsedsdk.as"
+#include "mod_aht.as"
+
+	;gsel 0,-1
+	tminit
+
+	ahtfile = dir_exe + "\\ezinput\\画面の操作\\カラー設定.aht"
+/*
+	ahtfile = dir_cmdline
+	if ahtfile="" {
+		dialog "無効な機能を選択しました。"
+		end
+	}
+*/
+	goto *goaht
+*goaht
+	tmload m,ahtfile,"",-1
+	if m<0 : dialog "読み込み中にエラーが発生しました。["+ahtfile+"]" : end
+	tmprops m
+
+	objsize 80,24
+	myx=ginfo_cx:myy=ginfo_cy
+
+	if helpkw@ahtmod!="" {
+		pos myx+40,myy-26
+		button "ヘルプ",*kwhelp
+	}
+	pos myx-40,myy
+	button "キャンセル",*owari
+	pos myx+40,myy
+	button "Ok",*update
+	stop
+
+*kwhelp
+	;	キーワードのヘルプ
+	;
+	exec "hsphelp\\helpman "+helpkw@ahtmod
+	stop
+
+*update
+	;	ahtoutをエディタに送信
+	;
+	tmsetprop m
+	tmmake m, 2
+	if stat {
+		dialog stdbuf@ahtmod,0,"AHTファイルの変換中にエラーが発生しました。"
+	}
+	notesel buf
+	noteload "ahtout"
+	hsed_sendstr buf
+
+*owari
+	end
+

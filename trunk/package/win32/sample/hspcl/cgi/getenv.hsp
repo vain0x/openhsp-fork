@@ -1,0 +1,60 @@
+; 環境変数の内容を取得するCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/getenv.ax
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+#include "hspinet.as"
+
+	sdim header,$1000
+
+	lf="a":poke lf,0,$0a			; 改行コード(LF)
+
+	header = "Status: 200 OK"+lf
+	header += "Cache-Control: no-cache, no-store, must-revalidate, private"+lf
+	header += "Pragma: no-cache"+lf
+	header += "Content-type: text/html; charset=Shift_JIS"+lf+lf
+
+	mes header
+
+	envlist={"DOCUMENT_ROOT
+GATEWAY_INTERFACE
+HTTP_FORWARDED
+HTTP_HOST
+HTTP_USER_AGENT
+HTTP_REFERER
+HTTP_VIA
+PATH
+QUERY_STRING
+REMOTE_HOST
+REMOTE_ADDR
+REMOTE_PORT
+REQUEST_METHOD
+REQUEST_URI
+SCRIPT_FILENAME
+SCRIPT_NAME
+SERVER_ADMIN
+SERVER_NAME
+SERVER_PORT
+SERVER_PROTOCOL
+SERVER_SIGNATURE
+SERVER_SOFTWARE"}
+
+	mes "<html>"
+	mes "<title>HSPCGI TEST</title>"
+	mes "<body>"
+
+	mes "環境変数を表示します<br>"
+
+	notesel envlist
+	repeat notemax
+		noteget envname,cnt
+		getenv value, envname
+		mes envname+" ["+value+"]<br>"
+	loop
+
+	mes "</body>"
+	mes "</html>"
+
+	end
+

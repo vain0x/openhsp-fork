@@ -1,0 +1,65 @@
+;
+;	xlsドライバにつないでみる
+;
+#include "hspdb.as"
+
+sdim buf,32000
+sdim buf2,1024
+sdim dsn,256
+sdim sql,512
+;dsn="DRIVER={Microsoft Access Driver (*.mdb)}"	; mdbドライバ
+dsn="DRIVER={Microsoft Excel Driver (*.xls)}"	; xlsドライバ
+
+;	ODBC環境の初期化
+dbini
+if stat : dialog "ODBC環境がありません。終了します。("+stat+")" : end
+
+screen 0,480,320:cls 1
+objmode 1,1:objsize 480,24
+mes "DSN名:"
+input dsn
+button "接続",*start
+stop
+
+*start
+
+;	DBドライバに接続します
+;	選択ダイアログを表示させます。
+dbopen dsn,1
+if stat : dialog "DB接続できませんでした。終了します。("+stat+")" : end
+;	接続が成功したら、後はSQLを自由に送信することができます。
+;	SQLの送信はdbsend、結果はdbgetsで取得してください。
+
+cls 1:objmode 1,1:objsize 480,24
+mes "DSN名:"+dsn
+mes "SQL:"
+sql="SELECT * from A1:A5"	; xlsドライバに送るSQLの例
+input sql
+button "QUERY",*send
+button "END",*over
+mes "結果:"
+mesbox buf,480,192
+objsel 0
+stop
+
+*send
+dbspchr 9	; 区切り文字列をTABに変更
+dbsend sql
+if stat : dialog "SQL送信に失敗しました。("+stat+")" : stop
+
+buf=""
+repeat
+	dbgets buf2		; 結果の取得
+	if stat : break		; すべて取得したらループから抜ける
+	buf+=buf2
+loop
+
+objprm 3,buf
+
+stop
+
+*over
+
+dbclose		; DBとの接続を切ります
+end
+

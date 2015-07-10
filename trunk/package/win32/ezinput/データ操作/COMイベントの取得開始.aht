@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "comevent"
+
+#define 変数名	""	;;str
+#define イベント取得元の変数名	""	;;str
+#define コネクションポイントGUID	""	;;str
+#define イベントサブルーチンのラベル	""	;;str
+
+#ahtmes "comevent "+変数名+" , "+イベント取得元の変数名+" , "+コネクションポイントGUID+" , "+イベントサブルーチンのラベル+

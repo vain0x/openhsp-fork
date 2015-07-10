@@ -1,0 +1,20 @@
+#include "hspinet.as"
+
+	;
+	;	単純なファイルのダウンロード
+	;
+
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	neturl "http://www.onionsoft.net/hsp/"
+
+	mes "DOWNLOAD 開始"
+
+	netload "index.html"
+
+	mes "DOWNLOAD 完了"
+	mes "index.htmlを保存しました。"
+
+	stop
+

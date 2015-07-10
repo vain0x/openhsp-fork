@@ -1,0 +1,83 @@
+	;	洞窟探検ゲーム
+	;
+	;	顔(face.bmp)キャラクターを操って洞窟を進んでください。
+	;	スペースキーを押している間は、上に行こうとします。
+	;	スペースキーを離している間は、下に行こうとします。
+	;	慣性がついているので、程よくキーを押してください。
+	;	だんだん洞窟が狭くなるので注意。
+	;
+	face=1
+	celload "face.bmp",face
+	celdiv face,64,64,32,32			; パーツのサイズと中心位置
+*start
+	cls 4
+	scr=0
+	wxs=640
+	wys=480
+	gys=320
+	gy=(wys-gys)/2
+	spd=8
+	px=100
+	py=240
+	dy=0
+	bom=0
+*main
+	;	キャラクターにぶつかったか調べる
+	a=0
+	pget px+32,py-32
+	a=a+ginfo_g
+	pget px+32,py+32
+	a=a+ginfo_g
+	pget px+64,py
+	a=a+ginfo_g
+	if a>0 : goto *dead
+
+	redraw 0
+
+	;	洞窟を描画
+	color 0,192,0
+	boxf wxs-spd,0,wxs,wys
+	color 0,0,0
+	boxf wxs-spd,gy,wxs,gy+gys
+	pos 0,0
+	gmode 0,wxs-spd,wys
+	gcopy 0,spd,0
+
+	scr=scr+1
+	title "点数="+scr
+
+	gys=320-(scr/30)
+	if gys<100 :gys=100
+
+	if scr<60 : goto *mymove
+
+	dy=dy+1
+	if dy>16 : dy=16
+	stick ky,16
+	if ky=16 : dy=dy-3
+	py=py+(dy/2)
+*mymove
+	gmode 2,64,64
+	pos px,py
+	celput face
+
+	if cn<1 :cn=rnd(16) :cn=cn+3 :ry=rnd(17) :ry=ry-8
+	cn=cn-1
+	gy+=ry
+	if gy+gys>448 : gy=448-gys
+	if gy<32 : gy=32
+
+	redraw 1
+	await 24
+	goto *main
+*dead
+	;	ぶつかった
+	font msgothic,60
+	pos 160,200
+	color 255,255,255
+	mes "いてーーー!"
+*keymati
+	stick ky
+	if ky&32 : goto *start
+	wait 10
+	goto *keymati

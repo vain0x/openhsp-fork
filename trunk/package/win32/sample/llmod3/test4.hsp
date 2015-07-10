@@ -1,0 +1,68 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/progbox.hsp"
+	#include "llmod3/trackbox.hsp"
+	#include "llmod3/udbtn.hsp"
+	#include "llmod3/obj.hsp"
+
+	cls
+
+	progbox 300,40 : prog_id=stat
+	progbox 300,40 : prog_id.1=stat
+	trackbox 300,40,$100 : trck_id=stat
+	trackbox 300,40,$100 : trck_id.1=stat
+	trackbox 300,40,$100 : trck_id.2=stat
+
+	s=""
+	input s,100,30
+	button "",*x10
+	mes "   ↑押すと次へ進みます"
+	udbtn 0,0,4|$20 : ud1_id=stat
+	udset ,0
+	udbtn 0,0,8|$20 : ud2_id=stat
+	udset ,1
+	_objsel 1
+
+	i=0
+*@
+	wait 10
+	x=rnd(100)
+	i+ : if i>100 : i=0
+	sel_progbox prog_id : progset
+	sel_progbox prog_id.1 : progset x,1
+	sel_trackbox trck_id.1 : trackpos x
+	sel_trackbox trck_id.2 : trackpos i
+	goto *@b
+
+*x10
+	_cls				;全てのオブジェクトを消去
+	button "click!",*_x10  : btn_id=0
+	button "もう一度",*x10 : btn2_id=1
+	button "終了",*x11
+	objgray  btn2_id		;btn2_idを使用不可にする
+
+	mes "await時間(数字が小さいほど難しい)"
+	lvl=600
+	input lvl,40,30
+	dim s,8
+*@
+	await lvl
+	getobjsize s,btn_id		;オブジェクトのサイズ取得
+					;s.0=幅、s.1=高さ、s.2=x座標、s.3=y座標
+	s.2=rnd(ginfo_sx)		;オブジェクトのx座標を変える
+	s.3=rnd(ginfo_sy)		;オブジェクトのy座標を変える
+	resizeobj btn_id,s		;オブジェクトのサイズ&位置変更
+					;(ここではサイズは変えていない)
+	goto *@b
+*_x10
+	mes "great !"
+	objgray  btn2_id,1		;btn2_idを使用可にする
+	stop
+
+*x11
+	end

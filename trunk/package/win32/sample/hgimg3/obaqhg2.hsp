@@ -1,0 +1,71 @@
+#include "hgimg3.as"
+#include "obaq.as"
+
+	;	OBAQ描画サンプル
+	;
+
+	;	初期設定
+	;
+	hgini
+	qreset			; OBAQの初期化
+	qgetptr obaq_ptr
+	hgobaq obaq_ptr, 0
+
+	;	OBAQ設定
+	;
+	qborder -50,-50,50,50	; 壁の設定
+
+	;	OBAQロゴ
+	;
+	texload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+	;	テクスチャ素材
+	;
+	texload "q.bmp"		; 素材画像を読み込む
+	tex=stat
+
+	;	変数初期化
+	;
+	hako=10			; 箱の出現数
+	frame=0
+
+	;	背景色の設定
+	;
+	clscolor $40
+
+*main
+	;	メインループ
+	;
+	qexec			; OBAQによるオブジェクトの更新
+	hgdraw			; 描画処理
+
+	color 255,0,0:gmode 2,128,64	; ロゴ描画の設定
+	pos 110,64:hgrotate logoid,0,0,0 ; ロゴ描画
+
+	hgsync 12		; 時間待ち
+
+	stick key,15		; キーの取得
+	if key&128 : goto *owari; [ESC]で終了
+
+	;	一定時間ごとに出現
+	;
+	if frame\30=0 {
+		if hako>0 {
+			qaddpoly my, 4, 96,24,0.01*rnd(628)	; 三角形を追加
+			qspeed my,0.1*rnd(10)-0.5,0,0.01	; ランダムな方向に飛ばす
+			qmat my,mat_spr,tex
+			hako--
+		}
+	}
+
+	qgetpos 0,x,y,r		; 壁の座標・角度を取得
+	r+=0.01			; 壁を回転させる
+	qpos 0,x,y,r		; 壁の座標・角度を設定
+
+	frame++
+	goto *main
+
+*owari
+	end
+

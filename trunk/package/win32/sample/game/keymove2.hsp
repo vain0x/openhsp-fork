@@ -1,0 +1,40 @@
+
+	;
+	;	カーソルキーで画像を動かす(2)
+	;
+	celload "face.bmp"			; 元画像ファイル
+	face=stat				; 元画像のIDを保存
+	celdiv face,64,64,32,32			; パーツのサイズと中心位置
+
+	x1=0 : y1=0					; 左上XY
+	x2=640 : y2=480					; 右下XY
+
+	;	角度のリスト(90度単位)
+	rotdir=0.0, 1.57079632, 3.14159264, 4.71238896
+
+	mx=320						; X座標
+	my=240						; Y座標
+	msp=4						; スピード
+	mr=0						; 角度
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf						; 背景を消す
+
+	gmode 2						; 透明色ありの指定
+	pos mx,my					; 表示位置の設定
+	celput face,0,1,1,rotdir(mr)			; 画像コピー
+
+	redraw 1					; 描画終わり
+	await 20
+
+	stick key,15				; キー入力
+
+	if key&1 : mx=limit( mx-msp, x1, x2 ) : mr=3
+	if key&4 : mx=limit( mx+msp, x1, x2 ) : mr=1
+	if key&2 : my=limit( my-msp, y1, y2 ) : mr=0
+	if key&8 : my=limit( my+msp, y1, y2 ) : mr=2
+
+	goto *main
+

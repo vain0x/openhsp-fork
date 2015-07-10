@@ -1,0 +1,82 @@
+#include "hsptvapp.as"
+
+	title "HSPTVデータの更新登録テスト"
+
+	mes "お待ちください..."
+	hsptv_start ""				; ネット接続時にはスタートアップコードを指定します
+
+	score=1000
+	sdim comm,64
+
+	hsptv_up -1,""				; 最初に情報を更新しておく
+
+*main
+	cls
+	gosub *update				; ランキング情報の表示
+
+	pos 500,32:objsize 120,24
+	mes "スコア"
+	input score
+	mes "コメント"
+	input comm
+	button "更新",*send
+	button "設定",*info
+	button "終了",*ok
+	stop
+
+*send
+	;	スコアを更新
+	;
+	hsptv_up score, comm
+	goto *main
+
+*update
+	;	スコア表示のサブルーチン
+	;
+	pos 0,32
+	repeat 10				; 上位10位のみ表示
+	hsptv_getrank rscore,ruser,rcomm,cnt	; 情報を取得する
+	rank=cnt+1
+	mes "#"+rank+":"+rscore+"("+ruser+") "
+	mes "    コメント:"+rcomm
+	loop
+	return
+
+*info
+	;	ユーザー情報設定画面
+	;
+	hsptv_getini u_name,0			; ユーザー情報(名前)
+	hsptv_getini u_key,1			; ユーザー情報(キー)
+	hsptv_getini u_adr,2			; ユーザー情報(PROXYアドレス)
+	hsptv_getini u_port,3			; ユーザー情報(PROXYポート)
+	;
+	cls
+	mes "ユーザー設定"
+	pos 0,32
+	objsize 240,24
+	mes "ユーザーネーム:"
+	input u_name
+	mes "ユーザーキー:"
+	input u_key
+	mes "PROXYアドレス:"
+	input u_adr
+	mes "PROXYポート:"
+	input u_port
+
+	objsize 120,24
+	button "OK",*save
+	button "キャンセル",*main
+	stop
+
+*save
+	;	ユーザー情報を保存
+	;
+	hsptv_setini u_name,0			; ユーザー情報(名前)
+	hsptv_setini u_key,1			; ユーザー情報(キー)
+	hsptv_setini u_adr,2			; ユーザー情報(PROXYアドレス)
+	hsptv_setini u_port,3			; ユーザー情報(PROXYポート)
+	hsptv_saveini
+	goto *main
+
+*ok
+	end

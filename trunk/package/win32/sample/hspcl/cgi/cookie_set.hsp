@@ -1,0 +1,30 @@
+; クッキーの書き込みCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/cookie_set.ax
+
+#runtime "hsp3cl"			; HSPCLランタイムを使用する
+
+	sdim header,$1000
+
+	lf="a":poke lf,0,$0a			; 改行コード(LF)
+
+	header = "Status: 200 OK"+lf
+	header += "Cache-Control: no-cache, no-store, must-revalidate, private"+lf
+	header += "Pragma: no-cache"+lf
+	header += "Set-Cookie: hspver=HSP3.3; Max-Age=604800"+lf
+	header += "Content-type: text/html; charset=Shift_JIS"+lf+lf
+
+; ここでは"hspver=HSP3.3"という部分がクッキーに保存される文字列になっています。
+; "Max-Age="以降にはクッキーの保存期限を記述します。
+
+	mes header
+
+	mes "<html>"
+	mes "<title>HSPCGI TEST</title>"
+	mes "<body>"
+	mes "クッキーを保存しました"
+	mes "</body>"
+	mes "</html>"
+
+	end

@@ -1,0 +1,74 @@
+#include "hgimg.as"
+
+	;	4つの立方体を回転させるサンプル
+	;	(パレットモード)
+	;
+
+
+	;	ウインドゥサイズの設定
+	;
+;	screen 0,640,480,1
+	screen 0,320,240,1
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+	onexit *owari
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	BOXオブジェクトを登録
+	;
+	setsizef 4.0f, 4.0f	; BOXのXYサイズ
+	setuv 0,0,127,127	; テクスチャUV座標
+	addbox mdid		; BOXモデルを作成
+	texload "btex.bmp"	; テクスチャの登録
+	fv=0
+	fvset fv, -7.5f, 0.0f, 0.0f
+	repeat 4
+		regobj a,mdid, 0	; BOXモデルをオブジェクトとして登録
+		if cnt=0 : mychr = a	; 最初のオブジェクトIDを取得
+		selpos mychr+cnt
+		objsetfv fv
+		fvadd fv, 5.0f, 0.0f, 0.0f		
+	loop
+
+	;	パレットをコピー
+	;
+	gsel 0
+	;palcopy 3
+
+	;	カメラ位置設定
+	;
+	selcpos
+	objsetf3 0.0f, 0.0f, 20.0f
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	getsync t1,0			; 前回からの負荷を取得
+	fprt "HGIMG Plugin test",8,108
+	fprt "T:"+t1,8,124
+	hgsync 10			; 処理落ちしてなければ描画
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	自動回転
+	;
+	repeat 4
+	selang mychr+cnt
+	objaddf3 0.03f, -0.03f, 0.0f
+	loop
+
+	goto *main
+
+*owari
+	hgbye
+	end
+

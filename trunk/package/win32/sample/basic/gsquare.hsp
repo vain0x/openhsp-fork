@@ -1,0 +1,39 @@
+;	gsquare–½—ß‚É‚æ‚é‰æ‘œ‚Ì•ÏŒ`ƒTƒ“ƒvƒ‹
+;
+title "gsquare"
+randomize
+
+buffer 3
+picload dir_exe+"\\doclib\\hsp3ttl.jpg"
+
+screen 0,640,480,0
+
+	gmode 0,640,200
+
+	tx.0=0:ty.0=0
+	tx.1=640:ty.1=0
+	tx.2=640:ty.2=200
+	tx.3=0:ty.3=200
+
+	repeat
+	redraw 0
+	color 64,64,64:boxf
+
+	n = cnt&127:if n>=64 : n=63-(n-64)
+	x.0=n+100
+	y.0=n/2+150
+	x.1=540-n
+	y.1=n/2+150
+	x.2=n+540
+	y.2=330-(n/2)
+	x.3=100-n
+	y.3=330-(n/2)
+;	color 255,0,0:gsquare -1,x,y
+	gsquare 3,x,y,tx,ty
+
+	redraw 1
+	await 12
+	loop
+
+stop
+

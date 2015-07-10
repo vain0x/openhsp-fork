@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "circle"
+
+#define 矩形の左上X座標	"0"	;;str
+#define 矩形の左上Y座標	"0"	;;str
+#define 矩形の右下X座標	"0"	;;str
+#define 矩形の右下Y座標	"0"	;;str
+#define 描画モード	"1"	;;str
+
+#ahtmes "circle "+矩形の左上X座標+" , "+矩形の左上Y座標+" , "+矩形の右下X座標+" , "+矩形の右下Y座標+" , "+描画モード+

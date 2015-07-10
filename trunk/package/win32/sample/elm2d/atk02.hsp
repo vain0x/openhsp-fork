@@ -1,0 +1,49 @@
+;	このスクリプト単体では実行させることができません
+;
+;generated from elm2d
+#ifndef __atk02__
+#define __atk02__
+#define global atk02_frame 80
+#define global atk02_setevent(%1) setevent %1,atk02_ev1:setevent %1,atk02_ev2
+
+#deffunc atk02_init
+newevent atk02_ev1
+event_pos atk02_ev1,10,-24,-31,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,-39,1,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,-19,39,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,22,48,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,60,54,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,70,78,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,49,103,0,3
+event_wait atk02_ev1,10
+event_pos atk02_ev1,10,46,186,0,3
+event_wait atk02_ev1,10
+event_prmset atk02_ev1,PRMSET_FLAG,0
+newevent atk02_ev2
+event_setang atk02_ev2,0,0,0.000000
+event_ang atk02_ev2,10,0,0,-0.483805
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-1.985487
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-2.984513
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-3.788761
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-4.128053
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-3.512300
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-3.066195
+event_wait atk02_ev2,10
+event_ang atk02_ev2,10,0,0,-3.009646
+event_wait atk02_ev2,10
+event_prmset atk02_ev2,PRMSET_FLAG,0
+return
+
+#endif

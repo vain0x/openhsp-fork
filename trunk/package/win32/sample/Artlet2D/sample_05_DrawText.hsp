@@ -1,0 +1,59 @@
+
+;============================================================
+;                                                 2010/--/--
+;	Artlet2D sample
+;
+;============================================================
+;
+; テキスト描画のサンプルです。
+;
+; Artlet2D では、矩形領域内に収まるようにテキストを自動改行
+; して表示することができます。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+	; 仮想イメージ 0 を作成
+	alCreateImage 0, 640, 480
+	if stat = -1 : dialog "GDI+ を初期化できませんでした。" : end
+
+	; フォント選択
+	alFont "ＭＳ ゴシック", 40
+
+	; テキスト描画 (基本)
+	alDrawText "test テキスト"
+
+
+	; 矩形領域内自動折り返しでテキスト描画
+	s = {"
+Ohoadmri, or iamneterie at aholiqdltn. Tc pbednpasuami. Na solciunhthlec. Mpatnoi, pdaogtni kc titftkiadt. Il iethivriact.
+
+St ianhoeaehr, ai etla, flepovm, aris ro haskhoalt euvh lodcs, eshscan ts coanoldarapsr mr teace uf oeieshepin ealinaya en enehtqs ofdtces oe idaoieidat itfso aedeoih pa uamehs, fh ntaetn igaeat nieusyi ea ctndisesi entrga, scarncog ea thts ey dwaosrvsoer loatoeod mloe aioide teaoest an aontoadesdsna cn girny.
+
+Et mdotrh rdwea, lh tekarolstdso ritlq yr ontehsti, renrnha wteavecd oanidr tm sjbarhahoup, nh neir. Grtega theapt an oasou on lisd sn deoasoat, pbae usndls teal gsoei. Elcdnt ie perlvese ta wics uetmwepi me anuftaoef dmnpej sa ipre! Ad teleaenhtp, aeid jo evhraer nepbslai elme, udanhf gd onhosonbnoi dtroarmc, hn riwstnaletjme, at inea ts!
+"}
+	alFont "Times New Roman", 12
+	alDrawText s, 100, 50, 400, 300
+
+	; 矩形領域内でセンタリングしてテキスト描画
+	alColor 0, 128, 0
+	alDrawText s, 100, 250, 400, 300, 1
+
+
+	; フォントスタイル、ブラシの組み合わせ
+	alFont "Arial", 80, 3+4
+	alGradientColor 0, 0, 3, 10, RGBA(0, 0, 0), RGBA(255, 0, 0), WrapModeTileFlipX
+	alDrawText "Artlet2D", 280, 280
+
+	alFont "Arial", 80, 2
+	alColor 180, 64, 200, 64
+	repeat 7
+		alDrawText "Artlet2D", 280+rnd(10), 380+rnd(10)
+	loop
+
+
+	; 仮想イメージ 0 から HSP スクリーンにコピー
+	alCopyImageToScreen 0, 0
+	redraw
+

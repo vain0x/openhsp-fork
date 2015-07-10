@@ -1,0 +1,35 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/ime.hsp"
+
+	cls
+	alloc linebuf,1024
+	alloc buf,1024*32 : buf="へんかんしわすれ\nﾊﾝｶｸﾓｼﾞ\n1234\nakai"
+	mes "変換したい行にカーソルを移動させて行変換を押してください"
+	mesbox buf,ginfo_winx,ginfo_winy-120,1
+	mb_id=0
+	imeinit ime,mb_id
+
+	objsize 100,24
+	button "行変換",*line_translate
+	button "選択部分変換",*sel_translate
+	button "終了",*x13
+	stop
+
+*line_translate
+	objsel mb_id
+	linesel mb_id,-1
+*sel_translate
+	objsel mb_id
+	selget linebuf,mb_id
+	imeopen ime
+	imestr ime,linebuf
+	stop
+
+*x13
+	end

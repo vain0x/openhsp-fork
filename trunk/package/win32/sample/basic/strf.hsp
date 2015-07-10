@@ -1,0 +1,13 @@
+
+	;	書式指定付き文字列変換(strf)テスト
+	a=123
+	mes strf("10進[%d]",a)
+	mes strf("16進[%x]",a)
+	mes strf("10進桁数指定付き[%05d]",a)
+	mes strf("16進桁数指定付き[%05x]",a)
+	a=sqrt(2)
+	mes strf("10進実数[%f]",a)
+	mes strf("10進実数桁数指定付き[%3.10f]",a)
+
+	stop
+

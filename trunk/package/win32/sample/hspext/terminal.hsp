@@ -1,0 +1,46 @@
+
+	;
+	;	簡易ターミナルソフト
+	;	(入力ボックスの内容を[SEND]ボタンでモデムに送ります)
+	;	(「atd電話番号」をモデムに送れば簡易ターミナルになるはずです)
+	;
+
+#include "hspext.as"
+
+	sdim buf,128
+	onexit *combye
+
+	sdstr=""
+	input sdstr,320
+	button "SEND",*comgo
+	button "END",*combye
+	;
+	comopen 1,""
+	if stat : dialog "シリアルポートは使えません" : end
+	;
+	a=0
+*commain
+	wait 10
+	comgetc a
+	if stat=0 : goto *commain
+	b=0
+*chk1
+	if a=13 : goto *chk2
+	if a>=32 : poke buf,b,a:b+
+	comgetc a
+	if stat>0 : goto *chk1
+*chk2
+	poke buf,b,0
+	pos 0,440:mes buf
+	pos 0,100:gcopy 0,0,120,640,360
+	;
+	goto *commain
+
+*comgo
+	comput sdstr+"\r"
+	sdstr="":objprm 0,sdstr
+	goto *commain
+
+*combye
+	comclose
+	end

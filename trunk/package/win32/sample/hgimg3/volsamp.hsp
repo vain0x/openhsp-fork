@@ -1,0 +1,42 @@
+//●dmmvolで正しい音量を設定するサンプル
+;このサンプルはArue（ http://hp.vector.co.jp/authors/VA029904/ ）によって
+;書かれました。このサンプルはdmmvol命令でデシベル値を直感的に設定するものです。
+;hgimg3に直感的なボリュームコントロール命令が実装されるまでの繋ぎとして
+;自由にお使いください。
+
+//vol2db p1  ----------------------------------------------------------------
+//ボリューム値をデシベル値に変換する関数（0.0～100.0%を-10000～0dbに変換する）
+//p1:ボリュームを％で設定　0.0～100.0(実数値)
+//　※わかりやすく最大音量を100.0にしてますが、
+//　　maxvolを1.0でボリュームを取れば（p1=0.0～1.0）、
+//　　( p1 / maxvol )の式は ( p1 )のみで良くなるため、
+//　　若干高速化するかもしれません＾＾；
+//                                        vol2db Written by Arue.
+
+#module
+#define maxvol 100.0    //ボリュームの最大値を100.0とする。
+#defcfunc vol2db double p1
+if( p1 < 0.005 ):return -10000.0    //最低値を設定しておかないと0除算してしまう
+if p1>maxvol:return 0.0
+return ( ( 20.0 * (logf( p1 / maxvol )/logf(10)) ) * 100.0 )
+#global
+
+//サンプル  ----------------------------------------------------------------
+screen 0,400,200
+#include "hspogg.as"
+dmmini
+dmmload dir_exe+"\\sample\\demo\\oot06.ogg",1:dmmplay 1
+volume=50,0:gmode 0,4,8
+repeat
+stick ky,256
+redraw 0
+color 255,255,255:boxf:color:boxf 100,100,300,102:color ,,255
+grect 100+volume*2,100:if ky&256:volume=limit((mousex-100)/2,0,100)
+if volume!volume(1):{
+    dmmvol 1,vol2db(volume):volume(1)=volume
+    title "ボリューム"+volume+"/db値("+vol2db(volume)+")"
+}
+redraw 1
+await 15
+loop
+//-------------------------------------------------------------------------

@@ -1,0 +1,27 @@
+	randomize
+	screen 0,320,240,0
+	cls 4
+	buffer 3,320,240,0
+	cls 4
+	font "ÇlÇr ÉSÉVÉbÉN",40,1
+	buffer 4,,,0
+	cls 0
+*main
+	gsel 3
+	gmode 0,320,240
+	pos 5,5:gzoom 310,230,0
+	gmode 6,320,240,2
+	pos 0,0:gcopy 4,0,0
+	x=rnd(320)-20: y=rnd(240)-20
+	color rnd(256),rnd(256),rnd(256):pos x,y:mes "Åú"
+
+	gsel 0
+	gmode 3,320,240,64
+	pos 0,0:gcopy 3,0,0
+	await 20
+	goto *main
+
+	stop
+
+
+

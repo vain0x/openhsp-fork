@@ -1,0 +1,110 @@
+
+	;
+	;	hsp3cnvを使用したソース変換
+	;
+#packopt name "cnvsrc"
+#include "hspcmp.as"
+#include "hspext.as"
+#include "hspinet.as"
+
+	randomize
+
+	title "cnvsrc v1.0"
+	screen 0,480,240
+	sdim buf,$10000
+	sdim ln,4096
+	sdim fname,1024
+	enc=0
+
+	syscolor 15:boxf
+	color 0,0,0
+	mes "指定されたスクリプトをC言語ソースファイルに変換します"
+
+	pos 8,30
+	sysfont 17
+	mes "ソーススクリプト:"
+	objsize 390,24
+	input fname
+	objsize 64,24
+	pos 408,41:button "参照...",*selfile
+
+	objsize 160,24
+	pos 8,68
+	chkbox "出力ソースをUTF-8に変換",enc
+
+	pos 0,150
+	button "変換",*mksrc
+	button "マニュアル",*openman
+	button "終了",*owari
+	stop
+
+*openman
+	exec dir_exe+"\\doclib\\hsp3cnv.txt",16
+	stop
+
+*owari
+	end
+
+*selfile
+	dialog "hsp",16,"hsp3スクリプト"
+	fname=refstr
+	if stat : objprm 0,fname
+	stop
+
+*mksrc
+	if fname="" : stop
+
+	cls 1
+	syscolor 15:boxf
+	sysfont 17
+	objmode 1
+	color 0,0,0
+
+	mydir=getpath(fname,32)
+	myfile=getpath(fname,1+8+16)
+	chdir mydir
+
+	hspname=myfile+".hsp" ; スクリプトファイル名
+	objname=myfile+".ax" ; オブジェクトファイル名
+	cppname=myfile+".cpp" ; Cファイル名
+
+	hsc_ini fname
+	hsc_objname objname
+	hsc_comp 0 ; コンパイル
+	res=stat:if res!=0 : dialog "エラーが発生しました。" : goto *fin
+
+	cmd = dir_exe+"\\hsp3cnv "+myfile
+	pipeexec buf,cmd,1
+	if stat : dialog "hsp3cnvを実行できませんでした" : goto *fin
+
+	mes "処理中..."
+
+	repeat
+	pipeget ln
+	if stat=0 : break
+	await 10
+	loop
+
+	mes buf
+	exist cppname
+	if strsize<=0 : dialog "hsp3cnvの変換でエラーが発生しました" : goto *fin
+
+	if enc=0 : goto *fin
+
+	maxsize = strsize*2
+	sdim outbuf, maxsize
+
+	mes "UTF-8に変換中..."
+
+	notesel buf
+	noteload cppname
+
+	nkfcnv outbuf,buf,"Sw",-1,maxsize		; 文字コード変換
+
+	notesel outbuf
+	notesave cppname
+
+*fin
+	mes "終了しました。"
+	button "終了",*owari
+	stop

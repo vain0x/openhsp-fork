@@ -1,0 +1,234 @@
+	;================================================================================
+	;モジュール multiopen
+	;ver 2.0
+	;	ファイル名を取得
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; multiopenモジュール命令一覧
+	;
+	; multiopen			複数のファイル名を取得
+	;
+	; 計	1個
+
+
+	;使い方
+	;================================================================================
+	; multiopen v1,v2,n3,n4		複数のファイル名を取得
+	;
+	;  v1 : 選択されたファイル名を受け取るための変数
+	;  v2 : 情報
+	;  n3 : フィルタのインデックス(1から)
+	;  n4 : Read Onlyボックスを付ける
+	;================================================================================
+	;
+	;<>説明
+	; HSPのdialog(type 16,17)で複数のファイルを選択できるようにしたものです。
+	; multiopen呼び出し時に、v1.0,v1.1にそれぞれv1,v2のサイズを代入しておきます。
+	; v2には例のような形式でフィルタを代入します。
+	; n3を省略、またはマイナスの値を使ったときの動作は備考参照。
+	; n4を1にするとReadOnlyボックスを付けます。2にするとReadOnlyボックスを
+	; チェックした状態にします。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; 0 キャンセルされた
+	; 1 ファイルが選択されてOKボタンが押された
+	; 2 ファイルが選択されてOKボタンが押された(ReadOnlyがチェックされている。ただし
+	; 複数選択されていない場合のみ)
+	;
+	;<>例
+	;	buf_size=512 : info_size=128
+	;	alloc buf,buf_size
+	;	alloc info,info_size
+	;
+	;	buf="ﾌｧｲﾙを開くtest title" : info="a:\\windows"
+	;	multiopen buf,info
+	;
+	;	buf=buf_size
+	;	buf.1=info_size
+	;	info="HSP2 ｽｸﾘﾌﾟﾄﾌｧｲﾙ(*.as)|*.as|ﾃｷｽﾄﾌｧｲﾙ(*.txt)|*.txt|全てのﾌｧｲﾙ|*.*|"
+	;	multiopen buf,info,1
+	;	if stat=0 : mes "キャンセルされました" : else {
+	;		notesel buf
+	;		notemax mx
+	;		mes "選択されたファイル数 "+mx
+	;		repeat mx
+	;			noteget a,cnt
+	;			mes a
+	;		loop
+	;		if mx=1 : mes "拡張子は"+info : else mes "フォルダ "+info
+	;	}
+	;
+	;<>備考
+	; p3を0(省略)にしてp1,p2に文字列を入れるとp1がタイトルになり、p2は初期フォルダに
+	; なります。
+	; p3をマイナス値にすると保存するファイル名を得るときに使うことができます。(ただし
+	; 複数選択はできません)
+	;
+	; 複数のファイルが選択されたかはnotesel,notemaxを使って調べます。
+	; ファイルが一つしか選択されなかった場合、p1にはファイル名のフルパスが代入され、
+	; p2にはファイルの拡張子が代入されます。
+	; ファイルが複数選ばれた場合は、p1にnotegetで取得できる形式でファイル名が複数
+	; 入っていて、p2には選択されたファイルがあるフォルダが代入されます。(p1のファイル
+	; 名は'\r'で区切られています。)
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "_multiopen"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;multiopen
+	;................................................................................
+	#deffunc multiopen array buf,var info,int filt_idx,int read_only
+	mref stt,64
+
+	if(first_call == 0) : ttle = "" : inidir = "" : first_call = 1
+	if(filt_idx == 0) {
+		a = strlen(buf)  : if(a >= 64) : sdim ttle,a + 1 : else : sdim ttle,64
+		a = strlen(info) : if(a >= 64) : sdim inidir,a + 1 : else : sdim inidir,64
+		ttle = "" : inidir = ""
+		ttle = buf
+		inidir = info
+		return
+	}
+	if(filt_idx < 0) : filt_idx =- filt_idx : b_save = 1 : else : b_save = 0
+
+	a = strlen(info)
+	if(a >= 64) : sdim lcl_info,a + 1
+	lcl_info = info		;保存しておかないとまずい
+
+	_null_sep_str lcl_info,'|'
+
+	defext = ""
+;	a=0
+;	repeat -1
+;		peek a,lcl_info,cnt
+;		if a=0 : peek defext,lcl_info,cnt+3 : break
+;	loop
+
+
+;	alloc prm,76
+	dim prm,16
+	prm.0 = 76
+
+	;@@@@ Instanceの取得 @@@@
+	_get_instance prm.2
+
+	;@@@@ Active Windows の取得 @@@@
+	_get_active_window prm.1
+
+	getptr prm.3,lcl_info
+	prm.4 = 0,0,filt_idx
+
+	prm.8 = buf.0
+	prm.10 = buf.1
+
+	sdim buf,prm.8	;1024*4
+	;buf = ""
+	sdim buf,prm.10	;1024*4
+	;info = ""
+
+	getptr prm.7,buf
+	getptr prm.9,info
+
+	getptr prm.11,inidir
+	getptr prm.12,ttle
+
+	;#define OFN_ALLOWMULTISELECT	512
+	;#define OFN_CREATEPROMPT	0x2000
+	;#define OFN_ENABLEHOOK	32
+	;#define OFN_ENABLETEMPLATE	64
+	;#define OFN_ENABLETEMPLATEHANDLE	128
+	;#define OFN_EXPLORER	0x80000
+	;#define OFN_EXTENSIONDIFFERENT	0x400
+	;#define OFN_FILEMUSTEXIST	0x1000
+	;#define OFN_HIDEREADONLY	4
+	;#define OFN_LONGNAMES	0x200000
+	;#define OFN_NOCHANGEDIR	8
+	;#define OFN_NODEREFERENCELINKS	0x100000
+	;#define OFN_NOLONGNAMES	0x40000
+	;#define OFN_NONETWORKBUTTON	0x20000
+	;#define OFN_NOREADONLYRETURN	0x8000
+	;#define OFN_NOTESTFILECREATE	0x10000
+	;#define OFN_NOVALIDATE	256
+	;#define OFN_OVERWRITEPROMPT	2
+	;#define OFN_PATHMUSTEXIST	0x800
+	;#define OFN_READONLY	1
+	;#define OFN_SHAREAWARE	0x4000
+	;#define OFN_SHOWHELP	16
+	;#define OFN_SHAREFALLTHROUGH	2
+	;#define OFN_SHARENOWARN	1
+	;#define OFN_SHAREWARN	0
+
+	if(b_save) {
+	; OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT
+	;	prm.13=$800 | 2
+		prm.13 = $802
+	} else {
+	; OFN_FILEMUSTEXIST | OFN_ALLOWMULTISELECT | OFN_EXPLORER
+	;	prm.13=$1000 | $200 | $80000
+		prm.13 = $81200
+		if(read_only == 0) : prm.13 = (prm.13) | 4
+		if(read_only == 2) : prm.13++
+	}
+	prm.14 = 0
+	getptr prm.15,defext
+	prm.16 = 0,0,0
+
+	getptr a,prm
+
+	if(b_save) {
+		dllproc "GetSaveFileNameA",a,1,D_COMDLG
+	} else {
+		dllproc "GetOpenFileNameA",a,1,D_COMDLG
+	}
+	ret = stat
+
+
+	alloc lcl_info,64	;確保しておいたバッファをもどす
+
+	if(ret) {
+		a = (prm.14 >> 16) & $ffff
+		if(a) {			;シングルセレクト
+			;info = peek(buf,a)
+			getstr info,buf,a
+		} else {			;マルチセレクト
+			getstr info,buf,0
+/*
+			repeat -1
+				a = peek(buf,cnt)
+				if(a == 0) {
+					a = peek(buf,cnt + 1)
+					if(a == 0) : prm = cnt : break
+				}
+			loop
+
+			getptr a,buf
+			defext = 0
+			defext = strlen(info)
+			dupptr clone,a + defext + 1,1,4
+			buf = peek(clone,prm + 1)
+*/
+			repeat -1
+				a = peek(buf,cnt)
+				if(a == 0) {
+					poke buf,cnt,13
+					a = peek(buf,cnt + 1)
+					if(a == 0) : break
+				}
+			loop
+			a=strlen(info)+1
+			memcpy buf,buf,strlen(buf)-a+1,0,a
+		}
+	}
+
+	if(ret) : stt = 1 : else : stt = 0
+	if(read_only & (prm.13 & 1)) : stt = 2
+
+	return
+	#global
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+#endif /* __hsp30__ */

@@ -1,0 +1,63 @@
+#include "hgimg3.as"
+
+	;	ライトのコントロールサンプル
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_a.x"	; モデルを読み込む
+	;
+	max=5
+	dim obj,max
+	repeat max
+	regobj obj.cnt, m_xmodel	; オブジェクトの登録
+	setpos obj.cnt, cnt*8-16, 0, 0
+	loop
+	;
+	setdir HGOBJ_LIGHT, 0, 64, 0	; 標準ライトのアンビエント
+	;
+	reglight exlight		; 追加のライト
+	setscale exlight, 255, 0, 0	; ライト色を設定
+	setdir exlight, 0, 64, 0	; アンビエント色を設定
+	;
+	clscolor $80			; 背景色の設定
+	;
+	a=1
+	gosub *set_all
+*main
+	stick key
+	if key&128 : goto *owari
+
+	hgdraw				; 描画
+
+	fprt "HGIMG3 Plugin test",8,8
+
+	hgsync 10			; 時間待ち
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : a=limit(a+1,0,max-1) : gosub *set_all
+	if key&1 : a=limit(a-1,0,max-1) : gosub *set_all 
+
+	;	モデルを回転させる
+	addang obj.a, 0, 0.05, 0
+
+	goto *main
+
+*set_all
+	;	変数aのオブジェクトを特別なライトに
+	repeat max
+	if cnt=a : objlight obj.cnt, exlight : else : objlight obj.cnt, HGOBJ_LIGHT
+	loop
+	return
+
+*owari
+	end

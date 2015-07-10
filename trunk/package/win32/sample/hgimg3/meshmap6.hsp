@@ -1,0 +1,161 @@
+#include "hgimg3.as"
+
+#const COL_MY 1
+#const COL_TREE 2
+
+	;	static objectサンプル
+	;	(複数オブジェクトの衝突)
+	;
+	randomize
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	バッファサイズ
+	sx=32:sy=32
+	dim vmap,sx+1,sy+1
+	wave_init sx,sy
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	モデル登録(目玉)
+	;
+	addxfile m_xmodel,"eye.x"
+	modelcols m_xmodel, 20,20,20	; コリジョンx,y,zサイズ
+	modelcols m_xmodel, 0,20,18,1	; コリジョンweight,y,zサイズ
+
+	;	モデル登録(影)
+	addeprim m_sd,EPRIM_CIRCLE
+	seteprim m_sd,0,2
+	seteprim m_sd,1,12
+	seteprim m_sd,2,4
+	seteprim m_sd,3,4
+	seteprim m_sd,16,$80000000
+	seteprim m_sd,17,$80000000
+	seteprim m_sd,18,$80000000
+	seteprim m_sd,19,$00000000
+
+	;	回転するイベントを登録
+	;
+	newevent ev_eyeanm
+	event_addang ev_eyeanm, 0, 0.02, 0
+	event_wait ev_eyeanm,30
+	event_jump ev_eyeanm,0
+
+	;	目玉を10個配置
+	;
+	repeat 10
+	gosub *newobj
+	loop
+
+	;	モデル登録(木)
+	;
+	texload2 "tree.tga"				; テクスチャの登録
+	addplate m_tree,1,15,30,0,0,255,255,stat	; モデル登録
+	modelcols m_tree, 10,10,10	; コリジョンx,y,zサイズ
+	modelcols m_tree, 1,22,10,1	; コリジョンweight,y,zサイズ
+	regobj tree, m_tree, OBJ_STATIC|OBJ_TREE|OBJ_LATE
+	objfloor tree, 15
+	setcoli tree,COL_TREE
+	setpos tree, 0, -10, 20
+
+	;	モデル登録(地面)
+	;
+	setuv 0,0,128,128
+	addmesh m_mesh,sx,sy,0,160,160
+	texload "mapbg4.bmp"
+	regobj obj, m_mesh,OBJ_GROUND	; 地面として登録
+	setborder 150,150,150		; 移動範囲の設定
+
+	;	高さ、UVマップの設定
+	;
+	gsel 3
+	picload "g_road.bmp"
+	getvarmap vmap,sx,sy,1
+	picload "g_river.bmp"
+	getvarmap vmap,sx,sy,2
+	meshmap vmap,m_mesh,$100
+	picload "g_height1.bmp"
+	getvarmap vmap,sx,sy
+	meshmap vmap,m_mesh,0,0.1
+
+
+	;	表示の準備
+	;
+	gsel 0
+	clscolor $60e0		; 背景色の設定
+	setpos HGOBJ_CAMERA, 0,-60,150	; カメラ位置の設定
+	setangr HGOBJ_CAMERA, -15,0,0	; カメラ角度の設定
+
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+
+*main
+	gosub *alldraw
+	stick key,$3ff
+	if key&128 : goto *main2
+
+	;	カーソルキーで動かす
+	;	(オブジェクトの移動量を変えることで動かしている)
+	;
+	if key&2 : adddir mychr,0,0,-0.1
+	if key&8 : adddir mychr,0,0,0.1
+	if key&1 : adddir mychr,-0.1,0,0
+	if key&4 : adddir mychr,0.1,0,0
+
+	goto *main
+
+*main2
+	gosub *fadeout
+	repeat
+	gosub *alldraw
+	if scfadev=256 : break
+	loop
+
+*owari
+	end
+
+*newobj
+	;	目玉を１つ出すサブルーチン
+	;
+	x=rnd(100)-50:z=rnd(100)-50
+	regobj mychr, m_xmodel,OBJ_BORDER|OBJ_FLIP|OBJ_STAND|OBJ_MOVE|OBJ_GRAVITY|OBJ_STATIC
+	setevent mychr, ev_eyeanm
+	setpos mychr,x,-30,z
+	setangr mychr,0,rnd(256),0
+	objfloor mychr,8	; 地面からのオフセット値を指定する
+	setcoli mychr,COL_MY,COL_MY|COL_TREE
+
+	regobj mysdw, m_sd, OBJ_LATE|OBJ_LAND|OBJ_STAND	; 半透明なのでOBJ_LATEを指定する
+	setefx mysdw,$500		; 半透明(色減算)の指定
+	objchild mychr, mysdw		; 目玉の子供として影を登録
+	return
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt "Frame:"+frame,8,8
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,640,480,scfadev
+		hgrect 320,240,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return

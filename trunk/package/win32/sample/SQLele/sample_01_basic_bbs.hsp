@@ -1,0 +1,64 @@
+
+;============================================================
+;                                                 2010/--/--
+;	SQLele sample
+;                               http://sprocket.babyblue.jp/
+;============================================================
+;
+; SQLele の単純なサンプルです。
+; ボタンを押すと、データベースにメモが挿入されていきます。
+;
+;============================================================
+
+#include "sqlele.hsp"
+
+	; データベースファイル「sample.db」を開く (ファイルが無ければ作成されます)
+	sql_open "sample.db"
+
+	;「MemoTable」テーブルを作成 (すでにテーブルがあれば作成されません)
+	sql_q "CREATE TABLE IF NOT EXISTS MemoTable (ID INTEGER PRIMARY KEY, Memo)"
+
+	; テーブル MemoTable は、ID (自動連番) と Memo のフィールドを持っています
+
+	; 書き込み UI
+	msg = "オナカスイタ"
+	pos 10, 10 : input msg, 380, 25
+	pos 400, 10 : button goto "書き込み", *kakikomi
+
+	; リスト更新
+	gosub *list_renew_sub
+
+	stop
+
+
+; 一覧表示サブルーチン
+*list_renew_sub
+	; 画面クリア
+	color 255,255,255 : boxf
+	color 0, 0, 0 : pos 10, 60
+	mes "これまでの書き込み："
+
+	; 現在の MemoTable の内容を抽出 (ID 逆順)
+	sql_q "SELECT ID, Memo FROM MemoTable ORDER BY ID DESC"
+
+	; MemoTable の内容を表示 (抽出されたレコード数はシステム変数 stat に格納されている)
+	repeat stat
+		mes "ID = " + sql_v("ID") + " / Memo = " + sql_v("Memo")
+		sql_next
+	loop
+
+	return
+
+
+; 書き込みボタンの処理
+*kakikomi
+	; 変数 msg の内容を MemoTable に書き込み
+	; (変数 msg にシングルクォーテーションが入っていたときの誤動作を防ぐため sqesc() を使用すること)
+	sql_q "INSERT INTO MemoTable (Memo) VALUES ('" + sqesc(msg) + "')"
+
+	; リスト更新
+	gosub *list_renew_sub
+
+	stop
+
+

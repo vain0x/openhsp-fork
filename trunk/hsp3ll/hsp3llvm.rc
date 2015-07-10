@@ -1,0 +1,5 @@
+#include "windows.h"
+
+#define IDR_LLRT                   256
+
+IDR_LLRT       TEXT    DISCARDABLE     "rt.ll"

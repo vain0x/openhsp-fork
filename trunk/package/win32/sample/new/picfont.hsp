@@ -1,0 +1,28 @@
+;
+;	mod_picfontのサンプル
+;
+;	mod_picfontは、画像を使用したフォント表示を行なうためのモジュールです。
+;	HGIMG3のsetfont命令と互換性のある形でフォントを表示できます。
+;	表示できる文字は、半角英数字のみです。
+;	命令のリファレンスは、picfont、picfprt命令のヘルプ(F1)を参照してください。
+;	フォントの形式、及び作成方法についてはサンプルmkfont.hspを参照してください。
+;
+	#include "mod_picfont.as"
+
+	buffer 3
+	picload "fontchr.bmp"
+	screen 0,640,480
+	cls 3
+
+	;	テクスチャフォント表示の準備
+	;
+	picfont 3,16,16,2,-4	; id, sizex, sizey, mode, offset
+
+	;	フォントの表示
+	;
+	pos 32,32
+	picfprt "[MOD_PICFONT.AS Sample Script]"
+
+	picfprt "Refer to 'picfont' and 'picfprt'\ncommand help, for further information."
+
+	stop

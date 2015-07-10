@@ -1,0 +1,61 @@
+#include "hsptv.as"
+
+#module
+#deffunc fbase int _p1
+
+	ofs=_p1
+	return
+
+#deffunc fprt str _p1
+	;	fprt "message"
+	;	(画像を使用したフォント表示を行ないます)
+	;	"message" : 表示するメッセージ
+	;	表示座標は、posで指定した位置から
+	;
+	i=0:st=_p1
+
+	repeat
+	a1=peek(st,i):i++:if a1=0 : break
+	if a1=13 {
+		a1=peek(st,i)
+		if a1=10 : i++
+		continue	; 改行
+	} else {
+		celput 1,a1+ofs
+	}
+	loop
+	return
+
+#global
+
+	title "HSPTV Test2"
+
+	;	HSPTVブラウザ用・標準イメージを読み込む
+	celload dir_exe+"\\hsptv\\hsptv_img.bmp",1
+
+	cls 4			; 画面をクリア
+
+	fbase 0			; フォントの起点を設定(0=通常フォント)
+	celdiv 1,16,16,0,0	; フォント用のドット分割指定
+
+	pos 120,100
+	gmode 2				; 黒は透過
+	fprt "HSPTV Origila Font Print"	; フォントを描画
+
+	fbase 96		; フォントの起点を設定(96=特殊フォント/大文字だけ!)
+	celdiv 1,16,16,0,0	; フォント用のドット分割指定
+
+	pos 140,160
+	gmode 2				; 黒は透過
+	fprt "HSPTV ORIGINAL FONT 2"	; フォントを描画
+
+	;	終了ボタン配置
+	;
+	pos 540,450
+	objsize 100,24
+	button "END",*owari
+	stop
+
+*owari
+	end
+

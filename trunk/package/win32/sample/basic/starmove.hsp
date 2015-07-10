@@ -1,0 +1,33 @@
+
+; test2
+buffer 1,320,240
+color 12,12,12
+boxf
+
+screen 0,320,240
+cls 1
+font "ÇlÇr ÉSÉVÉbÉN",40,1
+
+cvalue=0.0
+
+*main
+	redraw 0
+	gmode 6,320,240,256
+	pos 0,0:gcopy 1
+	dir=cvalue
+	size=70+sin(cvalue)*30
+	repeat 16
+		x=150+sin(dir+cvalue)*size
+		y=102+cos(dir-cvalue)*size
+		cc=sin(cvalue*0.5)*192
+		color abs(cc),160,255
+		pos x,y:mes "Åö"
+		dir+=0.2
+	loop
+	redraw 1
+	await 10
+	cvalue+=0.1
+	goto *main
+
+stop
+

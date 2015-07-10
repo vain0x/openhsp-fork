@@ -1,0 +1,28 @@
+
+	;
+	;	パーツを使った2Dマップ表示(1)
+	;
+	celload "mapbg.bmp"				; 元画像ファイル
+	map_id=stat					; 元画像のIDを保存
+	celdiv map_id,64,64				; パーツのサイズ
+
+	gmode 0
+	pos 160,80
+
+	;	分割されたパーツを値で指定することができます
+	;	また描画するごとに右にカレントポジションを移動します
+	celput map_id,0
+	celput map_id,1
+	celput map_id,2
+	celput map_id,3
+	celput map_id,4
+
+	;	繰り返しを使うことでパーツを並べることができます
+	;	これを応用してマップを表示します
+	gmode 0
+	repeat 3
+	pos 160,cnt*64+220
+	repeat 6
+	celput map_id,0
+	loop
+	loop

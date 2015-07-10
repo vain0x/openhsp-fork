@@ -1,0 +1,52 @@
+#include "hgimg.as"
+
+	;	立方体をキーで回転させるサンプル(光源付き)
+	;	(フルカラーモード)
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,320,240,0
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+	onexit *owari
+
+	;	BOXオブジェクトを登録
+	;
+	setsizef 80.0f, 80.0f	; BOXのXYサイズ
+	setcolor 255,0,0	; BOXの色(RGB)
+	addbox mdid,MODEL_SHADE	; BOXモデルを作成(光源あり)
+	regobj mychr,mdid	; BOXモデルをオブジェクトとして登録
+
+	;	カメラ位置設定
+	;
+	gsel 0
+	selcpos
+	objsetf3 0.0f, 0.0f, 200.0f
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	キー操作で回転
+	;
+	selang mychr
+	if k&1 : objaddf3 0.0f, -0.05f, 0.0f
+	if k&4 : objaddf3 0.0f, 0.05f, 0.0f
+	if k&2 : objaddf3 0.05f, 0.0f, 0.0f
+	if k&8 : objaddf3 -0.05f, 0.0f, 0.0f
+
+	goto *main
+
+*owari
+	hgbye
+	end
+

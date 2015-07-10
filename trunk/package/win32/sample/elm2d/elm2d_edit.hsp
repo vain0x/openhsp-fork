@@ -1,0 +1,766 @@
+
+;
+;	HGIMG3 2D Elements Editor
+;	onion software/onitama
+;
+
+;
+;	詳しい使用方法は、doclibフォルダのelm2d_edit.txtを参照してください。
+;
+
+#include "hgimg3.as"
+#include "mod_elm2d.as"
+#packopt name "elm2d_edit"
+
+#define global EDNAME "2D ElementEditor v1.0"
+
+
+#module "hged"
+#deffunc edinit
+
+	edsx=640:edsy=480
+	edbx=800:edby=600
+	edwx=64:edwy=64
+	ptmax=1:curpt=0
+	ptuse=0
+	sw_normal=1
+	sw_loop=0
+	sw_posini=3
+	ed_fr=10:ed_scx=1.0:ed_scy=1.0:ed_rz=0:ed_efx=256
+	ed_dist=40
+	ptfr=ed_fr
+	ptx=0:pty=0
+	ptrz=0:ptefx=256:ptanm=0
+	ptscx=1.0:ptscy=1.0
+	return
+
+#deffunc ptuse_update
+
+	ptuse=0
+	repeat ptmax
+		if ptx(cnt)!=0 : ptuse|=PTUSE_POS
+		if pty(cnt)!=0 : ptuse|=PTUSE_POS
+		if ptrz(cnt)!=0 : ptuse|=PTUSE_ANG
+		if ptscx(cnt)!=1.0 : ptuse|=PTUSE_SCALE
+		if ptscy(cnt)!=1.0 : ptuse|=PTUSE_SCALE
+		if ptefx(cnt)!=256 : ptuse|=PTUSE_EFX
+		if ptanm(cnt)!=0 : ptuse|=PTUSE_ANM|PTUSE_POS
+	loop
+	return
+
+#deffunc edload str fname
+
+	sdim s1,$1000
+	sdim s2,256
+	elm2d_init fname
+	elm2d_load
+	ptmax=0+elm2d_getvar("ptmax")
+	curpt=0+elm2d_getvar("curpt")
+	edsx=0+elm2d_getvar("edsx")
+	edsy=0+elm2d_getvar("edsy")
+	edbx=0+elm2d_getvar("edbx")
+	edby=0+elm2d_getvar("edby")
+	edwx=0+elm2d_getvar("edwx")
+	edwy=0+elm2d_getvar("edwy")
+	ptuse=0+elm2d_getvar("ptuse")
+	ed_loopid=0+elm2d_getvar("loopid")
+	ed_dist=0+elm2d_getvar("dist")
+	sw_loop=0+elm2d_getvar("loop")
+	sw_normal=0+elm2d_getvar("normal")
+	sw_posini=0+elm2d_getvar("posini")
+
+	repeat ptmax
+		elm2d_getdata s1
+		i=0
+		getstr s2,s1,i,',':i+=strsize
+		ptfr(cnt)=0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptx(cnt)=0+s2
+		getstr s2,s1,i,',':i+=strsize
+		pty(cnt)=0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptrz(cnt)=0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptscx(cnt)=0.0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptscy(cnt)=0.0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptefx(cnt)=0+s2
+		getstr s2,s1,i,',':i+=strsize
+		ptanm(cnt)=0+s2
+	loop
+	return
+
+#deffunc edsave str fname
+
+	elm2d_init fname
+	elm2d_seti "ptmax",ptmax
+	elm2d_seti "curpt",curpt
+	elm2d_seti "edsx",edsx
+	elm2d_seti "edsy",edsy
+	elm2d_seti "edbx",edbx
+	elm2d_seti "edby",edby
+	elm2d_seti "edwx",edwx
+	elm2d_seti "edwy",edwy
+	ptuse_update
+	elm2d_seti "ptuse",ptuse
+	elm2d_seti "loopid",ed_loopid
+	elm2d_seti "dist",ed_dist
+	elm2d_seti "loop",sw_loop
+	elm2d_seti "normal",sw_normal
+	elm2d_seti "posini",sw_posini
+
+	repeat ptmax
+	elm2d_data ""+ptfr(cnt)+","+ptx(cnt)+","+pty(cnt)+","+ptrz(cnt)+","+ptscx(cnt)+","+ptscy(cnt)+","+ptefx(cnt)+","+ptanm(cnt)
+	loop
+	elm2d_save
+	return
+
+#deffunc edpv_init
+
+	screen 4,edsx,edsy,8+2:cls 4
+	title "Preview"
+	hgini
+	return
+
+#defcfunc rotadj int oldang, int newang
+
+	told = oldang \ 1000
+	loc_dist=abs( newang - told )
+	if oldang<=newang {
+		loc_cmp = abs( newang - 1000 - told )
+		if loc_cmp<loc_dist : return newang-1000
+	} else {
+		loc_cmp = abs( newang + 1000 - told )
+		if loc_cmp<loc_dist : return newang+1000
+	}
+	return newang
+
+#deffunc edpv_exec
+
+	gsel 4
+	hgreset
+	
+	setuv 0,0,edwx-1,edwy-1
+	addspr pchr,1
+	tframe=0
+
+	;	posイベント生成
+	newevent ev1
+	event_setpos ev1, ptx(0),pty(0),0
+	i=1
+	repeat ptmax-1
+		event_pos ev1, ptfr(i), ptx(i), pty(i), 0, sw_posini&1
+		event_wait ev1, ptfr(i)
+		tframe+=ptfr(i)
+		i++
+	loop
+	if sw_loop=1 : event_jump ev1,ed_loopid,0
+	if sw_loop=2 : event_prmset ev1,PRMSET_FLAG,0
+
+	;	angイベント生成
+	newevent ev2
+	event_setang ev2, 0, 0, PI_FIX * ptrz(0)
+	i=1:prev=ptrz(0)
+	repeat ptmax-1
+		;newang = ptrz(i)
+		newang = rotadj( prev, ptrz(i) )
+		prev = newang
+		event_ang ev2, ptfr(i), 0, 0, PI_FIX * newang
+		event_wait ev2, ptfr(i)
+		i++
+	loop
+	if sw_loop=1 : event_jump ev2,ed_loopid,0
+	if sw_loop=2 : event_prmset ev2,PRMSET_FLAG,0
+
+	;	scaleイベント生成
+	newevent ev3
+	event_setscale ev3, ptscx(0), ptscy(0), 1
+	i=1
+	repeat ptmax-1
+		event_scale ev3, ptfr(i), ptscx(i), ptscy(i), 1
+		event_wait ev3, ptfr(i)
+		i++
+	loop
+	if sw_loop=1 : event_jump ev3,ed_loopid,0
+	if sw_loop=2 : event_prmset ev3,PRMSET_FLAG,0
+
+	;	efxイベント生成
+	newevent ev4
+	event_setefx ev4, ptefx(0),0,0
+	i=1
+	repeat ptmax-1
+		event_efx ev4, ptfr(i), ptefx(i),0,0
+		event_wait ev4, ptfr(i)
+		i++
+	loop
+	if sw_loop=1 : event_jump ev4,ed_loopid,0
+	if sw_loop=2 : event_prmset ev4,PRMSET_FLAG,0
+
+	ptuse_update
+	regobj mychr,pchr
+	if ptuse&PTUSE_POS : setevent mychr,ev1
+	if ptuse&PTUSE_ANG : setevent mychr,ev2
+	if ptuse&PTUSE_SCALE : setevent mychr,ev3
+	if ptuse&PTUSE_EFX : setevent mychr,ev4
+
+	gsel 2
+	settex edwx,edwy
+	gsel 4,1
+	frame=0
+*edpv_1
+	stick key
+	if key&$3f0 : goto *edpv_2
+	hgdraw
+	hgsync 10
+	if frame<tframe {
+		frame++
+		title "Frame:"+frame+"/"+tframe
+	}
+	goto *edpv_1
+*edpv_2
+	gsel 4,-1
+	return
+
+
+#deffunc edpv_make str fname
+
+	;	スクリプト生成
+	;
+	sdim sbuf,$1000
+	sdim evlist,$100
+	myname = getpath( fname, 1+8+16 )
+	ptuse_update
+	tframe=0:i=1
+	repeat ptmax-1
+		tframe+=ptfr(i)
+		i++
+	loop
+
+	sbuf=";generated from elm2d\n"
+	sbuf+="#ifndef __"+myname+"__\n#define __"+myname+"__\n"
+	sbuf+="#define global "+myname+"_frame "+tframe+"\n"
+	;
+	evlist=""
+	if ptuse&PTUSE_POS : evlist="setevent %1,"+myname+"_ev1"
+	if ptuse&PTUSE_ANG {
+		if evlist!="" : evlist+=":"
+		evlist+="setevent %1,"+myname+"_ev2"
+	}
+	if ptuse&PTUSE_SCALE {
+		if evlist!="" : evlist+=":"
+		evlist+="setevent %1,"+myname+"_ev3"
+	}
+	if ptuse&PTUSE_EFX {
+		if evlist!="" : evlist+=":"
+		evlist+="setevent %1,"+myname+"_ev4"
+	}
+	;
+	dummy=evlist
+	if evlist="" {
+		dialog "データがありません。"+evlist
+		return
+	}
+	;
+	sbuf+="#define global "+myname+"_setevent(%1) "+evlist+"\n"
+	sbuf+="\n#deffunc "+myname+"_init\n"
+
+	;	posイベント生成
+	if ptuse&PTUSE_POS {
+		sbuf+="newevent "+myname+"_ev1\n"
+		lastx=ptx(0):lasty=pty(0)
+		if (sw_posini&2)=0 {
+			sbuf+="event_setpos "+myname+"_ev1,"+lastx+","+lasty+",0\n"
+		}
+		i=1
+		repeat ptmax-1
+			x=ptx(i):y=pty(i)
+			if (x!=lastx)|(y!=lasty) {
+				if sw_posini&2 {
+					sbuf+="event_pos "+myname+"_ev1,"+ptfr(i)+","+(x-lastx)+","+(y-lasty)+",0,"+sw_posini+"\n"
+				} else {
+					sbuf+="event_pos "+myname+"_ev1,"+ptfr(i)+","+x+","+y+",0,"+sw_posini+"\n"
+				}
+			}
+			sbuf+="event_wait "+myname+"_ev1,"+ptfr(i)+"\n"
+			lastx=x:lasty=y
+			i++
+		loop
+		if sw_loop=1 : sbuf+="event_jump "+myname+"_ev1,"+ed_loopid+",0\n"
+		if sw_loop=2 : sbuf+="event_prmset "+myname+"_ev1,PRMSET_FLAG,0\n"
+	}
+	;	angイベント生成
+	if ptuse&PTUSE_ANG {
+		sbuf+="newevent "+myname+"_ev2\n"
+		lastx=ptrz(0)
+		sbuf+="event_setang "+myname+"_ev2,0,0,"+(PI_FIX*lastx)+"\n"
+		i=1
+		repeat ptmax-1
+			;x=ptrz(i)
+			x = rotadj( lastx, ptrz(i) )
+			if x!=lastx {
+				sbuf+="event_ang "+myname+"_ev2,"+ptfr(i)+",0,0,"+(PI_FIX*x)+"\n"
+			}
+			sbuf+="event_wait "+myname+"_ev2,"+ptfr(i)+"\n"
+			lastx=x
+			i++
+		loop
+		if sw_loop=1 : sbuf+="event_jump "+myname+"_ev2,"+ed_loopid+",0\n"
+		if sw_loop=2 : sbuf+="event_prmset "+myname+"_ev2,PRMSET_FLAG,0\n"
+	}
+	;	scaleイベント生成
+	if ptuse&PTUSE_SCALE {
+		sbuf+="newevent "+myname+"_ev3\n"
+		lastx=ptscx(0):lasty=ptscy(0)
+		sbuf+="event_setscale "+myname+"_ev3,"+lastx+","+lasty+",1\n"
+		i=1
+		repeat ptmax-1
+			x=ptscx(i):y=ptscy(i)
+			if (x!=lastx)|(y!=lasty) {
+				sbuf+="event_scale "+myname+"_ev3,"+ptfr(i)+","+x+","+y+",1\n"
+			}
+			sbuf+="event_wait "+myname+"_ev3,"+ptfr(i)+"\n"
+			lastx=x:lasty=y
+			i++
+		loop
+		if sw_loop=1 : sbuf+="event_jump "+myname+"_ev3,"+ed_loopid+",0\n"
+		if sw_loop=2 : sbuf+="event_prmset "+myname+"_ev3,PRMSET_FLAG,0\n"
+	}
+	;	efxイベント生成
+	if ptuse&PTUSE_EFX {
+		sbuf+="newevent "+myname+"_ev4\n"
+		lastx=ptefx(0)
+		sbuf+="event_setefx "+myname+"_ev4,"+lastx+",0,0\n"
+		i=1
+		repeat ptmax-1
+			x=ptefx(i)
+			if x!=lastx {
+				sbuf+="event_efx "+myname+"_ev4,"+ptfr(i)+","+x+",0,0\n"
+			}
+			sbuf+="event_wait "+myname+"_ev4,"+ptfr(i)+"\n"
+			lastx=x
+			i++
+		loop
+		if sw_loop=1 : sbuf+="event_jump "+myname+"_ev4,"+ed_loopid+",0\n"
+		if sw_loop=2 : sbuf+="event_prmset "+myname+"_ev4,PRMSET_FLAG,0\n"
+	}
+
+	sbuf+="return\n"
+	sbuf+="\n#endif\n"
+
+	notesel sbuf
+	myname = getpath( fname, 1 )+".hsp"
+	dialog "["+myname+"]を作成しました。"
+	notesave myname
+	return
+
+
+#deffunc edinfo_update
+
+	ptx(curpt) = ed_x
+	pty(curpt) = ed_y
+	ptfr(curpt) = ed_fr
+	ptrz(curpt) = ed_rz
+	ptscx(curpt) = ed_scx
+	ptscy(curpt) = ed_scy
+	ptefx(curpt) = ed_efx
+	ptanm(curpt) = ed_anm
+	return
+
+#deffunc ptinsert
+
+	ptmax++
+	curpt++
+	i=ptmax
+	repeat
+	ptx(i)=ptx(i-1)
+	pty(i)=pty(i-1)
+	ptfr(i)=ptfr(i-1)
+	ptrz(i)=ptrz(i-1)
+	ptscx(i)=ptscx(i-1)
+	ptscy(i)=ptscy(i-1)
+	ptefx(i)=ptefx(i-1)
+	ptanm(i)=ptanm(i-1)
+	i--:if i<=curpt : break
+	loop
+	edinfo_update
+	return
+
+#deffunc ptadd int xx, int yy
+
+	x=xx-edcx:y=yy-edcy
+
+	if sw_normal {
+		orgx = ptx(ptmax-1)
+		orgy = pty(ptmax-1)
+		resang=atan( x-orgx, y-orgy )
+		x = orgx + ( sin(resang) * ed_dist )
+		y = orgy + ( cos(resang) * ed_dist )
+	}
+
+	ed_x=x : ed_y=y
+	curpt=ptmax
+	edinfo_update
+	ptmax++
+	return
+
+#deffunc ptmove int id, int xx, int yy
+
+	x=xx-edcx:y=yy-edcy
+	ptx(id)=x
+	pty(id)=y
+	return
+
+#deffunc ptrot int xx, int yy
+
+	x=xx-edcx:y=yy-edcy
+	resang=atan( y-pty(curpt), x-ptx(curpt) )
+	ptrz(curpt)=int( resang * 159.15494309189533576888376337251 )
+	return
+
+#deffunc ptset int id
+
+	curpt=id
+	return
+
+#deffunc ptinc
+	i=curpt+1
+	if i>=ptmax : i=curpt
+	curpt=i
+	return
+
+#deffunc ptdec
+	i=curpt-1
+	if i<0 : i=0
+	curpt=i
+	return
+
+#deffunc ptdel int id
+
+	i=id:if i<0 : i=curpt
+	if ptmax<=1 : return
+	repeat
+	if (i+1)>=ptmax : break
+	ptx(i)=ptx(i+1)
+	pty(i)=pty(i+1)
+	ptfr(i)=ptfr(i+1)
+	ptrz(i)=ptrz(i+1)
+	ptscx(i)=ptscx(i+1)
+	ptscy(i)=ptscy(i+1)
+	ptefx(i)=ptefx(i+1)
+	ptanm(i)=ptanm(i+1)
+	i++
+	loop
+	ptmax--
+	if curpt=ptmax : curpt--
+	return
+
+#deffunc pttrans int xx, int yy
+
+	repeat ptmax
+	ptx(cnt)+=xx
+	pty(cnt)+=yy
+	loop
+	return
+
+#deffunc ptcheck int xx,int yy
+
+	x=xx-edcx:y=yy-edcy
+	res=-1
+
+	repeat ptmax
+
+	if cnt=curpt {
+		x1=ptx(cnt)-(edwx>>1)
+		y1=pty(cnt)-(edwy>>1)
+		x2=x1+edwx
+		y2=y1+edwy
+	} else {
+		x1=ptx(cnt)-4
+		y1=pty(cnt)-4
+		x2=x1+8:y2=y1+8
+	}
+	if (x>=x1)&(x<x2)&(y>=y1)&(y<y2) : res=cnt : break
+	loop
+	return res
+
+#deffunc ptpos int id
+
+	x=edcx+ptx(id):y=edcy+pty(id)
+	return
+
+#deffunc eddraw
+
+	gsel 0
+	objprm obj_edx,ptx(curpt)
+	objprm obj_edy,pty(curpt)
+	objprm obj_edfr,ptfr(curpt)
+	objprm obj_edrz,ptrz(curpt)
+	objprm obj_edscx,ptscx(curpt)
+	objprm obj_edscy,ptscy(curpt)
+	objprm obj_edefx,ptefx(curpt)
+	objprm obj_edanm,ptanm(curpt)
+
+	gsel 1
+	redraw 0
+	x=(edbx-edsx)/2
+	y=(edby-edsy)/2
+	color 0,0,0:boxf x,y,x+edsx,y+edsy 
+	color 64,64,64
+	boxf 0,0,x,edby
+	boxf x+edsx,0,edbx,edby
+	boxf x,0,edbx,y
+	boxf x,y+edsy,edbx,edby
+	;
+	boxf 0,edby/2,edbx,edby/2
+	boxf edbx/2,0,edbx/2,edby
+	;
+	color 255,0,0
+	ptpos 0:lastx=x:lasty=y
+	repeat ptmax
+	ptpos cnt
+		boxf x-2,y-2,x+2,y+2
+		line x,y,lastx,lasty
+		lastx=x:lasty=y
+	loop
+
+	ptpos curpt:pos x,y:gmode 0,edwx,edwy
+	grotate 2,0,0,PI_FIX * ptrz(curpt), ptscx(curpt)*edwx, ptscy(curpt)*edwy
+
+	redraw 1
+	return
+
+#deffunc edreset
+
+	edcx=edbx>>1:edcy=edby>>1
+	buffer 2,edwx,edwy
+	color 0,0,128:boxf 2,2,edwx-5,edwy-3
+	i=edwx
+	color 255,255,255:font "Arial",i,1
+	pos (edwx>>3)+2,0:mes "A"
+	;
+	screen 1,edbx,edby,8
+	title "View screen"
+	eddraw
+	return
+
+#deffunc edinfo_init
+
+	gsel 0
+	x=200:y=8
+	objsize 48,20
+	pos x,y+24:mes "座標XY"
+	pos x+50,y+20:input ed_x:obj_edx=stat
+	pos x+105,y+20:input ed_y:obj_edy=stat
+	pos x+160,y+24:mes "倍率XY"
+	pos x+210,y+20:input ed_scx:obj_edscx=stat
+	pos x+265,y+20:input ed_scy:obj_edscy=stat
+	;
+	pos x,y+58:mes "角度"
+	pos x+50,y+54:input ed_rz:obj_edrz=stat
+	pos x+160,y+58:mes "EFX"
+	pos x+190,y+54:input ed_efx:obj_edefx=stat
+	pos x,y+92:mes "フレーム"
+	pos x+50,y+88:input ed_fr:obj_edfr=stat
+	pos x+160,y+92:mes "アニメ"
+	pos x+190,y+88:input ed_anm:obj_edanm=stat
+	;
+	objsize 100,20
+	pos x,y+130
+	combox sw_loop,100,"通常\n繰り返し\n最後に消滅"
+	pos x,y+158
+	chkbox "距離を補正する",sw_normal
+	;
+	objsize 128,20
+	pos x+190,y+130
+	combox sw_posini,200,"リニア移動(絶対)\nスプライン移動(絶対)\nリニア移動(相対)\nスプライン移動(相対)"
+	objsize 48,20
+	pos x+120,y+132:input ed_loopid
+	pos x+120,y+158:input ed_dist
+	;
+	return
+
+#deffunc edinfo
+
+	gsel 0
+	x=200:y=8
+	redraw 0
+	syscolor 15:boxf x,y,640,y+20
+	color 0,0,0
+	pos x,y:mes "#"+curpt+" ("+ptmax+")"
+	redraw 1
+	return
+
+#global
+
+	;	Starting point
+	;
+	onexit gosub *cmd_bye
+*boot
+	edinit
+*boot2
+	screen 0,640,200
+	syscolor 15:boxf
+	title EDNAME
+	color 0,0,0:sysfont 17
+	y=8
+	pos 8,y+4:mes "編集サイズ":objsize 32,20
+	pos 96,y:input edbx@hged:pos 136,y:input edby@hged
+	y=32
+	pos 8,y+4:mes "画面サイズ":objsize 32,20
+	pos 96,y:input edsx@hged:pos 136,y:input edsy@hged
+	y=56
+	pos 8,y+4:mes "キャラクタサイズ":objsize 32,20
+	pos 96,y:input edwx@hged:pos 136,y:input edwy@hged
+	objsize 80,80
+	pos 540,96:button "プレビュー...",*cmd_prev
+	objsize 80,20
+	pos 96,92
+	button "変換...",*cmd_make
+	pos 8,92
+	button "ロード...",*cmd_load
+	button "セーブ...",*cmd_save
+	button "リフレッシュ",*main0
+	button "新規...",*cmd_new
+	button gosub "終了...",*cmd_bye
+	pos 540,22:button "データ変更",*cmd_update
+	pos 540,44:button "ポイント挿入",*cmd_ins
+	pos 540,66:button "ポイント削除",*cmd_del
+	;
+	x=200:y=4
+	objsize 20,20
+	pos x+60,y
+	button "前",*cmd_dec
+	pos x+80,y
+	button "次",*cmd_inc
+	pos x+100,y
+	button "終",*cmd_last
+	;
+	edinfo_init
+	edpv_init
+*main0
+	edreset
+	gsel 0,1
+*main1
+	edinfo
+	eddraw
+*main2
+	await 15
+	stick key,64
+
+	if dlgmode : goto *main2
+	;
+	if key&$100 : goto *clk1
+	if key&$200 : goto *clk2
+	;
+	if ginfo_act!=1 : goto *main2
+	;
+	if key&$20 : goto *cmd_prev
+	if key&1 : ptdec : goto *main1
+	if key&4 : ptinc : goto *main1
+	goto *main2
+*clk1
+	if ginfo_act!=1 : goto *main2
+	ptcheck mousex,mousey
+	if stat>=0 : goto *clkmove
+*clk1x
+	await 15
+	stick key,$3ff
+	if key&$100 : goto *clk1x
+	;
+	ptadd mousex,mousey
+	goto *main1
+*clk2
+	if ginfo_act!=1 : goto *main2
+	ptcheck mousex,mousey
+	if stat<0 : goto *main2
+	ptset stat
+	goto *main1
+*clkmove
+	target=stat
+	if key&64 : goto *main4
+	getkey a,16:if a : goto *main5
+*main3
+	edinfo
+	eddraw
+	await 15
+	stick key,$3ff
+	if (key&$100)=0 : goto *main1
+	ptmove target,mousex,mousey
+	goto *main3
+*main4
+	x=mousex:y=mousey
+	edinfo
+	eddraw
+	await 15
+	stick key,$3ff
+	if (key&$100)=0 : goto *main1
+	pttrans mousex-x, mousey-y
+	goto *main4
+*main5
+	edinfo
+	eddraw
+	await 15
+	stick key,$3ff
+	if (key&$100)=0 : goto *main1
+	ptrot mousex, mousey
+	goto *main5
+
+*cmd_inc
+	curpt++
+	if curpt>=ptmax : curpt = ptmax-1
+	goto *main1
+*cmd_dec
+	curpt--
+	if curpt<0 : curpt = 0
+	goto *main1
+*cmd_last
+	curpt = ptmax-1
+	goto *main1
+
+*cmd_del
+	ptdel -1
+	goto *main1
+*cmd_ins
+	ptinsert
+	goto *main1
+*cmd_update
+	edinfo_update
+	goto *main1
+*cmd_save
+	dlgmode=1
+	dialog "elm2d",17,"2D Element"
+	dlgmode=0
+	if stat=0 : goto *main1
+	edsave refstr
+	goto *main1
+*cmd_load
+	dlgmode=1
+	dialog "elm2d",16,"2D Element"
+	dlgmode=0
+	if stat=0 : goto *main1
+	edload refstr
+	goto *boot2
+*cmd_prev
+	edpv_exec
+	goto *main1
+*cmd_make
+	dlgmode=1
+	dialog "hsp",17,"HSP Script"
+	dlgmode=0
+	if stat=0 : goto *main1
+	edpv_make refstr
+	goto *main1
+*cmd_new
+	dlgmode=1
+	dialog "初期状態に戻していいですか?",2
+	dlgmode=0
+	if stat!=6 : goto *main1
+	goto *boot
+*cmd_bye
+	dlgmode=1
+	dialog "終了していいですか?",2
+	dlgmode=0
+	if stat!=6 : return
+	end
+

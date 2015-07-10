@@ -1,0 +1,226 @@
+#include "hgimg3.as"
+
+	;	珠音（たまね）3D model sample
+	;	モデリング&アニメーション製作 : オガワコウサク(チームグリグリ)
+	;	HGIMG3対応 HSP3用スクリプトサンプル
+	;	※このスクリプト及びサンプルデータは、自作ソフトで自由にお使い頂けます
+	;	※詳しくは、 http://hsp.tv/make/tamane3d.html
+	;
+	randomize
+	screen 0,800,480,0
+	cls 4
+	hgini
+
+#define PI 3.14159265358979
+#define PI2 6.28318530717958
+#define HPI 1.570796326794895
+
+#enum MYFLAG_STAY=0
+#enum MYFLAG_WALK
+#enum MYFLAG_RUN
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+	;
+	clscolor $80
+
+	;	バッファサイズ
+	sx=32:sy=32
+	dim vmap,sx+1,sy+1
+	wave_init sx,sy
+
+	;	モデル登録(地面)
+	;
+	setuv 0,0,128,128
+	addmesh m_mesh,sx,sy,0,320,320
+	texload "mapbg4.bmp"
+	regobj obj, m_mesh,OBJ_GROUND	; 地面として登録
+	setborder 300,300,300		; 移動範囲の設定
+
+	;	高さ、UVマップの設定
+	;
+	gsel 3
+	picload "g_road1.bmp"
+	getvarmap vmap,sx,sy,1
+	picload "g_river.bmp"
+	getvarmap vmap,sx,sy,2
+	meshmap vmap,m_mesh,$100
+	picload "g_height1.bmp"
+	getvarmap vmap,sx,sy
+	meshmap vmap,m_mesh,0,0.1
+
+	;	影
+	addeprim m_sd,0		; main
+	seteprim m_sd,0,1.5
+	seteprim m_sd,1,12
+	seteprim m_sd,2,0.5
+	seteprim m_sd,3,0.5
+	seteprim m_sd,16,$80000000
+	seteprim m_sd,17,$80000000
+	seteprim m_sd,18,$80000000
+	seteprim m_sd,19,$00000000
+
+	;	Xモデル登録
+	;
+	addxfile m_girl,"tamane2_s.x"
+	addxanim m_girl,"tamane2_w.x"
+	addxanim m_girl,"tamane2_r.x"
+
+	maketoon m_girl,1
+
+	regobj mychr, m_girl,OBJ_BORDER|OBJ_FLIP|OBJ_STAND|OBJ_MOVE|OBJ_GRAVITY|OBJ_STATIC
+	setscale mychr,0.02,0.02,0.02
+
+	regobj mysdw, m_sd, OBJ_LATE|OBJ_LAND|OBJ_STAND
+	setefx mysdw,$500
+	objchild mychr, mysdw
+
+	myflag = MYFLAG_STAY
+	objact mychr,0
+	ddim fv,8
+	px=0.0:pz=0.0
+
+	;	表示の準備
+	;
+	gsel 0
+	clscolor $60e0		; 背景色の設定
+
+	;	カメラの設定
+	;
+	ddim fv,4
+	px=0.0:pz=0.0
+
+	camdist=10.0
+	camheight=0.0
+
+	cammode CAM_MODE_AUTOMOVE, mychr
+	setdir HGOBJ_CAMERA, 0, -3, 0
+	setwork HGOBJ_CAMERA, camdist, 0, camheight
+	objfloor HGOBJ_CAMERA, 4	; 地面からのオフセット値
+
+	;	ライト
+	setdir HGOBJ_LIGHT,130,130,130
+	setang HGOBJ_LIGHT, 9.8, 4, 0
+
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+
+*main
+	gosub *player_move
+	gosub *alldraw
+	stick key,$3ff
+	if key&128 : goto *main2
+
+	goto *main
+
+*main2
+	gosub *fadeout
+	repeat
+		gosub *alldraw
+		if scfadev=256 : break
+	loop
+	goto *owari
+
+*player_move
+	;	プレイヤーを動かす
+	;
+	gosub *key_sub
+	on nmode goto *pmove_stay,*forward2,*forward
+*pmove_stay
+	objwalk vres,mychr,0,0.3,0
+	if myflag!=MYFLAG_STAY {
+		objact mychr,0
+		myflag=MYFLAG_STAY
+	}
+	return
+*forward
+	if myflag!=MYFLAG_RUN {
+		objact mychr,2
+		myflag=MYFLAG_RUN
+	}
+	gosub *go_fwd
+	return
+*forward2
+	if myflag!=MYFLAG_WALK {
+		objact mychr,1
+		myflag=MYFLAG_WALK
+	}
+	gosub *go_fwd
+	return
+
+*key_sub
+	nmode=0
+	dp=0.0
+	camp=0.0
+	getang HGOBJ_CAMERA, dx,dy,dz
+
+	if key&64 {		; カメラ移動
+		if key&1 : camp=0.025
+		if key&4 : camp=-0.025
+		if key&8 : if camheight<-6 : camheight+=1
+		if key&2 : if camheight>-20 : camheight-=1
+
+		if camp=0.0 {
+			getang mychr, fv,fv(1),fv(2)
+			dx=fv(1)+PI
+			if dy>PI2 : dy-=PI2
+			dz=dy+PI2
+			if absf(dx-dy)<absf(dx-dz) {
+				camp=dx-dy
+			} else {
+				camp=dx-dz
+			}
+			if camp>0.2 : camp=0.2
+			if camp<-0.2 : camp=-0.2
+		}
+		setwork HGOBJ_CAMERA, camdist, camp, camheight
+		return
+	}
+	if key&1 : setang mychr,0,dy-HPI : nmode=1 : dp=0.1 : camp=0.025
+	if key&4 : setang mychr,0,dy+HPI : nmode=1 : dp=0.1 : camp=-0.025
+	if key&2 : setang mychr,0,dy+PI : nmode=2 : dp=0.3
+	if key&8 : setang mychr,0,dy : nmode=2 : dp=0.3
+
+	setwork HGOBJ_CAMERA, camdist, camp, camheight
+	return
+
+*go_fwd
+	;	向いている方向に移動
+	;
+	getang mychr, fv,fv(1),fv(2)
+	fv(1)*=-1
+	fvdir fv,0,0,dp
+	objwalk vres,mychr,fv,1,fv(2)
+	return
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt "Frame:"+frame,8,8
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,ginfo_sx,ginfo_sy,scfadev
+		hgrect ginfo_sx/2,ginfo_sy/2,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return
+
+*owari
+	hgbye
+	end

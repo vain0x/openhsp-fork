@@ -1,0 +1,230 @@
+
+;
+;	シューティングゲームのサンプル	(onitama 2004/11)
+;	(HSP3以降専用)
+;
+
+;	バッファIDの設定
+;
+#define global bgbuf 2
+#define global chrbuf 3
+#define global bombuf 4
+
+#enum SE_BOM = 0
+
+
+;	レーザーの移動
+;
+#module mylaser x,y 
+
+#modinit int px, int py
+	x=px : y=py	
+	return
+
+#modfunc laser_move
+	x+=12
+	if x>640 : return 1
+	pos x,y : gcopy chrbuf,0,64
+	return 0
+
+#modfunc laser_getpos var resx, var resy
+	resx=x
+	resy=y
+	return
+
+#global
+
+
+
+;	敵１体の処理
+;
+#module enemy flag,x,y,px,py 
+#modinit
+
+	;	敵発生
+	;
+	flag=0
+	x=640
+	y=rnd(360)+40
+	px=rnd(3)-5
+	py=rnd(5)-2
+	return
+
+#modfunc enemy_move
+
+	;	敵移動
+	;
+	x+=px:y+=py
+	pos x,y
+	if flag {
+		gcopy bombuf,0,(flag-1)*64
+		flag++
+		if flag>17 : return 1
+		return 0
+	}
+	gcopy chrbuf,0,128
+	if x<-64 | x>640 | y<-64 | y>480 : return 1
+	return 0
+
+#modfunc enemy_hit int tx, int ty
+
+	;	敵ヒットチェック
+	if flag : return 0
+	if (abs(tx-x)<48)&(abs(ty-y)<48) {
+		mmplay SE_BOM
+		flag=1 : return 1
+	}
+	return 0
+
+#global
+
+#module
+#deffunc enemy_init
+	;	敵全体の初期化
+	;
+	etime=0
+	dimtype mod_enemy,vartype("struct"),32
+	return
+
+#deffunc enemy_move_all
+	;	敵全体の移動
+	;
+	etime++
+	if etime>12 : etime=0 : newmod mod_enemy,enemy
+	;
+	max=0
+	gmode 2,64,64
+	foreach mod_enemy
+		enemy_move mod_enemy.cnt
+		if stat : delmod mod_enemy.cnt
+		max++
+	loop
+ 	color 255,255,255:pos 0,0:mes "Enemy:"+max
+	return
+
+#deffunc enemy_hit_all int p1, int p2
+	;	敵全体のヒットチェック
+	;
+	retval=0
+	chkx=p1:chky=p2
+	foreach mod_enemy
+		enemy_hit mod_enemy.cnt,chkx,chky
+		if stat : break
+	loop
+	return
+
+#global
+
+
+#module
+
+;	自キャラの移動・操作
+;
+#deffunc my_init
+
+	mx=200:my=200:mflag=1
+	dimtype mod_laser,vartype("struct"),64
+	return
+
+#deffunc my_move int key
+
+	;	自機の移動
+	if key&2 : my=my-6
+	if key&8 : my=my+6
+	if key&1 : mx=mx-6
+	if key&4 : mx=mx+6
+	mx=limit(mx,0,511)
+	my=limit(my,0,415)
+	if mflag>1 {
+		mflag++
+		if mflag>60 : end
+		if mflag&2 : return
+	} else {
+		enemy_hit_all mx,my
+		if stat : mflag=2
+	}
+	pos mx,my:gmode 2,128,64:gcopy chrbuf
+ 	return
+
+#deffunc my_shot int key
+
+	;	レーザーの発射
+	if key&16 {
+		newmod mod_laser, mylaser, mx+64, my+32
+	}
+	;	レーザーの移動
+	res=0
+	gmode 5,64,64,256
+	foreach mod_laser
+		laser_getpos mod_laser.cnt,x,y
+		enemy_hit_all x,y
+		if stat : delmod mod_laser.cnt : continue
+		laser_move mod_laser.cnt
+		if stat : delmod mod_laser.cnt
+	loop
+	return
+
+#global
+
+
+
+
+*main
+	;	メインプログラム
+	;
+	randomize
+	title "shooting sample"
+
+	mmload dir_tv+"se_bom.wav",SE_BOM
+
+	buffer chrbuf
+	picload dir_tv+"shootchr.bmp"
+	buffer bombuf
+	picload dir_tv+"bom.bmp"
+
+	gosub *makebg
+
+	screen 0,640,480
+
+	my_init
+	enemy_init
+
+	repeat
+	redraw 0
+	gosub *putbg
+
+	stick key,15,1
+	if key&128 : end
+
+	my_move key
+	my_shot key
+	enemy_move_all
+
+	await 20		; 全体のスピード調節
+	redraw 1
+	loop
+	end
+
+*putbg
+	;	背景表示
+	;
+	gmode 0,640,480
+	pos bgx,0:gcopy bgbuf
+	bgx-=8:if bgx<-640 : bgx+=640
+	pos bgx+640,0:gcopy bgbuf
+	return
+
+*makebg
+	;	背景の作成
+	;
+	buffer bgbuf,1280,480,0
+	cls 4
+	gmode 5,64,64,200
+	repeat 32
+	x=rnd(1280)-32:y=rnd(480)-32
+	pos x,y:gcopy chrbuf,64,64
+	loop
+	bgx=0
+	return
+
+

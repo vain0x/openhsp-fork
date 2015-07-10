@@ -1,0 +1,38 @@
+
+#include "hspext.as"
+
+	sdim drvatr,20,8
+
+	drvatr="不明","なし","リムーバブル","ハードディスク","ネットワーク","CD-ROM","RAM"
+
+	repeat 7
+
+	vol="":fsys=""
+	dfree=0:typ=0:ser=0
+	drv=cnt+1
+	drvstr="@":poke drvstr,0,64+drv
+	mes drvstr+"ドライブの詳細:"
+
+	fxinfo typ,drv,8
+	if stat : goto *chkskip
+
+	mes "ドライブのタイプ="+drvatr.typ
+	if typ=5 : goto *chkgo
+	if typ!3 : goto *chkskip
+
+*chkgo
+	fxinfo vol,drv,16
+	if stat : goto *chkskip
+
+	fxinfo fsys,drv,17
+	fxinfo ser,drv,18
+	fxinfo dfree,drv,0
+
+	mes "ドライブの空き容量="+dfree+"("+fsys+")"
+	mes "ボリュームラベル="+vol+"("+ser+")"
+
+*chkskip
+	mes "---------------------------------"
+	loop
+	stop
+

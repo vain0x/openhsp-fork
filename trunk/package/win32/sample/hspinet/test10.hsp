@@ -1,0 +1,15 @@
+#include "hspinet.as"
+
+	src="ABC=abc&DEF=456789&GHI=123"
+
+	getenvprm s1,src,"ABC="
+	getenvprm s2,src,"DEF="
+	getenvprm s3,src,"GHI="
+
+	mes "ABC="+s1
+	mes "DEF="+s2
+	mes "GHI="+s3
+
+	stop
+
+

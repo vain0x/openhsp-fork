@@ -1,0 +1,23 @@
+#include "hspcv.as"
+
+cvload "bgsamp.jpg",0
+
+cvbuffer 1,640,480
+cvmakeavi "test.avi",,,1
+
+repeat 360
+
+cvcopy 0,0,0,1
+cvrotate cnt,1,0,0,,1
+cvputavi
+cvgetimg 1
+redraw
+await 20
+
+loop
+
+cvendavi
+
+title "OK"
+stop
+

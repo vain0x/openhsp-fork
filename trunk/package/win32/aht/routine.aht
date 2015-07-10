@@ -1,0 +1,12 @@
+#aht name "サブルーチン"
+#aht class "hsp3.std.system.label.routine"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 1
+#aht exp "指定したラベル名(タグ)を持つサブルーチンのパーツを割り当てます。"
+#aht exp "割り当てたラベル名は、「ジャンプ」など他のパーツからサブルーチンとして参照可能になります。"
+
+#define __label	サブルーチン	;;help="ラベル名",withid,refname
+
+*__label
+

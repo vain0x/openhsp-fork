@@ -1,0 +1,36 @@
+
+	screen 0,200,400
+	title "press [TAB] key"
+	cls 1
+
+	objsize 160,24
+	pos 20,20
+	objmode 1,1
+	button "BYE",*ok
+	;
+	objmode 2,1
+	font "Modern",14
+	chkbox "Check Box",a
+	;
+	bb="OBJECT TEST"
+	font "Lucida Console",14,1
+	input bb
+	;
+	sysfont 11
+	ed="MesBox Test..."
+	mesbox ed,160,100,0
+	;
+	ly=0
+	lb="List Box\nTest1\nTest2"
+	listbox ly,100,lb
+	;
+	cy=0
+	cb="Combo Box\nTest1\nTest2"
+	combox cy,100,cb
+	;
+	stop
+*ok
+	end
+
+
+

@@ -1,0 +1,106 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; 基本的な機能のサンプルです。
+;
+; カメラ座標とカメラターゲットの座標が動きます。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+
+#define MAX 16
+
+	ddim x, MAX
+	ddim y, MAX
+	ddim z, MAX
+
+	repeat
+		redraw 0
+		color 255, 255, 255 : boxf
+
+
+		; ボックスの座標を生成
+		ct = cnt
+		randomize 0
+
+		repeat MAX
+			x(cnt) = cos( 0.002 * (rnd(10) + 10) * ct ) * 600
+			y(cnt) = sin( 0.002 * (rnd(10) + 10) * ct ) * 600
+			z(cnt) = sin( 0.002 * (rnd(10) + 10) * ct ) * 60
+		loop
+
+
+
+		; カメラ座標設定 (自動切換え)
+		if (cnt / 150) & 1 {
+
+			; 移動カメラ
+			d3setcam x, y, z,  x(1), y(1), z(1)
+
+		} else {
+
+			; ふかんカメラ
+			d3setcam cos(0.01 * ct) * 1500, sin(0.01 * ct) * 1500, 1000
+		}
+
+
+
+		; 座標平面描画
+		color 64, 192, 64
+
+		repeat 31
+			a = cnt * 2000 / 30 - 1000
+			d3line a, 1000, 0,  a, -1000, 0
+			d3line 1000, a, 0,  -1000, a, 0
+		loop
+
+
+
+		; 座標軸描画
+		color 32, 128, 32
+
+		d3mes "X",  2200, 0, 0
+		d3mes "Y",  0, 2200, 0
+		d3mes "Z",  0, 0, 1100
+
+		d3arrow 2000, 0, 0,  -2000, 0, 0 ; x
+		d3arrow 0, 2000, 0,  0, -2000, 0 ; y
+		d3arrow 0, 0, 1000,  0, 0, -1000 ; z
+
+
+
+		; ボックスを描画
+		color , , 255
+		r = 30
+		repeat MAX
+			d3box x(cnt) - r, y(cnt) - r, z(cnt) - r, x(cnt) + r, y(cnt) + r, z(cnt) + r
+		loop
+
+
+
+		; 箱 0 (カメラ位置) を円で囲む
+		color , , 128
+		d3circle x(0), y(0), z(0),  100
+
+
+
+		; 箱 1 (ターゲット座標) を円で囲む
+		color 128
+		d3circle x(1), y(1), z(1),  100
+
+
+
+		redraw
+		await 30
+
+	loop
+

@@ -1,0 +1,43 @@
+#include "hgimg3.as"
+
+	;	3Dモデル描画サンプル
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel,"font_a.x"	; モデルを読み込む
+	regobj obj, m_xmodel		; オブジェクトの登録
+	clscolor $80			; 背景色の設定
+
+*main
+	stick key,$3ff
+	if key&128 : goto *owari
+
+	hgdraw				; 描画
+
+	fprt "HGIMG3 Plugin test",8,8
+
+	hgsync 10			; 時間待ち
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : addpos HGOBJ_CAMERA, -0.2, 0.0
+	if key&1 : addpos HGOBJ_CAMERA, 0.2, 0.0
+	if key&2 : addpos HGOBJ_CAMERA, 0.0, 0.2
+	if key&8 : addpos HGOBJ_CAMERA, 0.0, -0.2
+
+	;	モデルを回転させる
+	addang obj,0,0.05,0
+
+	goto *main
+
+*owari
+	end

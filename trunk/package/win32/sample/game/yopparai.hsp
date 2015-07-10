@@ -1,0 +1,120 @@
+	;
+	;	ヨッパライゲームサンプル
+	;	onitama / WEB+DB PRESS 2011/6
+	;
+#packopt name "yopparai"
+#pack "chr.bmp"
+
+#module
+#deffunc fprt str _p1
+	;	fprt "message"
+	;	(画像を使用したフォント表示を行ないます)
+	;	"message" : 表示するメッセージ
+	;	表示座標は、posで指定した位置から
+	;
+	i=0:st=_p1
+
+	repeat
+	a1=peek(st,i):i++:if a1=0 : break
+	if a1=13 {
+		a1=peek(st,i)
+		if a1=10 : i++
+		continue	; 改行
+	} else {
+		celput 1,a1
+	}
+	loop
+	return
+
+#deffunc putscore
+	gmode 0
+	pos 0,0:fprt "SCORE "+score@
+	return
+
+#global
+
+	title "Yopparai"
+	randomize
+	screen 0,640,480
+	celload "chr.bmp",1
+	celdiv 1,16,16,0,0
+*start
+	cls 4
+
+	pos 210,128
+	fprt "Y O P P A R A I"
+	pos 234,300
+	fprt "PRESS ENTER"
+	putscore
+
+	repeat
+		stick key
+		if key&$30 : break
+		if key&128 : end
+		await 24	
+	loop
+
+	level=2
+	score=0
+
+*go
+	cls 4
+	color 255,255,255
+	boxf 0,20,20,480
+	boxf 620,20,640,480
+	repeat level*4+8
+		y=rnd(8)*32+64
+		x=rnd(16)*32+64
+		boxf x,y,x+32,y+32
+	loop
+
+	x=320.0:y=440:px=0.0:dir=0.0
+*main
+	redraw 0
+	color 0,0,0
+	boxf 0,0,640,16
+	boxf x,y,x+32,y+32
+
+	stick key,15
+	if key&1 : dir=-0.5
+	if key&4 : dir=0.5
+	if key&128 : end
+	px=limitf(px+dir,-10,10)
+	x=x+px
+	y=y-1
+	score++
+
+	pget x+8,y-1:hit=ginfo_r
+	pget x+16,y-1:hit+=ginfo_r
+	pget x+24,y-1:hit+=ginfo_r
+
+	color 255,255,255
+	circle x+8,y+26,x+24,y+42
+	gmode 2
+	pos x,y:celput 1,$21,2,2
+
+	putscore
+	redraw 1
+	await 24
+
+	if hit : goto *miss
+	if y>20 : goto *main
+
+	pos 320,0:fprt "GOOD!"
+	level++
+	wait 300
+
+	goto *go
+
+*miss
+	repeat 32
+	redraw 0
+		color 0,0,0
+		boxf x,y,x+32,y+32
+		gmode 2
+		pos x,y:celput 1,$21+(cnt&3),2,2
+	redraw 1
+	await 96
+	loop
+
+	goto *start

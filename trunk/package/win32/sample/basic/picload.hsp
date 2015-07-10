@@ -1,0 +1,28 @@
+	;
+	;	JPEGロード & BMPセーブをするスクリプト
+	;
+	width 320,80
+	objsize 300,24
+	button "画像ファイルロード",*fload
+	button "BMPセーブ",*fsave
+	;
+	screen 2,640,480
+	gsel 2,-1
+	stop
+*fload
+	dialog "bmp;*.jpg;*.gif",16,"画像ファイル"
+	if stat=0 : goto *failed
+	gsel 2,1
+	picload refstr
+	stop
+*fsave
+	dialog "bmp",17,"BMP"
+	if stat=0 : goto *failed
+	fname=getpath(refstr,1)+".bmp"
+	gsel 2,1
+	bmpsave fname
+	stop
+*failed
+	dialog "Error"
+	stop
+

@@ -1,0 +1,190 @@
+
+;============================================================
+;                                                 2006/--/--
+	title "S.Programs Diamond Ring"
+;	version 1.0/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+・Diamond Ring
+
+惑星探査機が進路上で未確認天体郡と遭遇しました。
+可視光カメラからの映像が届きましたのでご覧ください…
+
+[Enter] : フルスクリーン切り替え
+[Esc] : 終了
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+;	main
+;============================================================
+
+	; ghost r, g, b
+	arr = 6, 1, 100
+	d3mkparticle  , 3333, 0, 0, arr
+	d3mkparticle 1, 0, 3333, 0, arr
+	d3mkparticle 2, 0, 0, 3333, arr
+
+	; normal
+	d3mkparticle 3, 160, 208, 256
+
+	; sun
+	d3mkparticle 4, 999, 999, 999
+
+
+	t_start = d3timer()
+
+
+;------------------------------------------------------------
+*mainloop
+
+
+	;------------------------------------------------------------
+	; full-screen ctrlr (toggle : Enter)
+
+	stick ky_inp
+	if ky_inp & 128 : end
+	if ky_inp & 32 {
+		mode_fsc ^= 1
+		chgdisp mode_fsc ; (default : 640, 480)
+		if mode_fsc {
+			bgscr 2
+			gsel 2, 2
+			mouse -1
+		} else {
+			gsel 2, -1
+			gsel
+			mouse
+		}
+	}
+
+
+	;------------------------------------------------------------
+	; setup
+
+	time = double(d3timer())
+	randomize 0
+	redraw 0
+
+
+	; set camera pos
+	f = time / 5882
+	f -= cos(f) / 2
+	u = 6600000 / (time - t_start + 1000) // start-efct
+	x1 = cos(f) * 1000
+	y1 = sin(f) * 1333 - u
+	z1 = sin(time / 7692) * 500 + sqrt(u * 700)
+	d3setcam x1, y1, z1
+
+
+	; sun vector (fixed)
+	;;x2 = 0
+	;;y2 = 1
+	;;z2 = 0
+
+
+	; get vcos()
+	;;vcos = (x1*x2 + y1*y2 + z1*z2) / (d3dist(x1, y1, z1) * d3dist(x2, y2, z2))
+	vcos = y1 / d3dist(x1, y1, z1)
+	vcos2 = vcos * vcos
+	vcos3 = vcos * vcos2
+
+
+	;------------------------------------------------------------
+	; draw
+
+	; bgcolor
+	hsvcolor 112, 192, 72 - vcos3*96*(vcos<0)
+	boxf
+
+
+	; bg stars
+	gmode 5, , , 96
+	repeat 600
+		d3particle 3, (rnd(32768)-16384)*1000, (rnd(32768)-16384)*1000, (rnd(32768)-16384)*1000, 50000
+	loop
+
+
+	; sun (r = 1400000[km], y = 150000000[km])
+	gmode 5, , , 256
+	d3particle 4, 0, 150000000, 0, 1400000
+	; get sun screen-pos
+	sunf = df@d3m
+	sunx = dx@d3m
+	suny = dy@d3m
+
+
+	; planets (r = 100[km])
+	repeat 7
+		; set pos
+		f = 1.0471975512*cnt + time/33333
+		r = 2000 * (cnt!6)
+		xx = cos(f) * r
+		yy = sin(f) * r
+
+
+		; back-flr
+		gmode 5, , , 96
+		d3particle 3, xx, yy + 25, zz, 125
+
+
+		; body
+		a = (vcos + 1) * 128 ;0.0 - 256.0
+		repeat 2
+			; body (if cnt)
+			if cnt : d3circle xx, yy, zz, 100, 1
+
+			; light-side
+			gmode 6-cnt, , , a
+			d3particle 3, xx ,yy + 66, zz, 133
+
+			; dark-side
+			gmode 5+cnt, , , 256 - a
+			d3particle 3, xx, yy - 66, zz, 133
+		loop
+
+
+		; highlight (if vcos > 0)
+		gmode 5, , , vcos3 * 256
+		d3particle 3, xx, yy + 30, zz, 133
+
+
+		; shadow (if vcos < 0)
+		repeat 12, 1
+			gmode 6, , , vcos3 * (cnt - 16)
+			d3particle 3, xx, yy - cnt*100, zz, 111
+		loop
+	loop
+
+
+	if sunf {
+		; eclipse chk
+		pget sunx, suny
+
+
+		; sunlight (y = 0 - 600000)
+		gmode 5, , , vcos2 * (128 + ginfo_b) / 11
+		repeat 11
+			d3particle 3, 0, cnt*cnt*6000, 0, cnt*5000
+		loop
+
+
+		; lens flare
+		gmode 5, , , (vcos2-0.5) * ginfo_g / 3
+		repeat 21, -10
+			d3particle rnd(3), 0, cnt*100, 75, rnd(60)
+		loop
+	}
+
+
+	redraw
+	await ;10
+	goto *mainloop
+
+
+
+
+

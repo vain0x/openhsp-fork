@@ -1,0 +1,42 @@
+#include "hspinet.as"
+
+	;
+	;	ファイルの取得(メモリ上に取得)
+	;
+	;	旧HSP3掲示板(onionsoft.net)のキーワード検索メニューを指定し、結果を取得します
+	;
+
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	;	URLを指定
+	neturl "http://www.onionsoft.net/hsp/beta/"
+
+	;	GET形式でCGIにパラメーターを渡す
+	netrequest_get "betabbs.cgi?mode=find&page=0&list="
+
+	mes "DOWNLOAD 開始"
+
+*main
+	;	結果待ちのためのループ
+	netexec res
+	if res > 0 : goto *comp
+	if res < 0 : goto *bad
+	await 50
+	goto *main
+
+*bad
+	;	エラー
+	neterror estr
+	mes "ERROR "+estr
+	stop
+
+*comp
+	;	完了
+	mes "DOWNLOAD 完了"
+
+	netgetv buf
+	mesbox buf,640,400,1
+
+	stop
+

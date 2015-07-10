@@ -1,0 +1,24 @@
+	;
+	;	音声合成を使って喋らせます。
+	;	Windows XP以降の環境であれば、標準で音声合成が利用できます。
+	;	以下のスクリプトは、変数wordに代入された文字列を発音します。
+	;
+	;	このスクリプトでは英語しか話すことができません。
+	;	Windows XPでない人や、日本語を喋らせたいという人に向けては、
+	;	MS Agentというシステムが用意されています。
+	;	こちらのページから、日本語のシステムや、音声合成エンジンを
+	;	ダウンロードすることができます。
+	;	SAPI 4.0 runtime support、及びSpeech control panelをインストールすれば、
+	;	Windows95以降でも音声合成を利用することができるようになります。
+	;	http://www.microsoft.com/msagent/downloads/user.asp
+	;
+	;	さらに詳しく使いたい人は、Speech API (SAPI)資料を
+	;	参考にしてみてください。(以下のリンクは英文です。)
+	;	http://msdn2.microsoft.com/en-us/library/ms723627.aspx
+	;
+	newcom spv, "Sapi.SpVoice"
+	if varuse(spv)=0 : dialog "SAPI not found." : end
+	word="Hello this is H.S.P. for windows."
+	spv->"Speak" word, 1 ; 0だと終了待ち
+	mes word
+	stop

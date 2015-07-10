@@ -1,0 +1,79 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; d3texture 命令の面分割機能のサンプルです。
+;
+; 面の分割数を指定すると、d3texture 命令が自動的に面を分割して
+; 描画し、テクスチャ使用時の画質を向上します。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+	TEX_SIZE = 32 ; 使用するテクスチャの大きさ
+
+
+	; テクスチャを格納する仮想スクリーン
+
+	buffer 2, TEX_SIZE, TEX_SIZE, 0
+
+	repeat TEX_SIZE
+		y = cnt
+		repeat TEX_SIZE
+			x = cnt
+			color rnd(256), x*255/TEX_SIZE, y*255/TEX_SIZE
+			pset x, y
+		loop
+	loop
+
+
+	gsel 0
+	gmode 5, , , 224 ; 面を描画するときのコピーモードを設定
+
+
+*mainloop
+
+	; タイマー
+	time = d3timer()
+
+
+	; フレームレートを表示
+	title "fps = " + d3getfps()
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.002 * time) * 500, sin(0.002 * time) * 500, sin(0.001 * time) * 200
+
+	redraw 0
+
+	color : boxf
+	color 255, 255, 255
+
+	repeat 4, 1
+		ofz = cnt * 100 - 250
+
+		x = -100.0,  100.0,  100.0, -100.0
+		y = -100.0, -100.0,  100.0,  100.0
+		z = 50.0 + ofz, -50.0 + ofz, 50.0 + ofz, -50.0 + ofz
+
+		; 分割数を変化させて面を描画
+		d3texture  x, y, z,  2,  0, 0,  TEX_SIZE, TEX_SIZE,  cnt
+		;                                                     └─ 分割 (div) 値
+
+		d3mes "div = " + cnt, 0, 0, ofz
+	loop
+
+
+	redraw
+	await
+
+
+	goto *mainloop
+

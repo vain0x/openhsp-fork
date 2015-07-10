@@ -1,0 +1,66 @@
+#include "hgimg3.as"
+
+	;	線分モデル表示サンプル
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	線分モデル登録
+	;
+	addline m_line,,$ffffff	; 線分モデルの登録
+	regobj lobj,m_line	; オブジェクト登録
+	setpos lobj, 0,-5,0	; 座標の指定
+	setwork lobj, 10,-10,0	; 線分のオフセット
+
+	;	BOXモデル登録
+	;
+	addbox m_model,10,10
+	regobj obj, m_model		; オブジェクトの登録
+
+	clscolor $80			; 背景色の設定
+
+*main
+	stick key,$3ff
+	if key&128 : goto *owari
+
+	hgdraw				; 描画
+
+	fprt "Line Model Sample",8,8
+
+	hgsync 10			; 時間待ち
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : addpos HGOBJ_CAMERA, -0.2, 0.0
+	if key&1 : addpos HGOBJ_CAMERA, 0.2, 0.0
+	if key&64 {
+		if key&2 : addpos HGOBJ_CAMERA, 0,0, 0.2
+		if key&8 : addpos HGOBJ_CAMERA, 0,0, -0.2
+	} else {
+		if key&2 : addpos HGOBJ_CAMERA, 0.0, 0.2
+		if key&8 : addpos HGOBJ_CAMERA, 0.0, -0.2
+	}
+
+	;	モデルを回転させる
+	addang obj,0,0.05,0
+	addang lobj,0,0.05,0
+
+	goto *main
+
+*owari
+	end
+
+
+#include "hgimg3.as"
+hgini
+repeat
+hgdraw
+hgsync 10
+loop
+

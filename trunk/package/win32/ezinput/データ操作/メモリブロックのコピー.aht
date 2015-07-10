@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "memcpy"
+
+#define コピー先の変数	""	;;str
+#define コピー元の変数	""	;;str
+#define コピーするサイズ	""	;;str
+#define コピー先の変数メモリオフセット	"0"	;;str
+#define コピー元の変数メモリオフセット	"0"	;;str
+
+#ahtmes "memcpy "+コピー先の変数+" , "+コピー元の変数+" , "+コピーするサイズ+" , "+コピー先の変数メモリオフセット+" , "+コピー元の変数メモリオフセット+

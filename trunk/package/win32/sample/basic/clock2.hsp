@@ -1,0 +1,25 @@
+
+	;
+	;	デジタル時計サンプル　その2
+	;
+
+#include "hsp3util.as"	; gettimestr,getdatestrを使うため
+
+	screen 0,320,80		; 画面サイズ指定
+	font msgothic,30,1	; 文字サイズを指定
+
+	t1="":t2=""
+*tmprt
+	gettimestr t1			; 時刻を取得
+	getdatestr t2			; 日付を取得
+
+	redraw 0
+	color 255,255,255:boxf		; 白い色で背景を塗りつぶす
+	color 0,0,0			; 文字の色
+	pos 0,0:mes t1			; 時刻を表示
+	pos 0,40:mes t2			; 日付を表示
+	redraw 1
+
+	wait 100			; 1秒ウエイトする
+	goto *tmprt			; 無限ループ
+

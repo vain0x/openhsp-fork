@@ -1,0 +1,55 @@
+
+	;
+	;	カーソルキーで画像を動かす(4)
+	;
+	celload "face.bmp"				; 元画像ファイル
+	face=stat					; 元画像のIDを保存
+	celdiv face,64,64,32,32			; パーツのサイズと中心位置
+
+	x1=0 : y1=0					; 左上XY
+	x2=640 : y2=480					; 右下XY
+
+	mx=320.0					; X座標
+	my=240.0					; Y座標
+	msa=10.0					; 最大スピード
+	msp=0.5						; 加速スピード
+	mgo=0.0						; スピード
+	mr=0.0						; 角度
+	mrsp=0.1					; 角度回転スピード
+	px=0.0						; X移動ベクトル
+	py=0.0						; Y移動ベクトル
+	mdown=0.95					; 減衰率
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf						; 背景を消す
+
+	gmode 2						; 透明色ありの指定
+	pos mx,my					; 表示位置の設定
+	celput face,0,1,1,mr				; 画像コピー
+
+	redraw 1					; 描画終わり
+	await 20
+
+	stick key,15				; キー入力
+
+	if key&1 : mr-=mrsp
+	if key&4 : mr+=mrsp
+	if key&2 : mgo=msp : gosub *main2
+	if key&8 : mgo=-msp : gosub *main2
+
+	mx=limitf( mx+px, x1, x2 )
+	my=limitf( my+py, y1, y2 )
+
+	px=limitf( px*mdown, -msa, msa )
+	py=limitf( py*mdown, -msa, msa )
+
+	goto *main
+
+*main2
+	;	加速させる
+	rot=mr-1.57079632
+	px=px+cos(rot)*mgo
+	py=py+sin(rot)*mgo
+	return

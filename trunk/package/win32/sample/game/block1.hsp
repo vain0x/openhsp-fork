@@ -1,0 +1,39 @@
+	;
+	;	ブロック崩し(1)
+	;	(ボールの移動のみ行ないます)
+	;
+
+	x1=0:y1=0		; 画面左上の座標
+	x2=480:y2=640		; 画面右下の座標
+
+	blsize=16		; ボールのサイズ
+	blx=240:bly=400		; ボールの座標
+	bpx=8:bpy=8		; XY方向のボール座標加算値
+
+	screen 0,x2,y2
+
+*main
+	redraw 0
+	gradf 0,0,x2,y2,1,0,128	; 画面クリア
+
+	; ボール : X方向の移動
+	blx=blx+bpx
+	if blx<=x1 : blx=x1 : bpx=-bpx
+	if blx>=(x2-blsize) : blx=x2-blsize : bpx=-bpx
+
+	; ボール : Y方向の移動
+	bly=bly+bpy
+	if bly<=y1 : bly=y1 : bpy=-bpy
+	if bly>=(y2-blsize) : bly=y2-blsize : bpy=-bpy
+
+	; ボールを表示
+	pos blx,bly:color 255,255,255
+	font msgothic,blsize
+	mes "●"
+
+	redraw 1
+	await 16
+	goto *main
+
+
+

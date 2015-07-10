@@ -1,0 +1,35 @@
+; 環境変数の値を取得・表示するCGIプログラム
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/hensu.exe?あいうえお
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+
+#include "mod_getenv.as"
+
+	mes "Content-type: text/html\n"		; 出力先をHTMLページに指定
+
+	; 文字変数を用意
+	;
+	sdim a,256
+	sdim b,256
+	sdim c,256
+	sdim d,256
+	sdim e,256
+
+	; 環境変数の内容を文字変数に取得
+	;
+	getenv a,"REMOTE_HOST"
+	getenv b,"REMOTE_ADDR"
+	getenv c,"HTTP_USER_AGENT"
+	getenv d,"REQUEST_METHOD"
+	getenv e,"QUERY_STRING"
+
+	; 環境変数の内容を表示
+	;
+	mes "<p><b>環境変数</b><br>"
+	mes "REMOTE_HOST:"+a+"<br>"
+	mes "REMOTE_ADDR:"+b+"<br>"
+	mes "HTTP_USER_AGENT:"+c+"<br>"
+	mes "REQUEST_METHOD:"+d+"<br>"
+	mes "QUERY_STRING:"+e+"<br>"

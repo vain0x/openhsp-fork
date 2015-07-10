@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSP3Dish,iOS,iPhone,iPad">
+	<meta name="description" content="HSP3Dish iOS版に関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3Dish iOS版プログラミングガイド</title>
+</head>
+<body>
+	<div id="CONTAINER">
+	<!-- ヘッダー -->
+	<p id="COPY">HSP : HSP3Dish / onion software 2014(c)</p>
+	<img src="hsp3dish.jpg" width="640" height="200" alt="タイトル">
+	<h1>HSP3Dish iOS版 XCode5設定ガイド</h1>
+
+	<!-- 目次 -->
+	<ol>
+		<li><a href="#ABOUT">はじめに</a></li>
+		<li><a href="#MAKEPROJ">XCode5プロジェクトの作成</a></li>
+		<li><a href="#ADDHSP">HSP3Dish関連ファイルの登録</a></li>
+		<li><a href="#XCODE51">XCode5.1以降の設定</a></li>
+	</ol>
+
+	<h2 id="ABOUT">はじめに</h2>
+	<p>
+	このマニュアルでは、iOS版のHSP3Dishをビルドするために、XCode5で新規プロジェクトを生成するための手順を説明しています。
+	<br>
+	現在、最新のHSP3Dish開発環境ではHSP3Dish HelperがXCode5用のプロジェクトファイルを出力する形になっています。
+	このガイドでは、手動でXCode5のプロジェクトを生成する場合に参考にしてください。
+	開発環境やスクリプトの準備は、<a href="hsp3dish_ios.htm">通常の方法と同様です</a>。
+	特に問題がない場合は、HSP3Dish Helperが出力するプロジェクトファイルをお使い頂くことを推奨しています。
+	<br>
+	</p>
+
+	<h2 id="MAKEPROJ">XCode5プロジェクトの作成</h2>
+	<p><b>
+	現在のiOS開発環境最新版は、XCode5となります。
+	以前のバージョンとなる、Xcode4を使用するためのガイドは<a href="hsp3dish_xcode4.htm">こちらを参照してください</a>。
+	</b></p>
+	<p>
+	OSX上でXcode5を起動して新規プロジェクト(Create a new Xcode project)を選択します。
+	テンプレートの選択画面になりますので、「iOS Application」の「Empty Application」を選び「Next」を押してください。
+	</p>
+	<img src="hsp3dish/s_proj1_5.jpg"><br>
+	<p>
+	オプション画面で、製品名(Product Name)入力します。<br>
+	識別子(Company Identifier)は、作成者を識別する名前(メーカー名など)を入力します。<br>
+	Device FamilyはiPhoneやiPadなどの任意のデバイスを設定します。その他の項目は、基本的にはそのままにしておいてください。
+	</p>
+	<p>
+	次に、プロジェクトのフォルダを作成する場所を設定します。これは任意の場所を指定して構いません。<br>
+	正常にプロジェクトが作成されると、開発環境(IDE)が起動します。<br>
+	メインウィンドウにプロジェクトの概要(General)が表示されるはずです。
+	</p>
+	<img src="hsp3dish/xcode5_opt2.jpg"><br>
+	<br>
+	<p>
+	HSP3Dishでは、最低動作バージョン(Deployment Target)を4.3に指定することを推奨しています。
+	XCode5でこの設定を変更するためには、最初にプロジェクトのビルド設定(Build Settings)タブのArchitecturesを
+	変更する必要があります。デフォルトでは、64bitアーキテクチャを含む設定になっているので、
+	これをStandard(armv7,armv7sのみ)にしてください。
+	これにより、Deployment Targetを4.3に指定することが可能です。
+	</p>
+	<img src="hsp3dish/xcode5_opt3.jpg"><br>
+	<br>
+
+	<p>
+	さらに、コンパイラの設定を以下のように変更する必要があります。<br>
+	プロジェクトのビルド設定(Build Settings)タブの「Apple LLVM 5.0 - Language - Objective C」項目、「Objective-C Automatic Referece Counting」を「No」に変更します。
+	</p>
+	<img src="hsp3dish/xcode5_opt5.jpg"><br>
+	<br>
+
+	<p>
+	同じく、ビルド設定(Build Settings)タブの「Apple LLVM 5.0 - Language」項目、「C Language Dialect」を「GNU99 [-std=gnu99]」に変更。<br>
+「Apple LLVM 5.0 - Language - C++」項目、「C++ Language Dialect」「C++ Standard Library」をすべて「Compiler Default」に変更。<br>
+「Apple LLVM 5.0 - Language - Modules」項目、「Enable Modules (C and Objective-C)」「No」にそれぞれ変更してください。
+	</p>
+	<img src="hsp3dish/xcode5_opt1.jpg"><br>
+	<br>
+
+
+	<p>
+	最後にビルド設定(Build Settings)タブの「Packaging」項目、「Compress PNG Files」を「No」に変更するのを忘れないでください。
+	</p>
+	<img src="hsp3dish/xcode5_opt4.jpg"><br>
+	<br>
+
+	<p>
+	以上で新規プロジェクトファイルの設定が完了します。<br>
+	尚、以前のXCodeで作成されたプロジェクトファイルは問題なく読み込みビルドすることが可能です。
+	</p>
+
+	<h2 id="ADDHSP">HSP3Dish関連ファイルの登録</h2>
+	<p>
+	作成されたプロジェクトのフォルダと同じ階層に、「iHSP20」フォルダを配置してください。
+	「iHSPxx」フォルダはアーカイブ内のiOSフォルダに同梱されています。
+	</p>
+	<img src="hsp3dish/s_menu.jpg" style="float:right;">
+	<img src="hsp3dish/s_folder.jpg"><br>
+	<p>
+	XCode上でプロジェクトに必要なファイルを追加してください。<br>
+	Fileメニューから、「Add Files to～」を選択し、「iHSP20」のフォルダ(下層も含む)を追加(Add)します。<br>
+	さらに、Windows上で作成されたCソースファイル(拡張子が.cppのファイル)を追加(Add)します。<br>
+	</p>
+	<p>
+	続いて、プロジェクトにフレームワークの追加を行ないます。以下のフレームワークを追加してください。
+	</p>
+	<ul>
+	<li>AudioToolbox.framework</li>
+	<li>OpenAL.framework</li>
+	<li>OpenGLES.framework</li>
+	<li>QuartzCore.framework</li>
+	<li>iAd.framework</li>
+	</ul>
+	<p>
+	フレームワークの追加は、プロジェクトの「General」タブの「Linked Frameworks and Libraries」項目の「+」ボタンで行なうことができます。
+	</p>
+	<img src="hsp3dish/xcode5_opt2.jpg"><br><br>
+	<p>
+	プロジェクトの「Summary」タブで、サポートされる画面の方向、ステータスバーの表示設定(フルスクリーンにする場合は、Hide during application launchにチェックを入れる)を行なってください。
+	</p>
+	<p>
+	アイコンやデータファイル(画像やサウンド)がある場合は、「Resource」フォルダを作成してプロジェクトに追加(Add)してください。(サンプルプロジェクトのResourceフォルダなどを参考にしてみてください)
+	</p>
+	<img src="hsp3dish/s_resource.jpg"><br><br>
+
+	<p>
+	以上で、HSP3Dish関連ファイルの登録が整いました。<br>
+	アプリアイコンやスタートアップスクリーンなどは、必要に応じて登録を行なってください。
+	</p>
+	<p>
+	新規プロジェクトを作成した場合は、デフォルトでビルドスキームがDebugになっています。
+	ProductメニューのEdit Scheme...の設定で、Build Configurationを「Release」に変更することで、最適化されたコードが出力され、より高速に実行されます。
+	</p>
+
+
+	<h2 id="XCODE51">XCode5.1以降の設定</h2>
+	<p>
+	XCode5.1以降では、64bitアーキテクチャがデフォルトで指定されているため、それまでのプロジェクトをコンパイルしようとする場合にもエラーとなってしまいます。
+	これを解決するには、プロジェクトのBuild Settingsタブにある、「Architectures」内の、「Architectures」項目が「$(ARCHS_STANDARD)」になっているのを、「$(ARCHS_STANDARD_32_BIT)」に変更します。<br>
+	変更後に、プロジェクトを一度クリーン(ProductメニューのClean項目)してから、再度ビルドを行なうようにしてください。
+	</p>
+
+
+
+	<!-- フッター -->
+	<ul id="FOOTER">
+		<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+		<li><a href="../index.htm">インデックスに戻る</a></li>
+	</ul>
+	<a href="http://www.onionsoft.net/">
+		<img src="onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+	</a>
+</div><!-- container -->
+</body>
+</html>

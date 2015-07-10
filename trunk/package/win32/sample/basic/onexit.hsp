@@ -1,0 +1,13 @@
+
+	onexit *exit
+	mes "スクリプト終了テスト(クローズボックスを押してみてください)"
+	button "END",*owari
+	stop
+*exit
+	dialog "終了していいですか?",2,"On exit prompt"
+	if stat=7 : stop
+*owari
+	end
+
+
+

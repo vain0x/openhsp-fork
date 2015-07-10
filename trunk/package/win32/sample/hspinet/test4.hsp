@@ -1,0 +1,19 @@
+#include "hspinet.as"
+
+;
+;	ファイルのCRC32、MD5を得る
+;
+
+dialog "",16
+fname = refstr
+
+mes "FILE="+fname
+filecrc a,fname
+mes "CRC="+a
+mes "SIZE="+strsize
+
+filemd5 md5,fname
+mes "MD5="+md5
+
+stop
+

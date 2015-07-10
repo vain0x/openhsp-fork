@@ -1,0 +1,161 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; d3setlocal 命令で、ローカル座標系を設定することが出来ます。
+;
+; この命令を使用することで、d3setcam だけでは実現できなかった
+; さまざまな座標変換設定を行うことができます。
+;
+; ローカル座標系は、d3setcam でカメラ位置を初期化した後に何度
+; でも変更可能で、複数の飛行物体が飛び回る画面の描画などが簡単
+; に行えるようになります。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+
+*mainloop
+	time = d3timer()
+
+	title "fps = " + d3getfps()
+
+	redraw 0
+	color 16, 16, 12 : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.0005 * time) * 2000, sin(0.0005 * time) * 1500, cos(0.0007 * time) * 1000
+
+
+	; グローバル座標系で座標軸を描画
+	color 128, 128, 96
+
+	d3arrow 1000, 0, 0,  -1000, 0, 0
+	d3arrow 0, 1000, 0,  0, -1000, 0
+	d3arrow 0, 0, 1000,  0, 0, -1000
+
+	d3mes "X", 1100, 0, 0
+	d3mes "Y", 0, 1100, 0
+	d3mes "Z", 0, 0, 1100
+
+
+	; ボックス描画
+
+	POLYS = 7 ; 分割数
+	dh = 6.2831853 / POLYS
+	r  = 900
+
+	repeat POLYS
+		p = dh * cnt
+		f = 0.002 * time - p
+
+		;------------------------------------------------------------
+		; ローカル座標系設定
+
+		d3setlocal cos(p)*r,sin(p)*r,0,  cos(f),sin(f),0,  -sin(f),cos(f),0,  0,0,1
+
+		;         └┬────────┘└┬───────────────────┘
+		;           │                    └ 3x3 座標変換マトリクス
+		;           └ 原点からの移動位置
+		;------------------------------------------------------------
+
+
+		; 現在のローカル座標系で座標軸を描画
+		color 128, 128, 96
+
+		d3arrow 300, 0, 0,  -300, 0, 0
+		d3arrow 0, 300, 0,  0, -300, 0
+		d3arrow 0, 0, 300,  0, 0, -300
+
+		d3mes "X", 350, 0, 0
+		d3mes "Y", 0, 350, 0
+		d3mes "Z", 0, 0, 350
+
+
+		; ボックス描画
+		color 255, 255, 192
+		d3box 300, 400, 100,  -300, 200, -100
+	loop
+
+
+	; 球体オブジェクト描画
+	repeat 2
+
+		; ローカル座標 平行移動量 + 3x3 変形マトリクス 設定
+		if cnt = 0 {
+			f = 0.002 * time
+			; ローカル座標系設定
+			d3setlocal 0,0,500,  sin(f),0,cos(f),  0,1,0,  -cos(f),0,sin(f)
+		}
+		if cnt = 1 {
+			f = 0.002 * time + 1.6
+			; ローカル座標系設定
+			d3setlocal ,,-500,  sin(f),0,cos(f),  0,1,0,  cos(f),0,-sin(f)
+		}
+
+
+		; 現在のローカル座標系で座標軸を描画
+		color 128, 128, 96
+
+		d3arrow 400, 0, 0,  -400, 0, 0
+		d3arrow 0, 400, 0,  0, -400, 0
+		d3arrow 0, 0, 400,  0, 0, -400
+
+		d3mes "X", 500, 0, 0
+		d3mes "Y", 0, 500, 0
+		d3mes "Z", 0, 0, 500
+
+
+		; 球体オブジェクト描画 (sample_08 とほぼ同じもの)
+		color 255, 255, 192
+
+		POLYS = 12 ; 分割数
+		dh = 6.2831853 / POLYS
+
+		r = 500
+
+		; oOOo
+		repeat POLYS / 2 - 1, 1
+			ph = dh * cnt
+			d3initlineto
+			repeat POLYS + 1
+				th = dh * cnt
+				x = 0
+				y = 0
+				z = r
+				d3rotate y, z, y, z, ph
+				d3rotate x, y, x, y, th
+				d3lineto x, y, z
+			loop
+		loop
+
+		; (())
+		repeat POLYS
+			th = dh * cnt
+			d3initlineto
+			repeat POLYS / 2 + 1
+				ph = dh * cnt
+				x = 0
+				y = 0
+				z = r
+				d3rotate y, z, y, z, ph
+				d3rotate x, y, x, y, th
+				d3lineto x, y, z
+			loop
+		loop
+	loop
+
+
+	redraw
+	await
+
+
+	goto *mainloop

@@ -1,0 +1,20 @@
+#include "mod_rss.as"
+
+	;	RSSリーダーサンプル
+	;
+	url="http://hotwired.goo.ne.jp/news/index.rdf"
+	rssload desc, link, url, 6
+	;
+	if stat=1 : dialog "取得に失敗しました。" : end
+	if stat=2 : dialog "RSSではありません。" : end
+	;
+	mes "RSSの内容を表示します。"
+	mes url
+	mes "----------------------------------------------------------------"
+
+	foreach desc
+	mes ""+cnt+":"+desc(cnt)
+	mes "    ("+link(cnt)+")"
+	loop
+
+	stop

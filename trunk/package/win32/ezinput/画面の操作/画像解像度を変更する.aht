@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "chgdisp"
+
+#define モードの設定	"0"	;;str
+#define X方向の画像解像度の設定	"640"	;;str
+#define Y方向の画像解像度の設定	"480"	;;str
+
+#ahtmes "chgdisp "+モードの設定+" , "+X方向の画像解像度の設定+" , "+Y方向の画像解像度の設定+

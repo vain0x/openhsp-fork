@@ -1,0 +1,45 @@
+
+#include "hspsock.as"
+
+	title "TCPクライアントテスト"
+
+	;
+	;	HSPによるTCP/IPサーバー・クライアント通信のスクリプトです。。
+	;	TCPサーバーに接続して、サーバーから文字列を取得して終わります。
+	;	このスクリプトは、server.asのスクリプトと対にしてお使いください。
+	;	あらかじめ、server.asを実行してあるLAN上の別マシンに接続します。
+	;	変数adrに接続先のIPアドレスを、portにポート番号(変更しなくても可)
+	;	を設定してください。接続に成功すると、サーバー側の時刻が文字列
+	;	として送信されてきます。
+	;
+	;	このスクリプトは、LAN接続を前提に作成された簡単なモデルです。
+	;	インターネットなどの、速度が安定しない通信環境や、負荷のかかる
+	;	ホストでは、送受信が遅れた場合などの対処が必要になる場合があります。
+	;
+
+	adr="127.0.0.1"
+	port=999
+	mes adr+"、ポート"+port+"に接続中..."
+	sockopen 0,adr,port
+	if stat : dialog "socket error" : goto *bye
+
+	mes "接続しました..."
+
+	a=0
+	repeat
+	sockcheck 0
+	title "CHK="+stat+"/"+a
+	if stat!=0 : break
+	wait 10
+	a+
+	loop
+
+	a=""
+	sockget a,64
+	if stat : dialog "socket error" : goto *bye
+	mes "サーバーからのメッセージ : "+a
+*bye
+	mes "終了"
+	sockclose
+	stop
+

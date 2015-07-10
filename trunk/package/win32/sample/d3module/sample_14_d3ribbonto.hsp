@@ -1,0 +1,103 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; d3ribbonto 命令を使用して、リボン状の連続平面を描画する
+; サンプルです。
+;
+; d3ribbonto 命令は、d3lineto 命令の平面バージョンのような
+; もので、d3square で実現するよりも簡単な記述で、高速に
+; リボン状に連続する平面を描画できます。
+;
+; d3ribbonto 命令で連続平面を描画する前に、d3initlineto で
+; 初期化を行います。これも d3lineto 命令と同様です。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+	time_start = d3timer()
+
+
+*mainloop
+
+	; ループタイマー
+	time = d3timer() - time_start
+
+
+	; フレームレートを表示
+	title "fps = " + d3getfps()
+
+
+	redraw 0
+
+	randomize 0
+
+	color : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.001 * time) * 500, sin(0.001 * time) * 750, cos(0.001 * time) * 1000
+
+
+	; ゼンマイ描画
+
+	color 255, 64, 64
+
+	; d3ribbonto 命令使用前の初期化 (d3lineto と似た扱い)
+	d3initlineto
+
+	repeat 100
+		x = cos(0.4 * cnt) * 10 * cnt
+		y = sin(0.4 * cnt) * 10 * cnt
+		z1 = -cnt
+		z2 =  cnt
+
+		; 面を描画するときのコピーモードを設定
+		gmode 5, , , 64 + rnd(128)
+
+
+		;------------------------------------------------------------
+		; リボン状に連続する面を描画
+
+		d3ribbonto  x, y, z1,  x, y, z2
+
+		;          └┬──┘ └┬──┘
+		;            │         └ 位置 2 (x, y, z)
+		;            └── 位置 1 (x, y, z)
+		;------------------------------------------------------------
+	loop
+
+
+	; らせん描画
+
+	color 255, 255, 64
+
+	d3initlineto
+
+	repeat 100
+		x = cos(0.3 * cnt) * sin(3.14 * cnt / 100) * 100
+		y = sin(0.3 * cnt) * sin(3.14 * cnt / 100) * 100
+		z1 = (cnt-51) * 20
+		z2 = (cnt-50) * 20
+
+		; 面を描画するときのコピーモードを設定
+		gmode 5, , , 64 + rnd(128)
+
+		; 描画
+		d3ribbonto  x, y, z1,  -x, -y, z2
+	loop
+
+
+	redraw
+	await
+
+
+	goto *mainloop
+

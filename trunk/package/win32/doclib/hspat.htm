@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSPTV">
+	<meta name="description" content="HSPTVに関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSPアシスタントマニュアル</title>
+</head>
+<body>
+	<div id="CONTAINER">
+		<!-- ヘッダー -->
+		<p id="COPY">HSP : Hot Soup Processor ver3.4 / onion software 1997-2014(c)</p>
+		<img src="hsp3ttl.jpg" alt="タイトル" width="640" height="200">
+		<h1>HSPアシスタントマニュアル</h1>
+
+		<!-- 目次 -->
+		<ol>
+			<li><a href="#ABOUT">HSPアシスタントとは</a></li>
+			<li><a href="#EZINPUT">EZInputカテゴリ</a></li>
+			<li><a href="#SAMPLE">Sampleカテゴリ</a></li>
+			<li><a href="#NETWORK">Networkカテゴリ</a></li>
+			<li><a href="#HSED">HSPスクリプトエディタとの連携</a></li>
+			<li><a href="#LICENCE">著作権とライセンス</a></li>
+		</ol>
+
+		<h2 id="ABOUT">HSPアシスタントとは</h2>
+		<img src="img/s_hspat1.jpg" style="float:right;">
+		<p>
+			「HSPアシスタント」は、サンプルの参照やスクリプト作成の補助、素材の取得
+			といったプログラミングに役立つ機能をまとめたツールです。
+		</p>
+		<p>
+			「HSPアシスタント」のショートカットアイコンから起動するか、 HSP3がインストールされているフォルダの「hspat.exe」を
+			起動させることでPeasエディタを使用することができます。
+			また、HSPスクリプトエディタの「ツール」メニューから「HSPアシスタント起動」を選択することでも起動できます。
+		</p>
+		<p>
+			「HSPアシスタント」は、コンパクトなサイズでスクリプトエディタとともにウィンドウ上に配置して、
+			必要な時に機能を呼び出すことのできるツールです。
+		</p>
+		<p>
+			「HSPアシスタント」では機能を大きく3つのカテゴリに分けて、3つのメニューが用意されています。
+			ウィンドウ内の「EZInput」「Sample」「Network」のボタンをそれぞれクリックすることで、
+			メニューのカテゴリを変更することができます。
+		</p>
+
+
+		<h2 id="EZINPUT">EZInputカテゴリ</h2>
+		<p>
+			EZInputカテゴリでは、スクリプトエディタの持つ「かんたん入力」機能を呼び出すことができます。
+			これにより、HSPの命令を目的の機能から検索して、パラメーター等を入力することができるようになります。
+		</p>
+		<p>
+			EZInputでは、ウィンドウ内に機能別のフォルダが展開されます。
+			必要な機能フォルダをクリックすることで、さらにサブメニューが開きます。
+		</p>
+		<p>
+			機能を示すアイコンをクリックすることで、「かんたん入力」のダイアログが開きます。
+			「かんたん入力」では、必要なパラメーターを入力して、「OK」ボタンを押すことで、
+			スクリプトエディタに命令とパラメーターが自動的に入力されます。
+			また、「help」ボタンを押すことで機能が実行される命令のヘルプを開きます。
+		</p>
+		<p>
+			EZInputカテゴリは、プログラムを組んでいて必要な機能を探したい時、
+			便利な命令を探すための助けになります。
+		</p>
+
+
+		<h2 id="SAMPLE">Sampleカテゴリ</h2>
+		<img src="img/s_hspat2.jpg" style="float:right;">
+		<p>
+			Sampleカテゴリでは、HSPのサンプルスクリプトの読み込み、実行をダイレクトに行なうことができます。
+			これにより、収録されているサンプルスクリプトを効率よく検索、閲覧することができるようになります。
+		</p>
+		<p>
+			グループを示すフォルダアイコンをクリックすることで、関連するサンプルスクリプトの一覧が開きます。
+			サンプルスクリプトのアイコンをクリックして選択すると、スクリプトの一部が表示され、その上に「run」「edit」「back」のボタンが表示されます。
+		</p>
+		<p>
+			「run」ボタンでスクリプトの実行、「edit」ボタンでスクリプトエディタに読み込みを行ないます。
+			「back」ボタンを押すと何もせずにスクリプトの選択を解除します。
+		</p>
+			
+
+
+		<h2 id="NETWORK">Networkカテゴリ</h2>
+		<img src="img/s_hspat3.jpg" style="float:right;">
+		<p>
+			Networkカテゴリでは、ネットワーク上に用意されている画像や音声、スクリプトを始めとする素材をダウンロードすることができます。
+			標準では、HSPTVが提供する素材ライブラリにアクセスします。
+			これにより、必要なデータを手軽にネットワーク上から取得して、自分の作品に利用することができるようになります。
+		</p>
+		<p>
+			グループを示すフォルダアイコンをクリックすることで、関連する素材の一覧が開きます。
+			(「設定」は特別なグループで、HSPアシスタントに関する様々な設定を変更することができます。)
+		</p>
+		<p>
+			素材のアイコンをクリックして選択すると内容が表示され、その上に「get」「back」のボタンが表示されます。
+			「get」ボタンを押すことで、選択した素材の読み込みを行ないます。
+			「back」ボタンを押すと何もせずに素材の選択を解除します。
+		</p>
+		<p>
+			取得された素材は、指定されたダウンロードフォルダに保存されます。
+			ダウンロードフォルダの設定は、「設定」グループ内で行なってください。
+		</p>
+
+
+		<h2 id="HSED">HSPスクリプトエディタとの連携</h2>
+		<p>
+			HSP3.3以降では、HSPスクリプトエディタの起動と連携してHSPアシスタントが
+			起動されるようになっています。
+		</p>
+		<p>
+			HSPアシスタントの自動起動を中止したい場合には、HSPスクリプトエディタの「ツール」→「オプション」メニューから設定ダイアログを表示し、
+			「動作」タブの「HSPアシスタント自動起動」のチェックを外してください。
+			次回の起動から、HSPアシスタントは自動で起動しなくなります。
+		</p>
+		<p>
+			HSPアシスタントは、独立したアプリケーションとして動作し、HSPスクリプトエディタの有無に関わらず使用することができます。
+			単独で使用することもできますし、HSPスクリプトエディタの起動中にいつでも終了・再開することが可能です。
+		</p>
+
+
+		<h2 id="LICENCE">著作権とライセンス</h2>
+		<p>
+			HSPアシスタントはonion softwareが著作権を持っています。
+		</p>
+		<p>
+			HSPアシスタントは、「HSP3.3」に同梱される形で配布されています。
+			再配布の規定は、「HSP3.3」と同様です。無償で行なわれる限りは、自由に行なって頂いて構いません。 
+		</p>
+		<p>
+			HSPアシスタントのソーススクリプトは、HSPSDKに含まれており、
+			誰でも自由に改造、改編、再配布を行なうことが可能です。
+			再配布は、ソーススクリプト形態でも、実行ファイルの形態であっても構いません。
+		</p>
+
+		<!-- フッター -->
+		<ul id="FOOTER">
+			<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+			<li><a href="../index.htm">ドキュメントの一覧に戻る</a></li>
+			<li><a href="http://hsp.tv/">Go to HSPTV page</a></li>
+		</ul>
+		<a href="http://www.onionsoft.net/hsp/">
+			<img src="img/onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+		</a>
+	</div><!-- container -->
+</body>
+</html>

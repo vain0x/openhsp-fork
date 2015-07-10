@@ -1,0 +1,59 @@
+#include "obaq.as"
+
+	;
+	;	重力のない平面でのビリヤード風動作サンプル
+	;	カーソルキー左右で角度を決定してスペースキーで発射します
+	;	[ESC]で終了します
+	;
+	randomize		; 乱数の初期化
+	screen 0,640,480	; ウィンドウ初期化
+	celload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+	qreset			; OBAQの初期化
+	qgravity 0,0		; 重力なし
+
+	qborder -40,-50,40,50
+	cenx=320/4:ceny=240/4
+
+	hako=10
+	repeat 100
+		if hako=0 : break
+		qaddpoly my, 16, cenx+rnd(60)-30,ceny+rnd(100)-50,0,5,5		; 多角形を追加
+		if my>=0 {
+			hako--
+		}
+
+	loop
+
+*main
+	;	メインループ
+	;
+	redraw 0		; 画面の更新を開始
+	gradf ,,,,1,0,128	; 画面クリア
+	qexec			; OBAQによるオブジェクトの更新
+
+	stick key,15		; キーの取得
+	if key&128 : end	; [ESC]キーで終了
+
+	qgetpos my, xx,yy,mr
+	if key&1 : mr-=0.05
+	if key&4 : mr+=0.05
+	qpos my, xx,yy,mr
+
+	if key&16 {
+		qspeed my, cos(mr), sin(mr)
+	}
+
+	qdraw			; オブジェクトの描画
+
+	color 255,255,255
+	qcnvaxis x,y,xx,yy
+	pos x,y:line x+cos(mr)*32,y+sin(mr)*32
+
+	gmode 2:pos 500,404	; ロゴ表示
+	celput logoid
+
+	redraw 1		; 画面の更新を終了
+	await 12		; 一定時間待つ
+	goto *main
