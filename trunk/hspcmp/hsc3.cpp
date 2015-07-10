@@ -87,6 +87,7 @@ void CHsc3::AddSystemMacros( CToken *tk, int option )
         tk->RegistExtMacro( "__include_level__", 0 );
         tk->RegistExtMacro( "__module__", "\"\"" );
         tk->RegistExtMacro( "__func__", "" );
+		tk->RegistExtMacro( "__hsp3_uedit__", 1 );
 		if ( option & HSC3_OPT_DEBUGMODE ) tk->RegistExtMacro( "_debug", "" );
 	}
 }
