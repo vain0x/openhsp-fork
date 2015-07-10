@@ -24,16 +24,6 @@
 
 class CMemBuf;
 class CToken;
-
-/*
-	rev 54
-	lb_info の型を void * から CLabel * に変更。
-
-	hsc3.cpp:207
-	mingw : warning : void * 型の delete は未定義
-	に対処。
-*/
-
 class CLabel;
 
 // HSC3 class
@@ -82,7 +72,7 @@ private:
 
 	//		for Compile Optimize
 	int cmpopt;
-	CLabel *lb_info;
+	std::shared_ptr<CLabel> lb_info;
 };
 
 

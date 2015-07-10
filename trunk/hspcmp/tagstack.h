@@ -8,7 +8,7 @@
 #define TAGSTK_MAX 256
 #define TAGSTK_SIZE 124
 #define TAGSTK_TAGMAX 256
-#define TAGSTK_TAGSIZE 16
+#define TAGSTK_TAGSIZE 56
 
 // tag info storage
 typedef struct TAGINF {
@@ -28,7 +28,6 @@ typedef struct TAGDATA {
 class CTagStack {
 public:
 	CTagStack();
-	~CTagStack();
 
 	int GetTagID( char *tag );
 	char *GetTagName( int tagid );
@@ -50,7 +49,6 @@ private:
 
 	//		Private members
 	//
-	int StrCmp( char *str1, char *str2 );
 	int SearchTagID( char *tag );
 	int RegistTagID( char *tag );
 };

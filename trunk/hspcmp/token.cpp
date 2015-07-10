@@ -60,7 +60,7 @@ void CToken::Error( char *mes )
 }
 
 
-void CToken::LineError( char *mes, int line, char *fname )
+void CToken::LineError( char *mes, int line, char const *fname )
 {
 	//		エラーメッセージ登録(line/filename)
 	//
@@ -129,28 +129,13 @@ int CToken::AddPackfile( char *name, int mode )
 //-------------------------------------------------------------
 
 CToken::CToken( void )
+	: lb(new CLabel)
+	, tmp_lb(nullptr)
+	, tstack(new CTagStack)
+	, filename_table(new std::set<std::string>())
 {
 	s3 = (unsigned char *)malloc( s3size );
-	lb = new CLabel;
-	tmp_lb = NULL;
 	hed_cmpmode = CMPMODE_OPTCODE | CMPMODE_OPTPRM | CMPMODE_SKIPJPSPC;
-	tstack = new CTagStack;
-	errbuf = NULL;
-	packbuf = NULL;
-	ahtmodel = NULL;
-	ahtbuf = NULL;
-	scnvbuf = NULL;
-	ResetCompiler();
-}
-
-
-CToken::CToken( char *buf )
-{
-	s3 = (unsigned char *)malloc( s3size );
-	lb = new CLabel;
-	tmp_lb = NULL;
-	hed_cmpmode = CMPMODE_OPTCODE | CMPMODE_OPTPRM | CMPMODE_SKIPJPSPC;
-	tstack = new CTagStack;
 	errbuf = NULL;
 	packbuf = NULL;
 	ahtmodel = NULL;
@@ -164,26 +149,19 @@ CToken::~CToken( void )
 {
 	if ( scnvbuf!=NULL ) InitSCNV(-1);
 
-	if ( tstack!=NULL ) { delete tstack; tstack = NULL; }
-	if ( lb!=NULL ) { delete lb; lb = NULL; }
 	if ( s3 != NULL ) { free( s3 );s3 = NULL; }
 //	buffer = NULL;
 }
 
 
-CLabel *CToken::GetLabelInfo( void )
+std::shared_ptr<CLabel> CToken::GetLabelInfo( void )
 {
 	//		ラベル情報取り出し
-	//		(CLabel *を取得したらそちらで、deleteすること)
-	//
-	CLabel *res;
-	res = lb;
-	lb = NULL;
-	return res;
+	return lb;
 }
 
 
-void CToken::SetLabelInfo( CLabel *lbinfo )
+void CToken::SetLabelInfo( std::shared_ptr<CLabel> lbinfo )
 {
 	//		ラベル情報設定
 	//
@@ -438,7 +416,7 @@ int CToken::GetToken( void )
 	if ((a1>=0x5b)&&(a1<=0x5e)) rval=TK_NONE;
 	if ((a1>=0x7b)&&(a1<=0x7f)) rval=TK_NONE;
 
-	if (a1==':') {							// multi statement
+	if (a1==':' || a1 == '{' || a1 == '}') {   // multi statement
 		wp++;
 		return TK_SEPARATE;
 	}
@@ -2645,7 +2623,7 @@ ppresult_t CToken::PP_Module( void )
 	int res,i,id,fl;
 	char *word;
 	char tagname[MODNAME_MAX + 1];
-	char tmp[0x4000];
+	//char tmp[0x4000];
 
 	word = (char *)s3; fl = 0;
 	i = GetToken();
@@ -3283,7 +3261,7 @@ int CToken::ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preproces
 }
 
 
-int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
+int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname )
 {
 	//		stringデータをmembufへ展開する
 	//
@@ -3411,7 +3389,7 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 }
 
 
-int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
+int CToken::ExpandFile( CMemBuf *buf, char *fname, char const *refname )
 {
 	//		ソースファイルをmembufへ展開する
 	//
@@ -3453,7 +3431,7 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 	buf->PutStrf( "##0 %s\r\n", fname_literal );
 	free( fname_literal );
 
-	strcpy2( refname_copy, refname, sizeof refname_copy );
+	strcpy(refname_copy, refname);
 	res = ExpandLine( buf, &fbuf, refname_copy );
 
 	if ( res == 0 ) {

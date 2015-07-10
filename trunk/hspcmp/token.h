@@ -129,16 +129,15 @@ class AHTMODEL;
 class CToken {
 public:
 	CToken();
-	CToken( char *buf );
 	~CToken();
-	CLabel *GetLabelInfo( void );
-	void SetLabelInfo( CLabel *lbinfo );
+	std::shared_ptr<CLabel> GetLabelInfo();
+	void SetLabelInfo( std::shared_ptr<CLabel> lbinfo );
 
 	void InitSCNV( int size );
 	char *ExecSCNV( char *srcbuf, int opt );
 
 	void Error( char *mes );
-	void LineError( char *mes, int line, char *fname );
+	void LineError( char *mes, int line, char const *fname );
 	void SetError( char *mes );
 	void Mes( char *mes );
 	void Mesf( char *format, ...);
@@ -158,8 +157,8 @@ public:
 	ppresult_t PreprocessNM( char *str );
 	void PreprocessCommentCheck( char *str );
 
-	int ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname );
-	int ExpandFile( CMemBuf *buf, char *fname, char *refname );
+	int ExpandLine( CMemBuf *buf, CMemBuf *src, char const *refname );
+	int ExpandFile( CMemBuf *buf, char *fname, char const *refname );
 	void FinishPreprocess( CMemBuf *buf );
 	void SetCommonPath( char *path );
 	int SetAdditionMode( int mode );
@@ -310,7 +309,7 @@ private:
 
 	void GenerateCodePP_regcmd( void );
 	void GenerateCodePP_cmd( void );
-	void GenerateCodePP_deffunc0( int is_command );
+	void GenerateCodePP_deffunc0( bool is_command );
 	void GenerateCodePP_deffunc( void );
 	void GenerateCodePP_defcfunc( void );
 	void GenerateCodePP_uselib( void );
@@ -381,9 +380,9 @@ private:
 
 	//		Data
 	//
-	CLabel *lb;						// label object
-	CLabel *tmp_lb;					// label object (preprocessor reference)
-	CTagStack *tstack;				// tag stack object
+	std::shared_ptr<CLabel> lb;         // label object
+	std::shared_ptr<CLabel> tmp_lb;     // label object (preprocessor reference)
+	std::unique_ptr<CTagStack> tstack;  // tag stack object
 	CMemBuf *errbuf;
 	CMemBuf *wrtbuf;
 	CMemBuf *packbuf;

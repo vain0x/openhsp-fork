@@ -60,7 +60,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) "D:/Tool/hsp/hspcmp_debug.dll"</Command>
+      <Command>copy $(TargetPath) "D:/Tool/hsp/hspcmp.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

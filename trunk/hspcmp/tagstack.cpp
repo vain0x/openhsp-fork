@@ -12,23 +12,6 @@
 //		Routines
 //-------------------------------------------------------------
 
-int CTagStack::StrCmp( char *str1, char *str2 )
-{
-	//	string compare (0=not same/-1=same)
-	//  (case sensitive)
-	int ap;
-	char as;
-	ap=0;
-	while(1) {
-		as=str1[ap];
-		if (as!=str2[ap]) return 0;
-		if (as==0) break;
-		ap++;
-	}
-	return -1;
-}
-
-
 int CTagStack::SearchTagID( char *tag )
 {
 	//		É^ÉOÇåüçı
@@ -36,7 +19,7 @@ int CTagStack::SearchTagID( char *tag )
 	int i;
 	if ( tagent==0 ) return -1;
 	for(i=0;i<tagent;i++) {
-		if ( StrCmp( mem_tag[i].name, tag )) return i;
+		if ( !strcmp(mem_tag[i].name, tag) ) return i;
 	}
 	return -1;
 }
@@ -46,11 +29,9 @@ int CTagStack::RegistTagID( char *tag )
 {
 	//		É^ÉOÇìoò^
 	//
-	int i,len;
 	if ( tagent>=TAGSTK_TAGMAX ) return -1;
-	i = tagent; tagent++;
-	len = strlen( tag );if ( len>=TAGSTK_TAGSIZE ) tag[TAGSTK_TAGSIZE-1]=0;
-	strcpy( mem_tag[i].name, tag );
+	int const i = tagent; tagent++;
+	strncpy_s(mem_tag[i].name, tag, TAGSTK_TAGSIZE - 1); mem_tag[i].name[TAGSTK_TAGSIZE - 1] = '\0';
 	return i;
 }
 
@@ -205,10 +186,3 @@ CTagStack::CTagStack()
 	gcount = 0;
 	strcpy( tagerr, "%err%" );
 }
-
-
-CTagStack::~CTagStack()
-{
-}
-
-

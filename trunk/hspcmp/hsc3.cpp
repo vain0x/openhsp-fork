@@ -212,10 +212,6 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 
 void CHsc3::PreProcessEnd( void )
 {
-	if ( lb_info != NULL ) {
-		delete lb_info;
-		lb_info = NULL;
-	}
 	if ( outbuf != NULL ) {
 		delete outbuf;
 		outbuf = NULL;
