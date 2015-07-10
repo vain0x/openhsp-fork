@@ -28,8 +28,8 @@
 //		システム関連ラベル
 //
 #ifdef HSPVER3
-#define FILE_HSPCMP "hspcmp.dll"
-#define DEFAULT_RUNTIME "hsp3.exe"   // HSP3 runtime
+#define FILE_HSPCMP "hspcmp_uedit.dll"
+#define DEFAULT_RUNTIME "hsp3_uedit.exe"   // HSP3 runtime
 #define HSP_VERSION 3
 #define REG_SUFFIX "3_3"                      // Suffix of registry section name 
 #define INI_FILE "hsed3config.ini"            // INI section name
