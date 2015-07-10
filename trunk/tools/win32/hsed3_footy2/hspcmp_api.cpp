@@ -4,6 +4,8 @@
 
 extern char szDllDir[_MAX_PATH]; //main.cpp
 
+char HspCompilerLoader::lastErrorMessage_[0x10000];
+
 HspCompilerLoader::HspCompilerLoader()
 	: api_(new HspCompilerApi)
 {
@@ -58,6 +60,7 @@ HspCompilerLoader::~HspCompilerLoader()
 	//		Release DLL entry
 	//
 	if ( dllflg_ == 1 ) {
+		loadErrorMessage();
 		api_->hsc_bye(0, 0, 0, 0);
 	}
 	if ( dllflg_ != 0 ) {
@@ -87,4 +90,12 @@ DLLFUNC HspCompilerLoader::loadFunc(char const* name)
 			.append("v‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB\r\n");
 		return nullptr;
 	}
+}
+
+char const* HspCompilerLoader::loadErrorMessage()
+{
+	if ( *this ) {
+		api_->hsc_getmes((int)lastErrorMessage_, 0, 0, 0);
+	}
+	return lastErrorMessage();
 }

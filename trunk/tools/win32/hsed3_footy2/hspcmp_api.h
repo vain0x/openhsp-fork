@@ -1,5 +1,5 @@
-#ifndef __hsp_compiler_api_h
-#define __hsp_compiler_api_h
+#ifndef __hspcmp_api_h
+#define __hspcmp_api_h
 
 #include <Windows.h>
 #include <memory>
@@ -39,6 +39,7 @@ public:
 
 	operator bool() const
 	{
+		//		³í‚É“Ç‚İ‚ß‚Ä‚¢‚½‚ç^
 		return api_ && dll_ && dllflg_ == 1;
 	}
 
@@ -46,6 +47,8 @@ public:
 	{
 		return api_.get();
 	}
+
+	char const* loadErrorMessage();
 
 private:
 	DLLFUNC loadFunc(char const* name);
@@ -56,6 +59,14 @@ private:
 	HINSTANCE dll_; // Handle to DLL
 	int dllflg_; // DLL uses flag
 	std::string errmsg_;
+
+public:
+	static char const* lastErrorMessage()
+	{
+		return lastErrorMessage_;
+	}
+private:
+	static char lastErrorMessage_[0x10000];
 };
 
 #endif

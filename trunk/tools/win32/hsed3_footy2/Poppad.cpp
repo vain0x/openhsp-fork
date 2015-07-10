@@ -216,8 +216,6 @@ WNDPROC	Org_TabProc;		// サブクラス化の初期値
 		HSP related service
 */
 
-static char *errbuf=NULL;					// error message buffer
-
 int		hsp_fullscr = 0;
 static int		hsp_fnstr = 0;
 
@@ -266,31 +264,18 @@ BOOL bAutoIndent;
 		Error message process
 */
 
-static void err_ini( void )
-{
-	//	init error message buffer
-	//
-	if (errbuf==NULL) errbuf=(char *)malloc(0x10000);
-	errbuf[0]=0;
-}
-
-static void err_bye( void )
-{
-	//	error message buffer release
-	//
-	free( errbuf );
-}
-
 /*static*/ void err_prt( HWND hwnd )
 {
 	//	error message print
 	//
 	//MessageBox (hwnd, errbuf, "HSP error message", MB_OK | MB_ICONEXCLAMATION) ;
-
-	//TODO: Fix
-	//hsc_getmes((int)errbuf, 0, 0, 0);
-
 	DialogBox (hInst, "ErrBox", hwnd, (DLGPROC)ErrDlgProc);
+}
+
+/*static*/ void err_prt( HWND hwnd, HspCompilerLoader& hspcmp )
+{
+	hspcmp.loadErrorMessage();
+	err_prt(hwnd);
 }
 
 static void OkMessage ( char *szMessage, char *szTitleName)
@@ -407,7 +392,7 @@ static void packgo( void )
 		a=hspcmp->pack_make( 1,0,0,0 );
 		//dpmc_ini(errbuf,"data");
 		//a=dpmc_pack();
-		if (a) { err_prt(hwbak);return; }
+		if (a) { err_prt(hwbak, hspcmp);return; }
 #ifdef JPNMSG
 	TMes("[DATA.DPM]ファイルを作成しました。");
 #else
@@ -433,7 +418,7 @@ static void expack( int mode, char *exname, char *finmes )
 	a=hspcmp->pack_make( 0,0,0,0 );
 	//dpmc_ini(errbuf,exname);
 	//a=dpmc_pack();
-	if (a) { err_prt(hwbak);return; }
+	if (a) { err_prt(hwbak, hspcmp); return; }
 
 	if ( hsp_clmode==0 ) {
 		wsprintf(hh,"%s\\hsprt",szExeDir);
@@ -445,7 +430,7 @@ static void expack( int mode, char *exname, char *finmes )
 	hspcmp->pack_opt( hsp_wx,hsp_wy,(hsp_wd)|(hsp_orgpath<<1),0 );
 	a=hspcmp->pack_exe( mode,0,0,0 );
 	//a=dpmc_mkexe( hsp_fullscr,hh,hsp_wx,hsp_wy,hsp_wd );
-	if (a) { err_prt(hwbak);return; }
+	if (a) { err_prt(hwbak, hspcmp); return; }
 	TMes(finmes);
 	DeleteFile(ftmp);
 }
@@ -626,7 +611,7 @@ static void hsprun_log_cl( char *objname )
 }
 
 
-static int mkobjfile( char *fname )
+static int mkobjfile( HspCompilerLoader& hspcmp, char *fname )
 {
 	//	make object file
 	//
@@ -649,9 +634,6 @@ static int mkobjfile( char *fname )
 	}
 	tmpst[a]=0;strcat(tmpst,".ax");
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return 1; //error
-
 	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
 	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
 	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
@@ -661,7 +643,7 @@ static int mkobjfile( char *fname )
 }
 
 
-static int mkobjfile2( char *fname )
+static int mkobjfile2( HspCompilerLoader& hspcmp, char *fname )
 {
 	//	make object file
 	//
@@ -671,9 +653,6 @@ static int mkobjfile2( char *fname )
 	strcpy(srcfn,fname);
 	strcpy(tmpst,"start.ax");
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return 1; // error
-	
 	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
 	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
 	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
@@ -1134,7 +1113,7 @@ BOOL CALLBACK ErrDlgProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lPara
           {
           case WM_INITDIALOG:
 				SendMessage( GetDlgItem( hDlg, IDC_EDIT1 ), EM_LIMITTEXT, 0, 0L);
-				SetDlgItemText( hDlg,IDC_EDIT1,errbuf );
+				SetDlgItemText( hDlg,IDC_EDIT1, HspCompilerLoader::lastErrorMessage() );
 				return TRUE ;
           case WM_COMMAND:
                switch (GET_WM_COMMAND_ID(wParam, lParam))
@@ -1530,8 +1509,6 @@ int poppad_ini( HWND hwnd, LPARAM lParam )
 			   TabCtrl_SetCurFocus(hwndTab, 0);
 
 			   DoCaption (szTitleName, activeID) ;
-			   err_ini();
-
                return 0 ;
 }
 
@@ -1544,7 +1521,6 @@ void poppad_bye( void )
 		CloseHSPAssistant();
 	}
 
-	err_bye();
 	PopFontDeinitialize () ;
 	ByeClassify();
 	DeleteObject((HGDIOBJ)(HFONT)SendMessage(hwndTab, WM_GETFONT, 0, 0));
@@ -2257,9 +2233,13 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						Footy2GetMetrics(activeFootyID, SM_UNDOREM, &GetTabInfo(activeID)->LatestUndoNum);
 						GetTabInfo(activeID)->FileIndex = GetFileIndex(szFileName);
 
-						if ( mkobjfile( szFileName ) ){
-							err_prt(hwnd);
-							return 0;
+						{
+							HspCompilerLoader hspcmp{};
+							if (!hspcmp) return 0;
+							if (mkobjfile(hspcmp, szFileName)) {
+								err_prt(hwnd, hspcmp);
+								return 0;
+							}
 						}
 #ifdef JPNMSG
                         TMes("オブジェクトファイルを作成しました");
@@ -2271,9 +2251,13 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_MKOBJ2:
 					PopFileWrite ( activeFootyID, "hsptmp" );
-					if ( mkobjfile2( "hsptmp" ) ){
-						err_prt(hwnd);
-						return 0;
+					{
+						HspCompilerLoader hspcmp {};
+						if (!hspcmp) return 0;
+						if (mkobjfile2(hspcmp, "hsptmp")) {
+							err_prt(hwnd, hspcmp);
+							return 0;
+						}
 					}
 #ifdef JPNMSG
                     TMes("START.AXを作成しました");
@@ -2284,9 +2268,13 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_AUTOMAKE:
 					PopFileWrite ( activeFootyID, "hsptmp" );
-					if ( mkexefile2( "hsptmp" ) ){
-						err_prt(hwnd);
-						return 0;
+					{
+						HspCompilerLoader hspcmp {};
+						if (!hspcmp) return 0;
+						if (mkexefile2("hsptmp")) {
+							err_prt(hwnd, hspcmp);
+							return 0;
+						}
 					}
 #ifdef JPNMSG
 					TMes("実行ファイルを作成しました");
@@ -2310,11 +2298,11 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
 					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
 					if (a) {
-						err_prt(hwnd);
+						err_prt(hwnd, hspcmp);
 						return 0;
 					}				
 					if (LOWORD (wParam)==IDM_COMP2) {
-						err_prt(hwnd);
+						err_prt(hwnd, hspcmp);
 						return 0;
 					}	
 					if (LOWORD (wParam)==IDM_LOGCOMP) {
@@ -2344,7 +2332,7 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						hspcmp->hsc_objname( 0,(int)objname, 0,0 );
 						a=hspcmp->hsc_comp( 0,0,0,0 );
 						//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,0 );
-						if (a) { err_prt(hwnd);return 0; }
+						if (a) { err_prt(hwnd, hspcmp);return 0; }
 #ifdef JPNMSG
 						TMes("オブジェクトファイルが作成されました");
 #else
@@ -2358,7 +2346,7 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
 					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
 					//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,1 );
-					if (a) { err_prt(hwnd);return 0; }
+					if (a) { err_prt(hwnd, hspcmp);return 0; }
 					if (hsp_clmode==0) { hsprun(objname); } else { hsprun_cl(objname); }
 					return 0;
 				}
@@ -2385,7 +2373,7 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 #endif
 						return 0;
 					}
-					err_prt(hwnd);
+					err_prt(hwnd, hspcmp);
 					return 0;
 				}
 				case IDM_FULLSCR:
