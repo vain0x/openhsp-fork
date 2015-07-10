@@ -6,9 +6,10 @@
 #define __label_h
 
 #include <string>
+#include <vector>
 #include <map>
 
-#define	maxname	256				// label name max
+static int const LAB_NAME_MAX = 256;  // label name max
 #define def_maxsymbol 0x10000	// Symbol Table Size (default)
 #define def_maxblock 128		// Symbol Table Block max (default)
 #define def_maxlab 4096			// label object max (default)
@@ -113,7 +114,6 @@ public:
 
 private:
 	int StrCase( char *str );
-	int StrCmp( char *str1, char *str2 );
 	int GetHash( char *str );
 
 	char *Prt( char *str, char *str2 );
@@ -128,15 +128,14 @@ private:
 
 	//	data
 	char *symbol;						// Symbol Table
-	LABOBJ *mem_lab;					// Label object
+	std::vector<LABOBJ> mem_lab;        // Label object
 
-	char *symblock[def_maxblock];		// Symbol Table Block
+	char *symblock[def_maxblock];		// Symbol Table Block (LABOBJから参照される名前や付随データのバッファ)
 	int	curblock;						// Current Block
 
 	int	cur;							// Current
 	int	symcur;							// Current Symbol Index
 	int maxsymbol;						// Max Symbol Size
-	int maxlab;							// Max Label Size
 	char token[64];						// Token for RegistList
 	int casemode;						// Case sensitive (0=none/other=ON)
 

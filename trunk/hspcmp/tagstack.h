@@ -28,7 +28,6 @@ typedef struct TAGDATA {
 class CTagStack {
 public:
 	CTagStack();
-	~CTagStack();
 
 	int GetTagID( char *tag );
 	char *GetTagName( int tagid );
@@ -50,7 +49,6 @@ private:
 
 	//		Private members
 	//
-	int StrCmp( char *str1, char *str2 );
 	int SearchTagID( char *tag );
 	int RegistTagID( char *tag );
 };

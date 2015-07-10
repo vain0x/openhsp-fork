@@ -1735,7 +1735,7 @@ void CToken::GenerateCodePP_usecom( void )
 	if ( ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	strncpy( libname, cg_str, 1023 );
+	strncpy( libname, cg_str, sizeof(libname) -1 );
 
 	i = lb->Search( libname );
 	if ( i >= 0 ) {
@@ -1745,13 +1745,13 @@ void CToken::GenerateCodePP_usecom( void )
 
 	GetTokenCG( GETTOKEN_DEFAULT );
 	if ( ttype != TK_STRING ) throw CGERROR_PP_BAD_IMPORT_IID;
-	strncpy( iidname, cg_str, 127 );
+	strncpy( iidname, cg_str, sizeof(iidname) - 1 );
 
 	*clsname = 0;
 	GetTokenCG( GETTOKEN_DEFAULT );
 	if ( ttype < TK_EOL ) {
 		if ( ttype != TK_STRING ) throw CGERROR_PP_BAD_IMPORT_IID;
-		strncpy( clsname, cg_str, 127 );
+		strncpy( clsname, cg_str, sizeof(clsname) - 1 );
 	}
 
 	cg_libindex = PutLIB( LIBDAT_FLAG_COMOBJ, iidname );
@@ -1779,7 +1779,7 @@ void CToken::GenerateCodePP_func( int deftype )
 
 	GetTokenCG( GETTOKEN_DEFAULT );
 	if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
-	strncpy( fbase, cg_str, 1023 );
+	strncpy( fbase, cg_str, sizeof(fbase) - 1 );
 
 	ref = -1;
 	if ( CG_optCode() &&( tmp_lb != NULL )) {		// プリプロセス情報から最適化を行なう
@@ -2041,7 +2041,7 @@ int CToken::GetParameterResTypeCG( char *name )
 #define STRUCTDAT_INDEX_DUMMY ((short)0x8000)
 
 
-void CToken::GenerateCodePP_deffunc0( int is_command )
+void CToken::GenerateCodePP_deffunc0(bool is_command)
 {
 	//		HSP3Codeを展開する(deffunc / defcfunc)
 	//
@@ -2164,13 +2164,13 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 
 void CToken::GenerateCodePP_deffunc( void )
 {
-	GenerateCodePP_deffunc0( 1 );
+	GenerateCodePP_deffunc0(true);
 }
 
 
 void CToken::GenerateCodePP_defcfunc( void )
 {
-	GenerateCodePP_deffunc0( 0 );
+	GenerateCodePP_deffunc0(false);
 }
 
 
