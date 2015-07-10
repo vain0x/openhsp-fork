@@ -2741,7 +2741,7 @@ int CToken::PutDSBuf( char *str )
 
 	// string literal pool
 	// TODO: UTF-8への対応。そのまま適用できるか調べるか、または対応できるようにする。
-	if ( hed_cmpmode & CMPMODE_OPTCODE ) {
+	if ( CG_optCode() ) {
 		auto const it = string_literal_table->find(str);
 		if ( it != string_literal_table->end() ) {
 			i = it->second;

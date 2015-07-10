@@ -29,14 +29,16 @@
 #define DUMPMODE_DLLCMD 4
 #define DUMPMODE_ALL 15
 
-#define CMPMODE_PPOUT 1
-#define CMPMODE_OPTCODE 2
-#define CMPMODE_CASE 4
-#define CMPMODE_OPTINFO 8
-#define CMPMODE_PUTVARS 16
-#define CMPMODE_VARINIT 32
-#define CMPMODE_OPTPRM 64
-#define CMPMODE_SKIPJPSPC 128
+#define CMPMODE_ERROR 0
+#define CMPMODE_PPOUT 1        // output proprocessed code
+#define CMPMODE_OPTCODE 2      // optimize code
+#define CMPMODE_CASE 4         // case sensitive switch
+#define CMPMODE_OPTINFO 8      // log optimization info
+#define CMPMODE_PUTVARS 16     // output VAR names (DInfo)
+#define CMPMODE_VARINIT 32     // check VAR initialization
+#define CMPMODE_OPTPRM 64      // parameter optimization switch
+#define CMPMODE_SKIPJPSPC 128  // skip japanese space code switch
+#define CMPMODE_OPTSHORT 512   // optimaze to code short
 
 #define CG_FLAG_ENABLE 0
 #define CG_FLAG_DISABLE 1
@@ -373,6 +375,7 @@ private:
 	char const* CG_scriptPositionString() const;
 	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optShort() const { return CG_optCode() && (hed_cmpmode & CMPMODE_OPTSHORT) != 0; }
 
 	//		Data
 	//
