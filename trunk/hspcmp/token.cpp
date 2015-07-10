@@ -1876,7 +1876,7 @@ ppresult_t CToken::PP_Const(void)
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
+		SetErrorSymbolOverdefined(keyword, res);
 		return PPRESULT_ERROR;
 	}
 
@@ -1949,7 +1949,7 @@ ppresult_t CToken::PP_Enum( void )
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
+		SetErrorSymbolOverdefined(keyword, res);
 		return PPRESULT_ERROR;
 	}
 
@@ -2069,7 +2069,7 @@ ppresult_t CToken::PP_Define( void )
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		SymbolOverloadingError(keyword, res);
+		SetErrorSymbolOverdefined(keyword, res);
 		return PPRESULT_ERROR;
 	}
 
@@ -2252,7 +2252,7 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
 	i = lb->Search( fixname );if ( i != -1 ) {
 		if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-			SymbolOverloadingError(fixname, i); return PPRESULT_ERROR;
+			SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
 		}
 		id = i;
 	}
@@ -2366,7 +2366,7 @@ ppresult_t CToken::PP_Deffunc( int mode )
 		if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
 		i = lb->Search( fixname );if ( i != -1 ) {
 			if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-				SymbolOverloadingError(fixname, i); return PPRESULT_ERROR;
+				SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
 			}
 			id = i;
 		}
@@ -2483,7 +2483,7 @@ ppresult_t CToken::PP_Struct( void )
 	strcpy( tagname, word );
 	if ( glmode ) FixModuleName( tagname ); else AddModuleName( tagname );
 	res = lb->Search(tagname); if ( res != -1 ) {
-		SymbolOverloadingError(tagname, res); return PPRESULT_ERROR;
+		SetErrorSymbolOverdefined(tagname, res); return PPRESULT_ERROR;
 	}
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
@@ -2504,7 +2504,7 @@ ppresult_t CToken::PP_Struct( void )
 		sprintf( keyword,"%s_%s", tagname, word );
 		if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 		res = lb->Search(keyword); if ( res != -1 ) {
-			SymbolOverloadingError(keyword, res); return PPRESULT_ERROR;
+			SetErrorSymbolOverdefined(keyword, res); return PPRESULT_ERROR;
 		}
 		id = lb->Regist( keyword, LAB_TYPE_PPDLLFUNC, 0 );
 		if ( glmode ) lb->SetEternal( id );
@@ -2546,7 +2546,7 @@ ppresult_t CToken::PP_Func( char *name )
 
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	//AddModuleName( word );
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 	id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
 	//
@@ -2566,7 +2566,7 @@ ppresult_t CToken::PP_Cmd( char *name )
 	word = (char *)s3;
 	i = GetToken();
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 
 	id = lb->Regist( word, LAB_TYPE_PPINTMAC, 0 );		// 内部マクロとして定義
 	strcat( word, "@hsp" );
@@ -2604,7 +2604,7 @@ ppresult_t CToken::PP_Usecom( void )
 		glmode=1;
 	}
 
-	i = lb->Search(word); if ( i != -1 ) { SymbolOverloadingError(word, i); return PPRESULT_ERROR; }
+	i = lb->Search(word); if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	id = lb->Regist( word, LAB_TYPE_COMVAR, 0 );
 	if ( glmode ) lb->SetEternal( id );
@@ -2636,7 +2636,7 @@ ppresult_t CToken::PP_Module( void )
 	}
 	sprintf( tagname, "%.*s", MODNAME_MAX, word );
 	res = lb->Search( tagname );if ( res != -1 ) {
-		SymbolOverloadingError(tagname, res); return PPRESULT_ERROR;
+		SetErrorSymbolOverdefined(tagname, res); return PPRESULT_ERROR;
 	}
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	lb->SetEternal( id );
@@ -2659,7 +2659,7 @@ ppresult_t CToken::PP_Module( void )
 		if ( i != TK_OBJ ) { SetError("invalid module param"); return PPRESULT_ERROR; }
 		AddModuleName( word );
 		res = lb->Search(word); if ( res != -1 ) {
-			SymbolOverloadingError(word, res); return PPRESULT_ERROR; 
+			SetErrorSymbolOverdefined(word, res); return PPRESULT_ERROR; 
 		}
 		id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 		wrtbuf->PutStr( "var " );
@@ -3751,9 +3751,9 @@ char *CToken::ExecSCNV( char *srcbuf, int opt )
 	return scnvbuf;
 }
 
-void CToken::SymbolOverloadingError(char* keyword, int labelId)
+void CToken::SetErrorSymbolOverdefined(char* keyword, int labelId)
 {
-	// 識別子の多重定義に関するエラー
+	// 識別子の定義が多すぎるエラー
 
 	char strtmp[0x100];
 	sprintf( strtmp,"symbol in use [%s]", keyword );

@@ -285,7 +285,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
-	void SymbolOverloadingError(char* keyword, int labelId);
+	void SetErrorSymbolOverdefined(char* keyword, int labelId);
 
 	//		For Code Generate
 	//
