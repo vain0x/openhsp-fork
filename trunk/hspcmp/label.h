@@ -65,13 +65,15 @@ typedef struct LABOBJ {
 	LABREL	*rel;				// relation id
 	short	init;				// initalize flag
 	short	typefix;			// force type
+
+	char const* definition_file;
+	int definition_line;
 } LABOBJ;
 
 //  label manager class
 class CLabel {
 public:
 	CLabel();
-	CLabel( int symmax, int worksize );
 	~CLabel();
 	void Reset( void );
 	int Regist( char *name, int type, int opt );
@@ -107,6 +109,7 @@ public:
 	void AddRelation( char *name, int rel_id );
 	int SearchRelation( int id, int rel_id );
 	void SetCaseMode( int flag );
+	void SetDefinition(int id, char const* file, int line);
 
 private:
 	int StrCase( char *str );
