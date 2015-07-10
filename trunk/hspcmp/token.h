@@ -183,6 +183,8 @@ public:
 	void PutCSSymbol( int label_id, int exflag );
 	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
+	int GetOTCount();
+	int GetOT(int ot_index );
 	int PutOT( int value );
 	int PutDS( char *str );
 	int PutDSBuf( char *str );
