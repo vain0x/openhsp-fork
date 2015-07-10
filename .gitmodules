@@ -1,0 +1,3 @@
+[submodule "trunk/hsp3ll/llvm"]
+	path = trunk/hsp3ll/llvm
+	url = http://github.com/llvm-mirror/llvm
