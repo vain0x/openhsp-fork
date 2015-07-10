@@ -37,7 +37,7 @@ char *CHsc3::GetError( void )
 
 int CHsc3::GetErrorSize( void )
 {
-	return errbuf->GetBufferSize();
+	return errbuf->GetSize();
 }
 
 
