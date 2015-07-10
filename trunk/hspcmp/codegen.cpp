@@ -2541,12 +2541,22 @@ int CToken::PutDSBuf( char *str, int size )
 }
 
 
+int CToken::GetOTCount()
+{
+	return ot_buf->GetSize() / sizeof(int);
+}
+
+int CToken::GetOT(int ot_index)
+{
+	assert(0 <= ot_index && ot_index < GetOTCount());
+	return reinterpret_cast<int*>(ot_buf->GetBuffer())[ot_index];
+}
+
 int CToken::PutOT( int value )
 {
 	//		Register object temp
 	//
-	int i;
-	i = ot_buf->GetSize() / sizeof( int );
+	int i = GetOTCount();
 	ot_buf->Put( value );
 	return i;
 }
@@ -2647,7 +2657,7 @@ void CToken::PutDIVars( void )
 // ƒ‰ƒxƒ‹–¼‚Ìî•ñ‚ðo—Í‚·‚é
 void CToken::PutDILabels( void )
 {
-	int num = ot_buf->GetSize() / sizeof(int);
+	int num = GetOTCount();
 	int *table = new int[num];
 	for (int i = 0; i < num; i++) table[i] = -1;
 	for (int i = 0; i < lb->GetNumEntry(); i++) {
