@@ -8,7 +8,7 @@
 #define TAGSTK_MAX 256
 #define TAGSTK_SIZE 124
 #define TAGSTK_TAGMAX 256
-#define TAGSTK_TAGSIZE 16
+#define TAGSTK_TAGSIZE 56
 
 // tag info storage
 typedef struct TAGINF {
