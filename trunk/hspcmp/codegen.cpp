@@ -2786,7 +2786,7 @@ int CToken::PutDSBuf( char *str )
 
 	// string literal pool
 	// TODO: UTF-8への対応。そのまま適用できるか調べるか、または対応できるようにする。
-	if ( CG_optCode() ) {
+	if ( CG_optShort() ) {
 		auto const it = string_literal_table->find(str);
 		if ( it != string_literal_table->end() ) {
 			i = it->second;
