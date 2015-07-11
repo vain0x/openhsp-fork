@@ -103,7 +103,7 @@ public:
 	int RegistList( char **list, char *modname );
 	int RegistList2( char **list, char *modname );
 	int RegistList3( char **list );
-	int GetNumEntry( void ) { return cur; };
+	int GetNumEntry( void ) { return GetCount(); };
 	void AddReference( int id );
 	int GetReference( int id );
 	void AddRelation( int id, int rel_id );
@@ -133,7 +133,6 @@ private:
 	char *symblock[def_maxblock];		// Symbol Table Block (LABOBJから参照される名前や付随データのバッファ)
 	int	curblock;						// Current Block
 
-	int	cur;							// Current
 	int	symcur;							// Current Symbol Index
 	int maxsymbol;						// Max Symbol Size
 	char token[64];						// Token for RegistList
