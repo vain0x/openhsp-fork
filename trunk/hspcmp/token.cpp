@@ -438,7 +438,7 @@ int CToken::GetToken( void )
 	if ((a1>=0x5b)&&(a1<=0x5e)) rval=TK_NONE;
 	if ((a1>=0x7b)&&(a1<=0x7f)) rval=TK_NONE;
 
-	if (a1==':') {							// multi statement
+	if (a1==':' || a1 == '{' || a1 == '}') {   // multi statement
 		wp++;
 		return TK_SEPARATE;
 	}
