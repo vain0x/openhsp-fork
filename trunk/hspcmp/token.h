@@ -39,6 +39,7 @@
 #define CMPMODE_OPTPRM 64      // parameter optimization switch
 #define CMPMODE_SKIPJPSPC 128  // skip japanese space code switch
 #define CMPMODE_OPTSHORT 512   // optimaze to code short
+#define CMPMODE_AXIOUT 1024    // output ax inspection file
 
 #define CG_FLAG_ENABLE 0
 #define CG_FLAG_DISABLE 1
@@ -211,11 +212,17 @@ public:
 
 	void CalcCG( int ex );
 
+	// others
+
 	int GetHeaderOption( void ) { return hed_option; }
 	char *GetHeaderRuntimeName( void ) { return hed_runtime; }
 	void SetHeaderOption( int opt, char *name ) { hed_option=opt; strcpy( hed_runtime, name ); }
 	int GetCmpOption( void ) { return hed_cmpmode; }
 	void SetCmpOption( int cmpmode ) { hed_cmpmode = cmpmode; }
+
+	//		For inspection
+	void InspectAxCode();
+	int SaveAxInspection(char* fname);
 
 private:
 	//		For preprocess
@@ -373,6 +380,18 @@ private:
 	void CalcCG_ceaseConstFolding();
 
 	char const* CG_scriptPositionString() const;
+	
+#ifdef HSPINSPECT
+	//		For inspection
+	void Inspect_CodeSegment();
+	int  Inspect_CSElem(int csindex);
+	void Inspect_FInfoSegment();
+
+	void Inspect_BeginSegment(char const* segment_title);
+
+	char const* Inspect_TypeName(int type);
+#endif
+
 	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
 	bool CG_optShort() const { return CG_optCode() && (hed_cmpmode & CMPMODE_OPTSHORT) != 0; }
@@ -505,7 +524,12 @@ private:
 	char *scnvbuf;			// SCNV変換バッファ
 	int	scnvsize;			// SCNV変換バッファサイズ
 
+#ifdef HSPINSPECT
+	//		for Inspection
+	std::unique_ptr<CMemBuf> axi_buf;
+#endif
 };
 
+extern char const* stringFromCalcCode(int op);
 
 #endif

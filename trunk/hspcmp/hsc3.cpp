@@ -224,7 +224,7 @@ void CHsc3::PreProcessEnd( void )
 }
 
 
-int CHsc3::Compile( char *fname, char *outname, int mode )
+int CHsc3::Compile( char *fname, char *outname, char *outname_axi, int mode )
 {
 	//		Compile
 	//
@@ -251,6 +251,17 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 		res = tk.GenerateCode( fname, outname, mode );
 	}
 
+	if ( tk.GetCmpOption() & CMPMODE_AXIOUT ) {
+#ifdef HSPINSPECT
+		int const res = tk.SaveAxInspection(outname_axi);
+		if ( res < 0 ) {
+			tk.Mesf("#Can't write output file. %s", outname_axi);
+			return -2;
+		}
+#else
+		tk.Mes("#Inspection is not supported.");
+#endif
+	}
 	return res;
 }
 

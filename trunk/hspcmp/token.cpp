@@ -2809,8 +2809,8 @@ ppresult_t CToken::PP_PackOpt( void )
 
 static int ParseCmpOptName(const char* optname)
 {
-	static char const* OptionNames[]  = { "ppout",       "optcode",      "case",       "optinfo",        "varname",       "varinit",       "optprm",       "skipjpspc",       "optshort" };
-	static int         OptionValues[] = { CMPMODE_PPOUT, CMPMODE_OPTCODE, CMPMODE_CASE, CMPMODE_OPTINFO, CMPMODE_PUTVARS, CMPMODE_VARINIT, CMPMODE_OPTPRM, CMPMODE_SKIPJPSPC, CMPMODE_OPTSHORT };
+	static char const* OptionNames[]  = { "ppout",       "optcode",      "case",       "optinfo",        "varname",       "varinit",       "optprm",       "skipjpspc",       "optshort",       "axiout" };
+	static int         OptionValues[] = { CMPMODE_PPOUT, CMPMODE_OPTCODE, CMPMODE_CASE, CMPMODE_OPTINFO, CMPMODE_PUTVARS, CMPMODE_VARINIT, CMPMODE_OPTPRM, CMPMODE_SKIPJPSPC, CMPMODE_OPTSHORT, CMPMODE_AXIOUT };
 	for ( int i = 0; i < sizeof(OptionValues) / sizeof(int); ++i ) {
 		if ( tstrcmp(optname, OptionNames[i]) ) {
 			return OptionValues[i];

@@ -26,12 +26,6 @@
 
 #define assert_sentinel assert(false); throw CGERROR_UNKNOWN;
 
-static char const* stringFromCalcCode(int op) {
-	static char const* table[] = { "+", "-", "*", "/", "\\", "&", "|", "^", "=", "!", ">", "<", ">=", "<=", ">>", "<<" };
-	assert(0 <= op && op <= CALCCODE_MAX);
-	return table[op];
-}
-
 // コード出力中の、スクリプトの位置を表す文字列
 // 返値の有効期限はすぐに切れる
 char const* CToken::CG_scriptPositionString() const
@@ -3372,6 +3366,12 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 			Mesf( "#No error detected. (total %d bytes)",hsphed.allsize );
 			res = 0;
 		}
+
+#ifdef HSPINSPECT
+		if ( hed_cmpmode & CMPMODE_AXIOUT ) {
+			InspectAxCode();
+		}
+#endif
 	}
 
 	delete hpi_buf;

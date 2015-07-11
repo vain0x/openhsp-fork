@@ -53,12 +53,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HSPWINGUI;HSPWIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;HSPCMP3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HSPINSPECT;HSPWINGUI;HSPWIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;HSPCMP3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) "D:/Tool/hsp/hspcmp_debug.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -87,6 +90,7 @@
     <ClCompile Include="..\errormsg.cpp" />
     <ClCompile Include="..\hsc3.cpp" />
     <ClCompile Include="..\hspcmd.cpp" />
+    <ClCompile Include="..\inspect.cpp" />
     <ClCompile Include="..\label.cpp" />
     <ClCompile Include="..\localinfo.cpp" />
     <ClCompile Include="..\membuf.cpp" />
