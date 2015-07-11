@@ -1,0 +1,432 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="DLL Functions">
+      <UniqueIdentifier>{8a49370d-d114-408b-8f49-672f605b75d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="View">
+      <UniqueIdentifier>{b3177c15-dc98-4783-a035-2cbc0434332d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Charsets">
+      <UniqueIdentifier>{3a91988b-db47-4664-9c2b-3fb0e4699c0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lines">
+      <UniqueIdentifier>{67feed29-39fc-4fad-a560-849bbc9f188d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Document">
+      <UniqueIdentifier>{32798f6d-bea9-4492-ba81-f7623f9a3445}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Caret.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Cursor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="DoubleBuffering.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="EditPosition.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="EmphasisWord.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="EthicLine.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="FontObjects.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Footy.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyStatus.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="HSplitter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="PositionBase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="RegExpContainer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="RegExpElement.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="RegExpLetters.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="SplitBase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="UndoBuffer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="VSplitter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="DllCaretFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllEditFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllFileFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllMain.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllMetricsFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllSetFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllTextFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="DllViewFunc.cpp">
+      <Filter>DLL Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyView.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyViewGUI.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyViewKey.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyViewMouse.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyViewMsg.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyViewScroll.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="CharsetDetective.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="CharsetDetective_EUC.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="CharsetDetective_MultiBytes.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="CharsetDetective_Unicode.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="CharsetDetector.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="ConvFactory.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_Ansi.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_EucJis2004.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_ShiftJIS2004.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_UTF16.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_UTF32.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextConverter_UTF8.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="UnicodeTable_ISO8859.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="UnicodeTable_JISX0213_P1.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="UnicodeTable_JISX0213_P2.cpp">
+      <Filter>Charsets</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyLine.cpp">
+      <Filter>Lines</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyLineClick.cpp">
+      <Filter>Lines</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyLineEmpSearch.cpp">
+      <Filter>Lines</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyLineWord.cpp">
+      <Filter>Lines</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDoc.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDocClip.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDocIndent.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDocSearch.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDocSelect.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+    <ClCompile Include="FootyDocUndo.cpp">
+      <Filter>Document</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="module.def">
+      <Filter>ソース ファイル</Filter>
+    </None>
+    <None Include="Resource\ln.cur">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Resource\url.cur">
+      <Filter>リソース ファイル</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resource\attach.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\back.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\box_checked.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\box_unchecked.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\cancel.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\clock-2.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\contents.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db cancel.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db delete.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db edit.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db first.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db insert.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db last.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db next.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db post.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db previous.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\db refresh.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\delete.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\execute.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\favs.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\flag blue.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\flag green.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\flag red.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\forward.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\help-2.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\information-2.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\key.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\lock on.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\record.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\tick.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\tips.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Resource\warning.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="rc.rc">
+      <Filter>リソース ファイル</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Caret.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvFactory.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Cursor.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="DoubleBuffering.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="EditPosition.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="EmphasisWord.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="EthicLine.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="FontObjects.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Footy.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="FootyStatus.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="HSplitter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyBoardState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="PositionBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="RegExpContainer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="RegExpElement.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="RegExpLetters.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="SplitBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticStack.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticVector.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="UndoBuffer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="VSplitter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Footy2.h">
+      <Filter>DLL Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="FootyView.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="CharsetDetective.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="CharsetDetective_MultiBytes.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="CharsetDetector.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextConverter.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextConverter_Ansi.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextConverter_ISO8859.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextConverter_Japanese.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextConverter_Unicode.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="UnicodeTable.h">
+      <Filter>Charsets</Filter>
+    </ClInclude>
+    <ClInclude Include="FootyLine.h">
+      <Filter>Lines</Filter>
+    </ClInclude>
+    <ClInclude Include="FootyDoc.h">
+      <Filter>Document</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReleaseNote_Footy.txt" />
+  </ItemGroup>
+</Project>
