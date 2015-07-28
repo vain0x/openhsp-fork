@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <cassert>
 #include <functional>
 
 #include "../hsp3/hsp3config.h"
@@ -24,6 +23,7 @@
 
 #include "errormsg.h"
 
+#include <assert.h>
 #define assert_sentinel assert(false); throw CGERROR_UNKNOWN;
 
 // コード出力中の、スクリプトの位置を表す文字列
@@ -1362,40 +1362,45 @@ void CToken::GenerateCodePRMN( void )
 }
 #endif
 
-void CToken::GenerateCodeLabel( char *keyname, int ex )
+int CToken::GenerateOTIndex(char* keyname)
 {
-	//		HSP3Codeを展開する(ラベル)
-	//
-	int id,t,i;
+	int id, t, i;
 	char lname[128];
 	char *name;
 
 	name = keyname;
 	if ( *name == '@' ) {
-		switch( tolower(name[1]) ) {
-		case 'f':
-			i = cg_locallabel;
-			break;
-		case 'b':
-			i = cg_locallabel - 1;
-			break;
-		default:
-			throw CGERROR_LABELNAME;
+		switch ( tolower(name[1]) ) {
+			case 'f':
+				i = cg_locallabel;
+				break;
+			case 'b':
+				i = cg_locallabel - 1;
+				break;
+			default:
+				throw CGERROR_LABELNAME;
 		}
-		sprintf( lname, "@l%d", i );				// local label
+		sprintf(lname, "@l%d", i);				// local label
 		name = lname;
 	}
 
-	id = lb->Search( name );
+	id = lb->Search(name);
 	if ( id < 0 ) {									// 仮のラベル
-		i = PutOT( -1 );
-		id = lb->Regist( name, TYPE_XLABEL, i );
+		i = PutOT(-1);
+		id = lb->Regist(name, TYPE_XLABEL, i);
 	} else {
 		t = lb->GetType(id);
-		if (( t != TYPE_XLABEL )&&( t != TYPE_LABEL )) throw CGERROR_LABELEXIST;
+		if ( (t != TYPE_XLABEL) && (t != TYPE_LABEL) ) throw CGERROR_LABELEXIST;
 	}
-	PutCS( TYPE_LABEL, lb->GetOpt(id), ex );
+	return lb->GetOpt(id);
 }
+void CToken::GenerateCodeLabel( char *keyname, int ex )
+{
+	//		HSP3Codeを展開する(ラベル)
+	//
+	PutCS(TYPE_LABEL, GenerateOTIndex(keyname), ex);
+}
+
 
 void CToken::GenerateCodeVAR( int id, int ex )
 {

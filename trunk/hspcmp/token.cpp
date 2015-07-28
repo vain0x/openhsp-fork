@@ -2623,6 +2623,7 @@ ppresult_t CToken::PP_Module( void )
 	int res,i,id,fl;
 	char *word;
 	char tagname[MODNAME_MAX + 1];
+	//char tmp[0x4000];
 
 	word = (char *)s3; fl = 0;
 	i = GetToken();

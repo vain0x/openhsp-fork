@@ -5,5 +5,5 @@ openhsp の revesion 753 から分流しました。(http://dev.onionsoft.net/tr
 コンパイラにHSPTV部門用の最適化機能を付与するのが目標。
 
 #### メモ
-* llvm  は submodule としてもつ。
-  * [llvm-mirror](https://github.com/llvm-mirror/llvm)
+* llvm は submodule として持つべき。
+  * ``git submodule add -- http://github.com/llvm-mirror/llvm trunk/hsp3ll/llvm/``
