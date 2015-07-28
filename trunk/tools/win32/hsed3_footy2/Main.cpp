@@ -472,7 +472,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 	szExeDir[a]=0;
 
 	//		DLL‚ğ‰Šú‰»
-
 	strcpy( szDllDir,szExeDir );
 	strcat( szDllDir,"\\" FILE_HSPCMP );
 

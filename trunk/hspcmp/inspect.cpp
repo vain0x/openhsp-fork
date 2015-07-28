@@ -1,6 +1,5 @@
 // partial CToken
-
-#ifdef HSPINSPECT
+// cf. knowbug/CAx::analyzeDInfo
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +24,8 @@
 
 #include "token.h"
 
+#ifdef HSPINSPECT
+
 extern char *hsp_prestr[];  // hspcmp.cpp
 extern char *hsp_prepp[];
 
@@ -46,8 +47,12 @@ void CToken::InspectAxCode()
 	assert(!axi_buf);
 	axi_buf.reset(new CMemBuf());
 
+	Inspect_AnalyzeDInfo();
+
 	Inspect_CodeSegment();
 	Inspect_FInfoSegment();
+	//Inspect_LInfoSegment();
+	//Inspect_HpiSegment();
 }
 
 void CToken::Inspect_BeginSegment(char const* segment_title)
@@ -130,17 +135,32 @@ int CToken::Inspect_CSElem(int csindex)
 			output << value;
 			break;
 		case TYPE_VAR: {
-			output << "(var#" << value << ")";
+			auto it = inspect_var_names->find(value);
+			if ( it != inspect_var_names->end() ) {
+				output << it->second;
+			} else {
+				output << "(var#" << value << ")";
+			}
 			break;
 		}
 		case TYPE_LABEL: {
-			int const csindex = reinterpret_cast<int*>(ot_buf->GetBuffer())[value];
-			output << "*(lb#" << value << ": " << csindex << ")";
+			auto it = inspect_lab_names->find(value);
+			if ( it != inspect_lab_names->end() ) {
+				output << '*' << it->second;
+			} else {
+				int const csindex = reinterpret_cast<int*>(ot_buf->GetBuffer())[value];
+				output << "*(lb#" << value << ": " << csindex << ")";
+			}
 			break;
 		}
 		case TYPE_MODCMD: {
-			//todo: STRUCTDAT::prmindex を調べて、元の関数名の第N引数、と表示したほうがよい
-			output << "(modcmd#" << value << ")";
+			auto it = inspect_prm_names->find(value);
+			if ( it != inspect_prm_names->end() ) {
+				output << it->second;
+			} else {
+				//todo: STRUCTDAT::prmindex を調べて、元の関数名の第N引数、と表示したほうがよい
+				output << "(modcmd#" << value << ")";
+			}
 			break;
 		}
 		case TYPE_STRUCT: {
@@ -158,19 +178,23 @@ int CToken::Inspect_CSElem(int csindex)
 
 			// パラメータエイリアス、またはローカル変数(メンバ変数)
 			assert(stprm->mptype == MPTYPE_LOCALVAR || stprm->subid == STRUCTPRM_SUBID_STACK);
-			
-			//どの関数のパラメータかを検索
-			if ( !stdat ) {
-				auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *fi_buf), [&](STRUCTDAT& it) {
-					return ((value - it.prmindex) < it.prmmax);
-				});
-				stdat = (found != MEMBUF_END(STRUCTDAT, *fi_buf)) ? found : nullptr;
-			}
-			if ( stdat ) {
-				char const* funcname = &ds_buf->GetBuffer()[stdat->nameidx];
-				output << "(prm#" << value << ": " << funcname << "#" << (value - stdat->prmindex) << ")";
+			auto it = inspect_prm_names->find(value);
+			if ( it != inspect_prm_names->end() ) {
+				output << it->second;
 			} else {
-				output << "(prm#" << value << ")";
+				//どの関数のパラメータかを検索
+				if ( !stdat ) {
+					auto const found = std::find_if(MEMBUF_RANGE(STRUCTDAT, *fi_buf), [&](STRUCTDAT& it) {
+						return ((value - it.prmindex) < it.prmmax);
+					});
+					stdat = (found != MEMBUF_END(STRUCTDAT, *fi_buf)) ? found : nullptr;
+				}
+				if ( stdat ) {
+					char const* funcname = &ds_buf->GetBuffer()[stdat->nameidx];
+					output << "(prm#" << value << ": " << funcname << "#" << (value - stdat->prmindex) << ")";
+				} else {
+					output << "(prm#" << value << ")";
+				}
 			}
 			break;
 		}
@@ -268,7 +292,77 @@ void CToken::Inspect_FInfoSegment()
 			}
 		}
 		if ( isCType ) { output << ')'; }
+
+
 	});
+}
+//void CToken::Inspect_LInfoSegment() {}
+//void CToken::Inspect_HpiSegment() {}
+
+
+static unsigned short wpeek(unsigned char const* p) { return *reinterpret_cast<unsigned short const*>(p); }
+static unsigned int tripeek(unsigned char const* p) { return (p[0] | p[1] << 8 | p[2] << 16); }
+
+void CToken::Inspect_AnalyzeDInfo()
+{
+	assert(!inspect_var_names);
+	assert(!inspect_lab_names);
+	assert(!inspect_prm_names);
+	inspect_var_names.reset(new std::decay_t<decltype(*inspect_var_names)>());
+	inspect_lab_names.reset(new std::decay_t<decltype(*inspect_lab_names)>());
+	inspect_prm_names.reset(new std::decay_t<decltype(*inspect_prm_names)>());
+
+	return;
+	//
+
+	enum DInfoCtx {	// ++ したいので enum class にしない
+		DInfoCtx_Default = 0,
+		DInfoCtx_LabelNames,
+		DInfoCtx_PrmNames,
+		DInfoCtx_Max
+	};
+	auto getIdentTableFromCtx = [&](int dictx) -> identTable_t* {
+		switch ( dictx ) {
+			case DInfoCtx_Default:    return inspect_var_names.get();
+			case DInfoCtx_LabelNames: return inspect_lab_names.get();
+			case DInfoCtx_PrmNames:   return inspect_prm_names.get();
+			default: throw;
+		}
+	};
+
+	auto const dinfo = reinterpret_cast<unsigned char const*>(di_buf->GetBuffer());
+	int const max_di = di_buf->GetSize() / sizeof(unsigned char);
+
+	int dictx = DInfoCtx_Default;
+	for ( int i = 0; i < max_di; ) {
+		switch ( dinfo[i] ) {
+			case 0xFF:
+				++dictx;  // enum を ++ する業
+				++i;
+				if ( dictx == DInfoCtx_Max ) goto break_loop;
+				break;
+
+			// ソースファイル指定
+			case 0xFE: i += 6; break;
+
+			// 識別子指定
+			case 0xFD:
+			case 0xFB:
+				if ( auto* tbl = getIdentTableFromCtx(dictx) ) {
+					char* const ident = &ds_buf->GetBuffer()[tripeek(&dinfo[i + 1])];
+					int const iparam = wpeek(&dinfo[i + 4]);
+					tbl->insert({ iparam, ident });
+				}
+				i += 6;
+				break;
+
+			// 次の命令までのCSオフセット値
+			case 0xFC: i += 3; break;
+			default: ++i; break;
+		}
+	}
+break_loop:
+	return;
 }
 
 #endif

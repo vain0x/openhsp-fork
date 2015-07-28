@@ -53,12 +53,11 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HSPINSPECT;HSPWINGUI;HSPWIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;HSPCMP3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HSPWINGUI;HSPWIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;HSPCMP3_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AssemblyDebug>true</AssemblyDebug>
     </Link>
     <PostBuildEvent>
       <Command>copy $(TargetPath) "D:/Tool/hsp/hspcmp.dll"</Command>
@@ -99,28 +98,19 @@
     <ClCompile Include="..\tagstack.cpp" />
     <ClCompile Include="..\token.cpp" />
     <ClCompile Include="..\win32\supio_win.cpp" />
-    <ClCompile Include="dpm.cpp" />
-    <ClCompile Include="hspcmp3.cpp" />
+    <ClCompile Include="hspcmp3_proxy.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ahtmodel.h" />
-    <ClInclude Include="..\ahtobj.h" />
-    <ClInclude Include="..\comutil.h" />
     <ClInclude Include="..\errormsg.h" />
     <ClInclude Include="..\hsc3.h" />
     <ClInclude Include="..\hspdll.h" />
     <ClInclude Include="..\label.h" />
     <ClInclude Include="..\localinfo.h" />
     <ClInclude Include="..\membuf.h" />
-    <ClInclude Include="..\strnote.h" />
-    <ClInclude Include="..\supio.h" />
-    <ClInclude Include="..\tagstack.h" />
     <ClInclude Include="..\token.h" />
-    <ClInclude Include="..\win32\supio_win.h" />
-    <ClInclude Include="dpm.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="hspcmp3.def" />
+    <None Include="..\win32dll\hspcmp3.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

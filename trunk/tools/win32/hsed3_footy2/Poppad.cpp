@@ -27,7 +27,7 @@
 #endif
 
 #include "poppad.h"
-#include "hsp_compiler_api.h"
+#include "HspCompilerInfo.h"
 #include "resource.h"
 
 #include "tabmanager.h"
@@ -46,6 +46,85 @@ int getUnicodeOffset( char *text, int offset );
 /*
 		DLL support routines
 */
+
+HspCompilerLinker::HspCompilerLinker()
+	: p_(new HspCompilerInfo)
+{
+	//		Initalize DLL entry
+	//			(result:1=ok)
+	//
+	HspCompilerInfo& hspcmp = *p_;
+
+	hspcmp.hDLL = LoadLibrary(szDllDir);
+	if ( !hspcmp.hDLL ) {
+		hspcmp.dllflg = 0;
+
+		msgboxf(NULL,
+#ifdef JPNMSG
+			"%sが見つかりませんでした。"
+#else
+			"%s not found."
+#endif
+			, "Startup error", MB_OK | MB_ICONEXCLAMATION, szDllDir);
+
+	} else {
+		HMODULE const hDll = hspcmp.hDLL;
+		hspcmp.dllflg = 1;
+		hspcmp.hsc_ini         = loadFunc("hsc_ini");
+		hspcmp.hsc_refname     = loadFunc("hsc_refname");
+		hspcmp.hsc_objname     = loadFunc("hsc_objname");
+		hspcmp.hsc_comp        = loadFunc("hsc_comp");
+		hspcmp.hsc_getmes      = loadFunc("hsc_getmes");
+		hspcmp.hsc_clrmes      = loadFunc("hsc_clrmes");
+		hspcmp.hsc_ver         = loadFunc("hsc_ver");
+		hspcmp.hsc_bye         = loadFunc("hsc_bye");
+		hspcmp.pack_ini        = loadFunc("pack_ini");
+		hspcmp.pack_make       = loadFunc("pack_make");
+		hspcmp.pack_exe        = loadFunc("pack_exe");
+		hspcmp.pack_opt        = loadFunc("pack_opt");
+		hspcmp.pack_rt         = loadFunc("pack_rt");
+		hspcmp.hsc3_getsym     = loadFunc("hsc3_getsym");
+		hspcmp.hsc3_make       = loadFunc("hsc3_make");
+		hspcmp.hsc3_messize    = loadFunc("hsc3_messize");
+
+		if ( hspcmp.dllflg > 0 ) {
+			// 3.0用の追加
+			hspcmp.hsc3_getruntime = loadFunc("hsc3_getruntime"); 
+			hspcmp.hsc3_run = loadFunc("hsc3_run");
+		}
+		if ( hspcmp.dllflg < 0 ) {
+			msgboxf(NULL, "%s", "Startup error", MB_OK | MB_ICONEXCLAMATION, errmsg_.c_str());
+		}
+	}
+}
+
+HspCompilerLinker::~HspCompilerLinker()
+{
+	//		Release DLL entry
+	//
+	if ( p_->dllflg == 1 ) {
+		p_->hsc_bye(0, 0, 0, 0);
+	}
+	if ( p_->dllflg != 0 ) {
+		FreeLibrary(p_->hDLL);
+	}
+}
+
+DLLFUNC HspCompilerLinker::loadFunc(char const* name)
+{
+	//		DLL関数を割り当てる
+	//
+	char funcname[128];
+	sprintf_s(funcname, "_%s@16", name);
+	auto const entity = (DLLFUNC)GetProcAddress( p_->hDLL, funcname );
+	if ( !entity ) {
+		p_->dllflg = -1;	// error flag
+		errmsg_.append("関数「")
+			.append(funcname)
+			.append("」が見つかりません。\r\n");
+	}
+	return entity;
+}
 
 /*
 		special dialog routines
@@ -385,25 +464,24 @@ static int GetFileTitle2( char *bname, char *tname )
 }
 
 
-static void packgo( void )
+static void packgo(void)
 {
-	int a;
-	if (filechk("packfile")) {
+	if ( filechk("packfile") ) {
 #ifdef JPNMSG
-		TMes( "DPMファイルを作るためにはパックするファイル名一覧(PACKFILE)を\n作成しておく必要があります。" );
+		TMes("DPMファイルを作るためにはパックするファイル名一覧(PACKFILE)を\n作成しておく必要があります。");
 #else
 		TMes( "[PACKFILE] needed." );
 #endif
 		return;
 	}
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp )  return;
-		hspcmp->pack_ini( 0,(int)"data",0,0 );
-		a=hspcmp->pack_make( 1,0,0,0 );
+	HspCompilerLinker hspcmp {};
+	if ( !hspcmp)  return;
+		hspcmp->pack_ini(0, (int)"data", 0, 0);
+		int a = hspcmp->pack_make(1, 0, 0, 0);
 		//dpmc_ini(errbuf,"data");
 		//a=dpmc_pack();
-		if (a) { err_prt(hwbak);return; }
+		if ( a ) { err_prt(hwbak); return; }
 #ifdef JPNMSG
 	TMes("[DATA.DPM]ファイルを作成しました。");
 #else
@@ -419,27 +497,28 @@ static void expack( int mode, char *exname, char *finmes )
 	int a;
 	char hh[_MAX_PATH];
 	char ftmp[_MAX_PATH];
-	
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return;
-	
-	strcpy(ftmp,exname);strcat(ftmp,".dpm");
 
-	hspcmp->pack_ini( 0,(int)exname,0,0 );	
-	a=hspcmp->pack_make( 0,0,0,0 );
+	strcpy(ftmp, exname);
+	strcat(ftmp, ".dpm");
+
+	HspCompilerLinker hspcmp {};
+	if ( !hspcmp ) return;
+
+	hspcmp->pack_ini(0, (int)exname, 0, 0);
+	a = hspcmp->pack_make(0, 0, 0, 0);
 	//dpmc_ini(errbuf,exname);
 	//a=dpmc_pack();
-	if (a) { err_prt(hwbak);return; }
+	if ( a ) { err_prt(hwbak); return; }
 
-	if ( hsp_clmode==0 ) {
-		wsprintf(hh,"%s\\hsprt",szExeDir);
+	if ( hsp_clmode == 0 ) {
+		wsprintf(hh, "%s\\hsprt", szExeDir);
 	} else {
-		wsprintf(hh,"%s\\runtime\\hspcl.hrt",szExeDir);
+		wsprintf(hh, "%s\\runtime\\hspcl.hrt", szExeDir);
 	}
-	
-	hspcmp->pack_rt( 0,(int)hh,0,0 );
-	hspcmp->pack_opt( hsp_wx,hsp_wy,(hsp_wd)|(hsp_orgpath<<1),0 );
-	a=hspcmp->pack_exe( mode,0,0,0 );
+
+	hspcmp->pack_rt(0, (int)hh, 0, 0);
+	hspcmp->pack_opt(hsp_wx, hsp_wy, (hsp_wd) | (hsp_orgpath << 1), 0);
+	a = hspcmp->pack_exe(mode, 0, 0, 0);
 	//a=dpmc_mkexe( hsp_fullscr,hh,hsp_wx,hsp_wy,hsp_wd );
 	if (a) { err_prt(hwbak);return; }
 	TMes(finmes);
@@ -511,29 +590,28 @@ static void hsprun( char *objname )
 {
 	//  execute HSP3 process
 	//
-	int i;
 	char cfname[256];
 	*cfname = 0;
 
-	HspCompilerLoader hspcmp {};
+	HspCompilerLinker hspcmp {};
 	if (!hspcmp ) return;
 
 	hspcmp->hsc3_getruntime((int)cfname, (int)objname, 0, 0);
-	
+
 	if ( *cfname == 0 ) {
-		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, DEFAULT_RUNTIME );
+		wsprintf(execmd, "\"%s\\%s\" ", szExeDir, DEFAULT_RUNTIME);
 	} else {
-		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, cfname );
+		wsprintf(execmd, "\"%s\\%s\" ", szExeDir, cfname);
 	}
 
-	strcat( execmd,objname );
-	if (hsp_cmdopt[0]!=0) {
-		strcat( execmd," " );
-		strcat( execmd,hsp_cmdopt );
+	strcat(execmd, objname);
+	if ( hsp_cmdopt[0] != 0 ) {
+		strcat(execmd, " ");
+		strcat(execmd, hsp_cmdopt);
 	}
 
-	i = hspcmp->hsc3_run( (int)execmd, hsp_debug, 0, 0 );
-	if (i) {
+	int const i = hspcmp->hsc3_run((int)execmd, hsp_debug, 0, 0);
+	if ( i ) {
 #ifdef JPNMSG
 		TMes("実行用ランタイムファイルが見つかりません。");
 #else
@@ -643,17 +721,19 @@ static int mkobjfile( char *fname )
 		if ((a1==0)||(a1=='.')) break;
 		a++;
 	}
-	tmpst[a]=0;strcat(tmpst,".ax");
+	tmpst[a] = 0; strcat(tmpst, ".ax");
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return 1; //error
+	{
+		HspCompilerLinker hspcmp {};
+		if ( !hspcmp ) return 1; // error
 
-	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
-	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
-	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hspcmp->hsc_comp( 0,0,0,0 );
-	//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
-	return a;
+		hspcmp->hsc_ini(0, (int)srcfn, 0, 0);
+		hspcmp->hsc_refname(0, (int)myfile(), 0, 0);
+		hspcmp->hsc_objname(0, (int)tmpst, 0, 0);
+		int a = hspcmp->hsc_comp(0, 0, 0, 0);
+		//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
+		return a;
+	}
 }
 
 
@@ -661,21 +741,22 @@ static int mkobjfile2( char *fname )
 {
 	//	make object file
 	//
-	int a;
 	char tmpst[_MAX_PATH];
 	char srcfn[_MAX_PATH];
 	strcpy(srcfn,fname);
 	strcpy(tmpst,"start.ax");
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return 1; // error
-	
-	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
-	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
-	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hspcmp->hsc_comp( 0,0,0,0 );
-	//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
-	return a;
+	{
+		HspCompilerLinker hspcmp {};
+		if ( !hspcmp ) return 1; // error
+
+		hspcmp->hsc_ini(0, (int)srcfn, 0, 0);
+		hspcmp->hsc_refname(0, (int)myfile(), 0, 0);
+		hspcmp->hsc_objname(0, (int)tmpst, 0, 0);
+		int a = hspcmp->hsc_comp(0, 0, 0, 0);
+		//a=tcomp_main( myfile(), srcfn, tmpst, errbuf, 0 );
+		return a;
+	}
 }
 
 
@@ -690,18 +771,17 @@ static int mkexefile2( char *fname )
 	strcpy(srcfn,fname);
 	strcpy(tmpst,"start.ax");
 
-	HspCompilerLoader hspcmp {};
-	if ( !hspcmp ) return 1;
+	if ( HspCompilerLinker hspcmp {} ) {
+		hspcmp->hsc_ini(0, (int)srcfn, 0, 0);
+		hspcmp->hsc_refname(0, (int)myfile(), 0, 0);
+		hspcmp->hsc_objname(0, (int)tmpst, 0, 0);
+		a = hspcmp->hsc_comp(0, 4, 0, 0);
+		if ( a ) return a;
 
-	hspcmp->hsc_ini( 0,(int)srcfn, 0,0 );
-	hspcmp->hsc_refname( 0,(int)myfile(), 0,0 );
-	hspcmp->hsc_objname( 0,(int)tmpst, 0,0 );
-	a=hspcmp->hsc_comp( 0,4,0,0 );
-	if ( a ) return a;
-
-	sprintf( ftmp, "%s\\%s.dpm", szExeDir, srcfn );
-	a=hspcmp->hsc3_make( 0,(int)ftmp,0,0 );
-	if ( a ) return a;
+		sprintf(ftmp, "%s\\%s.dpm", szExeDir, srcfn);
+		a = hspcmp->hsc3_make(0, (int)ftmp, 0, 0);
+		if ( a ) return a;
+	}
 	return 0;
 }
 
@@ -1124,33 +1204,28 @@ int CheckRadio( HWND hDlg, int idc, int num )
 	return i;
 }
 
-BOOL CALLBACK ErrDlgProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/)
-     {
-     switch (message)
-          {
-          case WM_INITDIALOG: {
-				auto const hscapi = HspCompilerLoader::lastHspcmp();
-				if ( hscapi && hscapi->hsc_getmes ) {
-					hscapi->hsc_getmes( (int)errbuf,0,0,0 );
-				} else {
-					strcpy(errbuf, "コンパイラが認識できないため、メッセージを取得できません。");
-				}
-				SendMessage( GetDlgItem( hDlg, IDC_EDIT1 ), EM_LIMITTEXT, 0, 0L);
-				SetDlgItemText( hDlg,IDC_EDIT1,errbuf );
-				return TRUE ;
+BOOL CALLBACK ErrDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/)
+{
+	switch ( message ) {
+		case WM_INITDIALOG:
+			if ( HspCompilerLinker hspcmp {} ) {
+				hspcmp->hsc_getmes((int)errbuf, 0, 0, 0);
+				SendMessage(GetDlgItem(hDlg, IDC_EDIT1), EM_LIMITTEXT, 0, 0L);
+				SetDlgItemText(hDlg, IDC_EDIT1, errbuf);
 			}
-          case WM_COMMAND:
-               switch (GET_WM_COMMAND_ID(wParam, lParam))
-                    {
-                    case IDOK:
-					case IDCANCEL:
-                         EndDialog (hDlg, 0);
-                         return TRUE;
-                    }
-               break ;
-          }
-     return FALSE ;
-     }
+			return TRUE;
+
+		case WM_COMMAND:
+			switch ( GET_WM_COMMAND_ID(wParam, lParam) ) {
+				case IDOK:
+				case IDCANCEL:
+					EndDialog(hDlg, 0);
+					return TRUE;
+			}
+			break;
+	}
+	return FALSE;
+}
 
 /*
 	Fixed
@@ -2300,30 +2375,32 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_COMP:
 				case IDM_COMP2:
-				case IDM_LOGCOMP: {
-					HspCompilerLoader hspcmp {};
-					if ( !hspcmp ) return 0;
+				case IDM_LOGCOMP:
+				{
+					HspCompilerLinker hspcmp {};
+					if (!hspcmp) return 0;
 
-					PopFileWrite ( activeFootyID, "hsptmp" );
-					strcpy(tmpfn,"hsptmp");
-					hspcmp->hsc_ini( 0,(int)tmpfn, 0,0 );
+					PopFileWrite(activeFootyID, "hsptmp");
+					strcpy(tmpfn, "hsptmp");
+
+					hspcmp->hsc_ini(0, (int)tmpfn, 0, 0);
 					myfile();
-					hspcmp->hsc_refname( 0,(int)compfile, 0,0 );
-					strcpy( objname,"obj" );
-					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
-					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
-					if (a) {
+					hspcmp->hsc_refname(0, (int)compfile, 0, 0);
+					strcpy(objname, "obj");
+					hspcmp->hsc_objname(0, (int)objname, 0, 0);
+					a = hspcmp->hsc_comp(1, 0, hsp_debug, 0);
+					if ( a ) {
 						err_prt(hwnd);
 						return 0;
-					}				
-					if (LOWORD (wParam)==IDM_COMP2) {
+					}
+					if ( LOWORD(wParam) == IDM_COMP2 ) {
 						err_prt(hwnd);
 						return 0;
-					}	
-					if (LOWORD (wParam)==IDM_LOGCOMP) {
-						DialogBox (hInst, "Logcomp", hwnd, (DLGPROC)LogcompDlgProc );
-						if (hsp_logflag==0) return 0;
-						if (hsp_clmode==0) { hsprun_log("obj"); } else { hsprun_log_cl("obj"); }
+					}
+					if ( LOWORD(wParam) == IDM_LOGCOMP ) {
+						DialogBox(hInst, "Logcomp", hwnd, (DLGPROC)LogcompDlgProc);
+						if ( hsp_logflag == 0 ) return 0;
+						if ( hsp_clmode == 0 ) { hsprun_log("obj"); } else { hsprun_log_cl("obj"); }
 						return 0;
 					}
 				}
@@ -2331,56 +2408,58 @@ LRESULT CALLBACK EditProc (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					if (hsp_clmode==0) { hsprun("obj"); } else { hsprun_cl("obj"); }
 					return 0;
 
-				case IDM_COMP3: {
-					HspCompilerLoader hspcmp {};
+				case IDM_COMP3:
+				{
+					HspCompilerLinker hspcmp {};
 					if ( !hspcmp ) return 0;
 
-					exemode=0;
-					DialogBox (hInst, "ExtComp", hwnd, (DLGPROC)ExtcmpDlgProc);
-					if (hsp_fnstr==0) return 0;
+					exemode = 0;
+					DialogBox(hInst, "ExtComp", hwnd, (DLGPROC)ExtcmpDlgProc);
+					if ( hsp_fnstr == 0 ) return 0;
 					chklstr(hsp_extstr);
 					if ( hsp_extobj ) {
-						strcpy( objname,hsp_extstr );
-						strcat( objname,".ax" );
-						strcat( hsp_extstr,".hsp" );
-						hspcmp->hsc_ini( 0,(int)hsp_extstr, 0,0 );
-						hspcmp->hsc_objname( 0,(int)objname, 0,0 );
-						a=hspcmp->hsc_comp( 0,0,0,0 );
+						strcpy(objname, hsp_extstr);
+						strcat(objname, ".ax");
+						strcat(hsp_extstr, ".hsp");
+						hspcmp->hsc_ini(0, (int)hsp_extstr, 0, 0);
+						hspcmp->hsc_objname(0, (int)objname, 0, 0);
+						a = hspcmp->hsc_comp(0, 0, 0, 0);
 						//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,0 );
-						if (a) { err_prt(hwnd);return 0; }
+						if ( a ) { err_prt(hwnd); return 0; }
 #ifdef JPNMSG
 						TMes("オブジェクトファイルが作成されました");
 #else
 						TMes("Object file generated.");
 #endif
-						return 0;
+					} else {
+						strcpy(objname, "obj");
+						strcat(hsp_extstr, ".hsp");
+						hspcmp->hsc_ini(0, (int)hsp_extstr, 0, 0);
+						hspcmp->hsc_objname(0, (int)objname, 0, 0);
+						a = hspcmp->hsc_comp(1, 0, hsp_debug, 0);
+						//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,1 );
+						if ( a ) { err_prt(hwnd); return 0; }
+						if ( hsp_clmode == 0 ) { hsprun(objname); } else { hsprun_cl(objname); }
 					}
-					strcpy( objname,"obj" );
-					strcat( hsp_extstr,".hsp" );
-					hspcmp->hsc_ini( 0,(int)hsp_extstr, 0,0 );
-					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
-					a=hspcmp->hsc_comp( 1, 0, hsp_debug, 0 );
-					//a=tcomp_main( hsp_extstr, hsp_extstr, objname, errbuf,1 );
-					if (a) { err_prt(hwnd);return 0; }
-					if (hsp_clmode==0) { hsprun(objname); } else { hsprun_cl(objname); }
 					return 0;
 				}
 				case IDM_HSPERR:
 					err_prt(hwnd);
 					return 0;
 
-				case IDM_HSPSYM: {
-					HspCompilerLoader hspcmp;
+				case IDM_HSPSYM:
+				{
+					HspCompilerLinker hspcmp {};
 					if ( !hspcmp ) return 0;
 
-					strcpy(tmpfn,"hsptmp");
-					hspcmp->hsc_ini( 0,(int)tmpfn, 0,0 );
+					strcpy(tmpfn, "hsptmp");
+					hspcmp->hsc_ini(0, (int)tmpfn, 0, 0);
 					myfile();
-					hspcmp->hsc_refname( 0,(int)compfile, 0,0 );
-					strcpy( objname,"obj" );
-					hspcmp->hsc_objname( 0,(int)objname, 0,0 );
-					a=hspcmp->hsc3_getsym( 0,0,0,0 );
-					if (a) {
+					hspcmp->hsc_refname(0, (int)compfile, 0, 0);
+					strcpy(objname, "obj");
+					hspcmp->hsc_objname(0, (int)objname, 0, 0);
+					a = hspcmp->hsc3_getsym(0, 0, 0, 0);
+					if ( a ) {
 #ifdef JPNMSG
 						TMes("キーワードの取得に失敗しました");
 #else
@@ -3103,12 +3182,12 @@ COLORREF crDefColor[] = {
 BOOL CALLBACK ConfigColorPageProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static MYCOLORREF crColor[21];
-	const char *szCategory[] = { "文字の色分け", "特殊な記号の配色", "エディタの配色", "行番号表示領域の配色", "ルーラーの配色"};
-	const char *szCharItem[] = { "通常の文字", "命令/関数", "プリプロセッサ命令", "文字列", "マクロ", "コメント", "ラベル" };
-	const char *szNonCharItem[] = { "半角スペース", "全角スペース", "TAB文字", "改行記号", "[EOF](ファイル終端)記号" };
-	const char *szEditItem[] = { "全体の背景色", "キャレット行の下線", "行番号とエディタの境界線" };
-	const char *szLineNumItem[] = { "行番号", "キャレット行の強調" };
-	const char *szRolerItem[] = { "数字", "背景色", "目盛り", "キャレット位置の強調" };
+	static const char *szCategory[] = { "文字の色分け", "特殊な記号の配色", "エディタの配色", "行番号表示領域の配色", "ルーラーの配色"};
+	static const char *szCharItem[] = { "通常の文字", "命令/関数", "プリプロセッサ命令", "文字列", "マクロ", "コメント", "ラベル" };
+	static const char *szNonCharItem[] = { "半角スペース", "全角スペース", "TAB文字", "改行記号", "[EOF](ファイル終端)記号" };
+	static const char *szEditItem[] = { "全体の背景色", "キャレット行の下線", "行番号とエディタの境界線" };
+	static const char *szLineNumItem[] = { "行番号", "キャレット行の強調" };
+	static const char *szRolerItem[] = { "数字", "背景色", "目盛り", "キャレット位置の強調" };
 
 	typedef struct tagItems{
 		const char **item;
@@ -3132,7 +3211,7 @@ BOOL CALLBACK ConfigColorPageProc (HWND hDlg, UINT message, WPARAM wParam, LPARA
 				SendDlgItemMessage(hDlg, IDC_COMBO1, CB_ADDSTRING, 0, (LPARAM)szCategory[i]);
 			SendDlgItemMessage(hDlg, IDC_COMBO1, CB_SETCURSEL, 0, 0L);
 
-			const char *szColorName[] = {
+			static const char *szColorName[] = {
 				"黒",
 				"白",
 				"赤",

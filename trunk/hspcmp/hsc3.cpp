@@ -86,8 +86,7 @@ void CHsc3::AddSystemMacros( CToken *tk, int option )
         tk->RegistExtMacro( "__file__", "" );
         tk->RegistExtMacro( "__include_level__", 0 );
         tk->RegistExtMacro( "__module__", "\"\"" );
-        tk->RegistExtMacro( "__func__", "\"\"" );
-		tk->RegistExtMacro( "__hsp3_uedit__", 1 );
+        tk->RegistExtMacro( "__func__", "" );
 		if ( option & HSC3_OPT_DEBUGMODE ) tk->RegistExtMacro( "_debug", "" );
 	}
 }
@@ -251,7 +250,7 @@ int CHsc3::Compile( char *fname, char *outname, char *outname_axi, int mode )
 		res = tk.GenerateCode( fname, outname, mode );
 	}
 
-	if ( tk.GetCmpOption() & CMPMODE_AXIOUT ) {
+	if ( cmpopt & CMPMODE_AXIOUT ) {
 #ifdef HSPINSPECT
 		int const res = tk.SaveAxInspection(outname_axi);
 		if ( res < 0 ) {

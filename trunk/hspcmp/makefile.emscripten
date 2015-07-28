@@ -38,18 +38,12 @@ block3cmp.html: $(OBJS) block3.hsp
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS) \
 	--preload-file emscripten/assets@/
 
-hspcmp.html: $(OBJS) assets
+hspcmp.html: $(OBJS)
 	$(CC) $(CFLAGS) \
 	$(OBJS) -o $@ $(LIBS) \
 	--preload-file emscripten/assets@/
-	cat ../hsp3dish/emscripten/license.js hspcmp.js > tmp.js
-	cp tmp.js hspcmp.js
-	cat tmp.js | gzip -9 > hspcmp.js.gz
+	cat ../hsp3dish/emscripten/license.js hspcmp.js | gzip -9 > hspcmp.js.gz
 	cat hspcmp.data | gzip -9 > hspcmp.data.gz
-
-assets:
-	rm -rf emscripten/assets/comon
-	cp -r ../package/win32/common/ emscripten/assets/
 
 clean:
 	rm -f $(OBJS) $(TARGET)

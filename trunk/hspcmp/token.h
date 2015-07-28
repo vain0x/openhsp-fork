@@ -184,18 +184,20 @@ public:
 	int GenerateCode( char *fname, char *oname, int mode );
 	int GenerateCode( CMemBuf *srcbuf, char *oname, int mode );
 
+	int GetCS( void );
 	void PutCS( int type, int value, int exflg );
 	void PutCSSymbol( int label_id, int exflag );
-	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
-	int GetOTCount();
-	int GetOT(int ot_index );
+	void SetCS(int csindex, int type, int value);
 	int PutOT( int value );
+	void PutOTBuf();
 	int PutDS( char *str );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
-	char *GetDS( int ptr );
+	char *GetDS(int ptr);
 	void SetOT( int id, int value );
+	int GetOT(int id); int GetOTCount();
+	int GetNewOTFromOldOT(int old_otindex);
 	void PutDI( void );
 	void PutDI( int dbg_code, int a, int subid );
 	void PutDIVars( void );
@@ -285,7 +287,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
-	void SetErrorSymbolOverdefined(char* keyword, int labelId);
+	void SymbolOverloadingError(char* keyword, int labelId);
 
 	//		For Code Generate
 	//
@@ -305,6 +307,7 @@ private:
 	int GenerateCodePRMF4( int t );
 	void GenerateCodeMethod( void );
 	void GenerateCodeLabel( char *name, int ex );
+	int GenerateOTIndex(char *name);
 
 	void GenerateCodePP_regcmd( void );
 	void GenerateCodePP_cmd( void );
@@ -353,51 +356,32 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
-	struct ConstCode final  // represents a const code
-	{
-		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
-		union { char* str; double dval; int inum; };
-		int exflag;
-
-		static ConstCode makeStr(const char* str, int exf);
-		static ConstCode makeDouble(double dval, int exf);
-		static ConstCode makeInt(int ival, int exf);
-		static ConstCode const mark;
-		bool isConst() const;
-		std::string toString() const;
-		std::string inspect() const;
-		ConstCode castTo(int destType) const;
-		~ConstCode();
-
-		ConstCode(ConstCode&&) _NOEXCEPT; // movable
-		ConstCode& operator = (ConstCode&&)_NOEXCEPT;
-		ConstCode(ConstCode const&);
-		ConstCode& operator = (ConstCode const&);
-	private:
-		ConstCode(int type, int exflag) : type(type), exflag(exflag) {}
-	};
+	struct ConstCode;
 	ConstCode CalcCG_evalConstExpr(int op, ConstCode const& lhs, ConstCode const& rhs);
 	void CalcCG_putConstElem(ConstCode&& elem);
 	void CalcCG_putCSCalcElem(ConstCode const&);
 	void CalcCG_ceaseConstFolding();
 
-	char const* CG_scriptPositionString() const;
 	void CG_MesLabelDefinition(int label_id);
-	
+
 #ifdef HSPINSPECT
 	//		For inspection
 	void Inspect_CodeSegment();
 	int  Inspect_CSElem(int csindex);
 	void Inspect_FInfoSegment();
+	void Inspect_LInfoSegment();
+	void Inspect_HpiSegment();
 
+	void Inspect_AnalyzeDInfo();
 	void Inspect_BeginSegment(char const* segment_title);
 
 	char const* Inspect_TypeName(int type);
 #endif
 
-	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 	bool CG_optShort() const { return CG_optCode() && (hed_cmpmode & CMPMODE_OPTSHORT) != 0; }
+	char const* CG_scriptPositionString() const;
 
 	//		Data
 	//
@@ -458,7 +442,7 @@ private:
 
 	//		for CodeGenerator
 	//
-	int cg_flag;
+	int cg_flag;  // 削除されるモジュールの内部コードを出力抑制するフラグ
 	int cg_debug;
 	int cg_iflev;
 	int cg_valcnt;
@@ -484,7 +468,7 @@ private:
 	int ifptr[CG_IFLEV_MAX];
 	int ifterm[CG_IFLEV_MAX];
 
-	int cg_lastcmd;
+	int cg_lastcmd;  // 直前に書き込んだコマンド; cmdif等は未実装
 	int cg_lasttype;
 	int cg_lastval;
 	int cg_lastcs;
@@ -502,7 +486,33 @@ private:
 
 	std::unique_ptr<std::map<std::string, int>> string_literal_table;
 	std::unique_ptr<std::map<double, int>> double_literal_table;
-	std::unique_ptr<std::vector<ConstCode>> stack_calculator;
+	std::unique_ptr<std::vector<int>> working_ot_buf; // コードの解析中にラベル(cs位置)の情報を記憶しておく。あとでまとめて ot_buf に書き出される
+	std::unique_ptr<std::multimap<int, int>> label_reference_table; // キーであるラベル(otindex)を参照しているcs位置の表。otindexの重複除去に使う。
+	std::unique_ptr<std::map<int, int>> otindex_table; //csindex -> new otindex (or -1)
+
+	struct ConstCode final  // represents a const code
+	{
+		int type; //TYPE_STRING/DNUM/INUM; or _MARK (stack bottom)
+		union { char* str; double dval; int inum; };
+		int exflag;
+
+		static ConstCode makeStr(const char* str, int exf);
+		static ConstCode makeDouble(double dval, int exf);
+		static ConstCode makeInt(int ival, int exf);
+		static ConstCode const mark;
+		bool isConst() const;
+		std::string toString() const;
+		ConstCode castTo(int destType) const;
+		~ConstCode();
+
+		ConstCode(ConstCode&&) _NOEXCEPT; // movable
+		ConstCode& operator = (ConstCode&&) _NOEXCEPT;
+		ConstCode(ConstCode const&);
+		ConstCode& operator = (ConstCode const&);
+	private:
+		ConstCode(int type, int exflag) : type(type), exflag(exflag) { }
+	};
+	std::unique_ptr<std::vector<ConstCode>> stack_calculator; // for const folding
 
 	//		for Header info
 	int hed_option;
@@ -530,9 +540,14 @@ private:
 	char *scnvbuf;			// SCNV変換バッファ
 	int	scnvsize;			// SCNV変換バッファサイズ
 
+
 #ifdef HSPINSPECT
 	//		for Inspection
 	std::unique_ptr<CMemBuf> axi_buf;
+	using identTable_t = std::map<int, char const*>;
+	std::unique_ptr<identTable_t> inspect_var_names;
+	std::unique_ptr<identTable_t> inspect_lab_names;
+	std::unique_ptr<identTable_t> inspect_prm_names;
 #endif
 };
 

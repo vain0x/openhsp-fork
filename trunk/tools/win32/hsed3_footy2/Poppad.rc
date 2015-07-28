@@ -770,9 +770,9 @@ BEGIN
         BLOCK "041104b0"
         BEGIN
             VALUE "FileDescription", "HSP スクリプトエディタ"
-            VALUE "FileVersion", "3.5"
+            VALUE "FileVersion", "3.4"
             VALUE "InternalName", "スクリプト エディタ"
-            VALUE "LegalCopyright", "Copyright (C) 1997-2015 Onion Software"
+            VALUE "LegalCopyright", "Copyright (C) 1997-2014 Onion Software"
             VALUE "OriginalFilename", "hsed3.exe"
             VALUE "PrivateBuild", "1.05"
             VALUE "ProductName", "Hot Soup Processor"

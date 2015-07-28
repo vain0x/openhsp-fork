@@ -8,7 +8,8 @@
 #include "interface.h"
 #include "tabmanager.h"
 #include "footy2.h"
-#include "hsp_compiler_api.h"
+
+#include "HspCompilerInfo.h"
 
 //
 // ƒOƒ[ƒoƒ‹•Ï”
@@ -277,7 +278,7 @@ static inline LRESULT GetHspcmpVer(HANDLE hPipe)
 	DWORD dwNumberOfBytesWritten;
 	BOOL bRet = FALSE;
 
-	if ( HspCompilerLoader hspcmp {} ) {
+	if ( HspCompilerLinker hspcmp {} ) {
 		hspcmp->hsc_ver(0, 0, 0, (int)szRefstr);
 		bRet = WriteFile(hPipe, szRefstr, lstrlen(szRefstr) + 1, &dwNumberOfBytesWritten, NULL);
 	}
@@ -399,11 +400,14 @@ static inline LRESULT GetText(int nFootyID, HANDLE hPipe)
 	lpBuffer = (char *)malloc(dwSize + 1);
 	if(lpBuffer == NULL) return -1;
 	nRet = Footy2GetText(nFootyID, lpBuffer, LM_CRLF, dwSize);
-	if (nRet == FOOTY2ERR_NONE && !WriteFile(hPipe, lpBuffer, dwSize, &dwNumberOfBytesWritten, NULL)){
+	if(nRet == FOOTY2ERR_NONE){
+		if(!WriteFile(hPipe, lpBuffer, dwSize, &dwNumberOfBytesWritten, NULL)){
+			free(lpBuffer);
+			return -3;
+		}
+	} else {
 		free(lpBuffer);
-		return -3;
 	}
-	free(lpBuffer);
 
 	switch(nRet){
 		case FOOTY2ERR_NONE:   return 0;
