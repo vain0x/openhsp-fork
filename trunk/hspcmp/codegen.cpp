@@ -119,7 +119,7 @@ void CToken::CalcCG_regmark( int mark )
 	default:
 		throw CGERROR_CALCEXP;
 	}
-	calccount++;
+	cg_calc_stack.top().calccount++;
 	PutCS( TK_NONE, op, texflag );
 }
 
@@ -127,51 +127,31 @@ void CToken::CalcCG_factor( void )
 {
 	int id;
 
-	cs_lasttype = ttype;
+	cg_calc_stack.top().cs_lasttype = ttype;
 	switch( ttype ) {
 	case TK_NUM:
-		PutCS( TYPE_INUM, val, texflag );
-		texflag = 0;
-		CalcCG_token();
-		calccount++;
-		return;
 	case TK_DNUM:
-		PutCS( TYPE_DNUM, val_d, texflag );
-		texflag = 0;
-		CalcCG_token();
-		calccount++;
-		return;
 	case TK_STRING:
-		PutCS( TYPE_STRING, PutDS( cg_str ), texflag );
-		texflag = 0;
-		CalcCG_token();
-		calccount++;
-		return;
 	case TK_LABEL:
-		GenerateCodeLabel( cg_str, texflag );
+		switch ( ttype ) {
+			case TK_NUM:    PutCS( TYPE_INUM, val, texflag ); break;
+			case TK_DNUM:   PutCS( TYPE_DNUM, val_d, texflag ); break;
+			case TK_STRING: PutCS( TYPE_STRING, PutDS( cg_str ), texflag ); break;
+			case TK_LABEL:  GenerateCodeLabel( cg_str, texflag ); break;
+		}
 		texflag = 0;
 		CalcCG_token();
-		calccount++;
+		cg_calc_stack.top().calccount++;
 		return;
 	case TK_OBJ:
 		id = SetVarsFixed( cg_str, cg_defvarfix );
-		if ( lb->GetType(id) == TYPE_VAR ) {
-			if ( lb->GetInitFlag(id) == LAB_INIT_NO ) {
-#ifdef JPNMSG
-				Mesf( "#未初期化の変数があります(%s)", cg_str );
-#else
-				Mesf( "#Uninitalized variable (%s).", cg_str );
-#endif
-				if ( hed_cmpmode & CMPMODE_VARINIT ) {
-					throw CGERROR_VAR_NOINIT;
-				}
-				lb->SetInitFlag( id, LAB_INIT_DONE );
-			}
+		if ( lb->GetInitFlag(id) == LAB_INIT_NO ) {
+			cg_calc_stack.top().uninitialized_labels.push_back(id);
 		}
 		GenerateCodeVAR( id, texflag );
 		texflag = 0;
 		if ( ttype == TK_NONE ) ttype = val;		// CalcCG_token()に合わせるため
-		calccount++;
+		cg_calc_stack.top().calccount++;
 		return;
 	case TK_SEPARATE:
 	case TK_EOL:
@@ -290,22 +270,30 @@ void CToken::CalcCG_start( void )
 	CalcCG_bool();
 }
 
-void CToken::CalcCG( int ex )
+void CToken::CalcCG( int ex, CGCalcData* result )
 {
 	//		パラメーターの式を評価する
 	//		(結果は逆ポーランドでコードを出力する)
 	//
 	texflag = ex;
-	cs_lastptr = cs_buf->GetSize();
-	calccount = 0;
+	cg_calc_stack.push({ cs_buf->GetSize(), TYPE_CALCERROR, 0, {} });
 
 	CalcCG_token_exprbeg_redo();
-
 	CalcCG_start();
 
 	if ( ttype == TK_CALCERROR ) {
 		throw CGERROR_CALCEXP;
 	}
+
+	if ( result ) {
+		*result = std::move(cg_calc_stack.top());
+	} else {
+		for ( auto& id : cg_calc_stack.top().uninitialized_labels ) {
+			AssertInitializedVar(id);
+		}
+	}
+	cg_calc_stack.pop();
+	return;
 }
 
 //-----------------------------------------------------------------------------
@@ -806,13 +794,13 @@ char *CToken::GetSymbolCG( char *str )
 
 //-----------------------------------------------------------------------------
 
-void CToken::GenerateCodePRM( void )
+void CToken::GenerateCodePRM( int t, int opt )
 {
 	//		HSP3Codeを展開する(パラメーター)
 	//
 	int ex;
 	ex = 0;
-	while(1) {
+	for ( int i = 0; ; ++i) {
 
 		if ( ttype == TK_NONE ) {
 			if ( val == ',' ) {						// 先頭が','の場合は省略
@@ -823,24 +811,33 @@ void CToken::GenerateCodePRM( void )
 			}
 		}
 
-		CalcCG( ex );								// 式の評価
+		CGCalcData calc_data;
+		CalcCG( ex, &calc_data );								// 式の評価
 		//Mesf( "#count %d", calccount );
 
 		if ( hed_cmpmode & CMPMODE_OPTPRM ) {
-			if ( calccount == 1 ) {						// パラメーターが単一項目の時
-				switch( cs_lasttype ) {
+			if ( calc_data.calccount == 1 ) {						// パラメーターが単一項目の時
+				switch( calc_data.cs_lasttype ) {
 				case TK_NUM:
 				case TK_DNUM:
 				case TK_STRING:
 					{
 					unsigned short *cstmp;
-					cstmp = (unsigned short *)( cs_buf->GetBuffer() + cs_lastptr );
+					cstmp = (unsigned short *)( cs_buf->GetBuffer() + calc_data.cs_lastptr );
 					*cstmp |= EXFLG_0;					// 単一項目フラグを立てる
 					break;
 					}
 				default:
 					break;
 				}
+			}
+		}
+
+		for ( auto& id : calc_data.uninitialized_labels ) {
+			if ( t == LAB_TYPE_PPMODFUNC ) {
+				lb->SetInitFlag(id, LAB_INIT_INHERIT, /* 命令 t の i 番目の引数 */);
+			} else {
+				AssertInitializedVar(id);
 			}
 		}
 
@@ -1370,7 +1367,7 @@ void CToken::GenerateCodeCMD( int id )
 
 	if ( opt & 0x10000 ) CheckInternalCMD1( opt );
 
-	GenerateCodePRM();
+	GenerateCodePRM( t, opt );
 	cg_lastcmd  = CG_LASTCMD_CMD;
 	cg_lasttype = t;
 	cg_lastval  = opt;
@@ -1400,7 +1397,8 @@ void CToken::GenerateCodeLET( int id )
 		return;
 	}
 
-	PutCS( t, lb->GetOpt(id), EXFLG_1 );			// 通常の変数代入
+	int const opt = lb->GetOpt(id);
+	PutCS( t, opt, EXFLG_1 );						// 通常の変数代入
 	GenerateCodePRMF4( t );							// 構造体/配列のチェック
 
 	if ( ttype != TK_NONE ) { throw CGERROR_SYNTAX; }
@@ -1428,7 +1426,7 @@ void CToken::GenerateCodeLET( int id )
 		}
 		break;
 	case '=':								// 変数=prm
-		GenerateCodePRM();
+		GenerateCodePRM( t, opt );
 		return;
 	default:
 		break;
@@ -1437,7 +1435,7 @@ void CToken::GenerateCodeLET( int id )
 	if (( ttype == TK_NONE )&&( val == '=' )) {
 		GetTokenCG( GETTOKEN_DEFAULT );
 	}
-	GenerateCodePRM();
+	GenerateCodePRM( t, opt );
 }
 
 
@@ -2087,6 +2085,34 @@ int CToken::SetVarsFixed( char *varname, int fixedvalue )
 	return id;
 }
 
+void CToken::AssertInitializedVar( int id )
+{
+	if ( lb->GetType(id) == TYPE_VAR ) {
+		if ( lb->GetInitFlag(id) == LAB_INIT_NO ) {
+#ifdef JPNMSG
+			Mesf("#未初期化の変数があります(%s)", cg_str);
+#else
+			Mesf("#Uninitalized variable (%s).", cg_str);
+#endif
+			if ( hed_cmpmode & CMPMODE_VARINIT ) {
+				throw CGERROR_VAR_NOINIT;
+			}
+			lb->SetInitFlag(id, LAB_INIT_DONE);
+		}
+	} else if ( lb->GetType(id) == TYPE_STRUCT ) {
+		lb->SetInitFlag(id, LAB_INIT_PP_READWRITE);
+	}
+}
+
+void CToken::SolveInitFlags()
+{
+	for ( int id = 0; id < lb->GetCount(); ++id ) {
+		if ( lb->GetInitFlag(id) != LAB_INIT_INHERIT ) continue;
+
+
+
+	}
+}
 
 void CToken::GenerateCodePP( char *buf )
 {
@@ -2192,24 +2218,22 @@ int CToken::GenerateCodeSub( void )
 			if ( i < 0 ) {
 				//Mesf( "[%s][%d]",cg_str, cg_valcnt );
 				i = SetVarsFixed( cg_str, cg_defvarfix );
-				lb->SetInitFlag( i, LAB_INIT_DONE );		//	変数の初期化フラグをセットする
-				GenerateCodeLET( i );
-			} else {
-				t = lb->GetType( i );
-				switch( t ) {
-				case TYPE_VAR:
-				case TYPE_STRUCT:
-					GenerateCodeLET( i );
-					break;
-				case TYPE_LABEL:
-				case TYPE_XLABEL:
-					throw CGERROR_LABELNAME;
-					break;
-				default:
-					GenerateCodeCMD( i );
-					break;
-				}
 			}
+			switch( lb->GetType( i ) ) {
+			case TYPE_VAR:
+			case TYPE_STRUCT:
+				lb->SetInitFlag( i, LAB_INIT_DONE );
+				GenerateCodeLET( i );
+				break;
+			case TYPE_LABEL:
+			case TYPE_XLABEL:
+				throw CGERROR_LABELNAME;
+				break;
+			default:
+				GenerateCodeCMD( i );
+				break;
+			}
+
 //			sprintf( tmp,"#obj:%s (%d)",cg_str,i );
 //			Mes( tmp );
 			break;
@@ -2395,6 +2419,9 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 
 		//		コンパイル後の後始末チェック
 		if ( replev != 0 ) throw CGERROR_LOOP_NOTFOUND;
+
+		// 変数の初期化フラグチェック
+		SolveInitFlags();
 
 		//		ラベル未処理チェック
 		int errend;

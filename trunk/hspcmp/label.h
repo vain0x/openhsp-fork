@@ -37,8 +37,10 @@
 #define PRM_MASK 0xfff
 #define PRM_FLAG_CTYPE 0x1000
 
-#define LAB_INIT_NO 0
-#define LAB_INIT_DONE 1
+#define LAB_INIT_NO           0
+#define LAB_INIT_DONE         1 // 初期化済み変数
+#define LAB_INIT_INHERIT      2 // ユーザ定義関数に変数渡しされた
+#define LAB_INIT_PP_READWRITE 3 // 読み取りが行われる変数参照パラメータ (読まれないものは _DONE)
 
 #define LAB_TYPEFIX_NONE 0
 #define LAB_TYPEFIX_INT 4
@@ -63,7 +65,8 @@ typedef struct LABOBJ {
 	char	*data;				// data field
 	char	*data2;				// data field (opt)
 	LABREL	*rel;				// relation id
-	short	init;				// initalize flag
+	int     init;				// initialize flag
+	int     init_inherit_base;  // which `init` inherits if init = LAB_INIT_INHERIT
 	short	typefix;			// force type
 } LABOBJ;
 
@@ -81,7 +84,7 @@ public:
 	void SetFlag( int id, int val );
 	void SetData( int id, char *str );
 	void SetData2( int id, char *str, int size );
-	void SetInitFlag( int id, int val );
+	void SetInitFlag( int id, int val, int inherit_base = -1 );
 	void SetForceType( int id, int val );
 	int Search( char *oname );
 	int SearchLocal( char *oname, char *loname );

@@ -6,6 +6,7 @@
 #define __token_h
 
 #include <vector>
+#include <stack>
 
 // token type
 #define TK_NONE 0
@@ -203,7 +204,8 @@ public:
 	int PutStructEnd( int i, char *name, int libindex, int otindex, int funcflag );
 	int PutStructEndDll( char *name, int libindex, int subid, int otindex );
 
-	void CalcCG( int ex );
+	struct CGCalcData;
+	void CalcCG( int ex, CGCalcData* result = nullptr );
 
 	int GetHeaderOption( void ) { return hed_option; }
 	char *GetHeaderRuntimeName( void ) { return hed_runtime; }
@@ -282,7 +284,7 @@ private:
 	void GenerateCodeCMD( int id );
 	void GenerateCodeLET( int id );
 	void GenerateCodeVAR( int id, int ex );
-	void GenerateCodePRM( void );
+	void GenerateCodePRM( int t, int opt );
 	void GenerateCodePRMN( void );
 	int GenerateCodePRMF( void );
 	void GenerateCodePRMF2( void );
@@ -324,6 +326,8 @@ private:
 	void CheckCMDIF_Fin( int mode );
 
 	int SetVarsFixed( char *varname, int fixedvalue );
+	void AssertInitializedVar( int id );
+	void SolveInitFlags();
 
 	void CalcCG_token( void );
 	void CalcCG_token_exprbeg( void );
@@ -389,9 +393,15 @@ private:
 		int len;
 	} undefined_symbol_t;
 	std::vector<undefined_symbol_t> undefined_symbols;
-	int cs_lastptr;					// パラメーターの初期CS位置
-	int cs_lasttype;				// パラメーターのタイプ(単一時)
-	int calccount;					// パラメーター個数
+	
+	struct CGCalcData
+	{
+		int cs_lastptr;				// パラメーターの初期CS位置
+		int cs_lasttype;			// パラメーターのタイプ(単一時)
+		int calccount;				// パラメーター個数
+		std::vector<int> uninitialized_labels; // 式の中に現れた未初期化なラベル
+	};
+	std::stack<CGCalcData> cg_calc_stack;
 
 	//		for CodeGenerator
 	//

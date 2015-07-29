@@ -122,6 +122,7 @@ int CLabel::Regist( char *name, int type, int opt )
 	lab->hash = StrCase( lab->name );
 	lab->rel = NULL;
 	lab->init = LAB_INIT_NO;
+	lab->init_inherit_base = -1;
 	lab->typefix = LAB_TYPEFIX_NONE;
 	labels.insert(std::make_pair(lab->name, a));
 	return a;
@@ -186,11 +187,14 @@ void CLabel::SetData2( int id, char *str, int size )
 }
 
 
-void CLabel::SetInitFlag( int id, int val )
+void CLabel::SetInitFlag( int id, int val, int inherit_base )
 {
 	//		set init flag
-	//
-	mem_lab[id].init = (short)val;
+	// 
+	if ( mem_lab[id].init == LAB_INIT_NO ) {
+		mem_lab[id].init = val;
+		mem_lab[id].init_inherit_base = inherit_base;
+	}
 }
 
 
