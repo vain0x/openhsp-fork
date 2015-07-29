@@ -231,6 +231,7 @@ private:
 	void Pickstr( void );
 	char *Pickstr2( char *str );
 	void Calc_token( void );
+	void Calc_defined( CALCVAR& v );
 	void Calc_factor( CALCVAR &v );
 	void Calc_unary( CALCVAR &v );
 	void Calc_muldiv( CALCVAR &v );

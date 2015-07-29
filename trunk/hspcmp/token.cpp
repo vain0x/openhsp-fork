@@ -630,6 +630,25 @@ void CToken::Calc_token( void )
 	ttype = GetToken();
 }
 
+void CToken::Calc_defined(CALCVAR &v)
+{
+	Calc_token();
+	if ( ttype != '?' ) { ttype = TK_ERROR; return; }
+
+	// •¶Žš—ñƒŠƒeƒ‰ƒ‹‚ðŽ¯•ÊŽq‚Æ‚µ‚ÄŽó‚¯Žæ‚èAŒŸõ‚·‚é
+	Calc_token();
+	if ( ttype != TK_STRING ) { ttype = TK_CALCERROR; return; }
+	char* const word = (char*)(s3);
+
+	char fixname[128];
+	strcase2(word, fixname);
+	AddModuleName(fixname);
+	int const id = lb->SearchLocal(word, fixname);
+
+	v = (id >= 0) ? 1 : 0;
+	Calc_token();
+}
+
 void CToken::Calc_factor( CALCVAR &v )
 {
 	CALCVAR v1;
@@ -657,6 +676,10 @@ void CToken::Calc_factor( CALCVAR &v )
 				v = *(CALCVAR *)ptr_dval;
 			}
 		Calc_token();
+		return;
+	}
+	if ( ttype == '?' ) {
+		Calc_defined(v);
 		return;
 	}
 	if( ttype!='(' ) { ttype=TK_ERROR; return; }
