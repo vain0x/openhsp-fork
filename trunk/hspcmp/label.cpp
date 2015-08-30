@@ -94,8 +94,12 @@ int CLabel::StrCmp( char *str1, char *str2 )
 
 int CLabel::Regist( char *name, int type, int opt )
 {
-	int a;
+	return Regist(name, type, opt, nullptr, -1);
+}
 
+
+int CLabel::Regist( char *name, int type, int opt, char const *filename, int line )
+{
 	if ( name[0]==0 ) return -1;
 	if ( cur>=maxlab ) {				// ラベルバッファ拡張
 		LABOBJ *tmp;
@@ -109,7 +113,7 @@ int CLabel::Regist( char *name, int type, int opt )
 		mem_lab = tmp;
 	}
 
-	a = cur;
+	int label_id = cur;
 	LABOBJ *lab=&mem_lab[cur++];
 	lab->flag = 1;
 	lab->type = type;
@@ -123,8 +127,10 @@ int CLabel::Regist( char *name, int type, int opt )
 	lab->rel = NULL;
 	lab->init = LAB_INIT_NO;
 	lab->typefix = LAB_TYPEFIX_NONE;
-	labels.insert(std::make_pair(lab->name, a));
-	return a;
+	SetDefinition(label_id, filename, line);
+
+	labels.emplace(lab->name, label_id);
+	return label_id;
 }
 
 
@@ -283,6 +289,7 @@ void CLabel::Reset( void )
 	int i;
 	cur = 0;
 	labels.clear();
+	filenames.clear();
 	for(i=0;i<maxlab;i++) { mem_lab[i].flag = -1; }
 	DisposeSymbolBuffer();
 	MakeSymbolBuffer();
@@ -770,3 +777,11 @@ void CLabel::SetCaseMode( int flag )
 	casemode = flag;
 }
 
+void CLabel::SetDefinition(int id, char const* filename, int line)
+{
+	if ( !(filename != nullptr && line >= 0) ) return;
+
+	LABOBJ* const it = GetLabel(id);
+	it->def_file = filenames.insert(filename).first->c_str();
+	it->def_line = line;
+}

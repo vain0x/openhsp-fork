@@ -1504,7 +1504,7 @@ void CToken::GenerateCodePP_cmd( void )
 	if ( ttype != TK_NUM ) throw CGERROR_PP_NO_REGCMD;
 	id = val;
 
-	lb->Regist( cmd, cg_pptype, id );
+	lb->Regist( cmd, cg_pptype, id , cg_orgfile, cg_orgline );
 	//Mesf( "#%x:%d [%s]",cg_pptype, id, cmd );
 }
 
@@ -1541,6 +1541,7 @@ void CToken::GenerateCodePP_usecom( void )
 
 	i = lb->Search( libname );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
@@ -1563,7 +1564,7 @@ void CToken::GenerateCodePP_usecom( void )
 
 	PutStructStart();
 	prmid = PutStructEndDll( "*", cg_libindex, STRUCTPRM_SUBID_COMOBJ, -1 );
-	lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ );
+	lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ, cg_orgfile, cg_orgline );
 
 	//Mesf( "#usecom %s [%s][%s]",libname,clsname,iidname );
 }
@@ -1684,6 +1685,7 @@ void CToken::GenerateCodePP_func( int deftype )
 
 	i = lb->Search( fbase );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_FUNCNAME;
 	}
 	subid = STRUCTPRM_SUBID_DLL;
@@ -1692,11 +1694,10 @@ void CToken::GenerateCodePP_func( int deftype )
 		//Mesf( "Warning:Old func expression [%s]", fbase );
 	}
 	i = PutStructEndDll( fname, cg_libindex, subid, otflag );
-	lb->Regist( fbase, TYPE_DLLFUNC, i );
+	lb->Regist( fbase, TYPE_DLLFUNC, i, cg_orgfile, cg_orgline );
 
 	//Mesf( "#func [%s][%s][%d]",fbase, fname, i );
 }
-
 
 void CToken::GenerateCodePP_comfunc( void )
 {
@@ -1739,11 +1740,12 @@ void CToken::GenerateCodePP_comfunc( void )
 
 	i = lb->Search( fbase );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_TAGNAME;
 	}
 	subid = STRUCTPRM_SUBID_COMOBJ;
 	i = PutStructEndDll( "*", cg_libindex, subid, imp_index );
-	lb->Regist( fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ );
+	lb->Regist(fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ, cg_orgfile, cg_orgline);
 
 	//Mesf( "#comfunc [%s][%d][%d]",fbase, imp_index, i );
 }
@@ -1874,9 +1876,12 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	index = -1;
 	int label_id = lb->Search( funcname );
 	if ( label_id >= 0 ) {
-		if ( lb->GetType(label_id) != TYPE_MODCMD ) throw CGERROR_PP_ALREADY_USE_FUNC;
+		if ( lb->GetType(label_id) != TYPE_MODCMD ) {
+			CG_MesLabelDefinition(label_id); throw CGERROR_PP_ALREADY_USE_FUNC;
+		}
 		index = lb->GetOpt(label_id);
 		if ( index >= 0 && GET_FI(index)->index != STRUCTDAT_INDEX_DUMMY ) {
+			CG_MesLabelDefinition(label_id);
 			throw CGERROR_PP_ALREADY_USE_FUNC;
 		}
 	}
@@ -1927,9 +1932,10 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 				//	引数のエイリアス
 				i = lb->Search( cg_str );
 				if ( i >= 0 ) {
+					CG_MesLabelDefinition(i);
 					throw CGERROR_PP_ALREADY_USE_PARAM;
 				}
-				i = lb->Regist( cg_str, TYPE_STRUCT, prmid );
+				i = lb->Regist( cg_str, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline );
 				cg_localstruct[ cg_localcur++ ] = i;
 				GetTokenCG( GETTOKEN_DEFAULT );
 			}
@@ -1945,7 +1951,7 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 		index = GET_FI_SIZE();
 		fi_buf->PreparePtr( sizeof(STRUCTDAT) );
 		if ( regflag ) {
-			lb->Regist( funcname, TYPE_MODCMD, index );
+			lb->Regist( funcname, TYPE_MODCMD, index, cg_orgfile, cg_orgline);
 		}
 	}
 	if ( label_id >= 0 ) {
@@ -2010,12 +2016,12 @@ void CToken::GenerateCodePP_struct( void )
 	strncpy( funcname, cg_str, 1023 );
 	i = lb->Search( funcname );
 	if ( i >= 0 ) {
-		throw CGERROR_PP_ALREADY_USE_PARAM;
+		CG_MesLabelDefinition(i); throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
 	PutStructStart();
 	prmid = PutStructParamTag();					// modinit用のTAG
-	lb->Regist( funcname, TYPE_STRUCT, prmid );
+	lb->Regist( funcname, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline);
 	//Mesf( "%d:%s",prmid, funcname );
 
 	while(1) {
@@ -2032,9 +2038,9 @@ void CToken::GenerateCodePP_struct( void )
 
 		i = lb->Search( cg_str );
 		if ( i >= 0 ) {
-			throw CGERROR_PP_ALREADY_USE_PARAM;
+			CG_MesLabelDefinition(i); throw CGERROR_PP_ALREADY_USE_PARAM;
 		}
-		lb->Regist( cg_str, TYPE_STRUCT, prmid );
+		lb->Regist( cg_str, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline);
 
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype >= TK_EOL ) break;
@@ -2082,7 +2088,7 @@ int CToken::SetVarsFixed( char *varname, int fixedvalue )
 	int id;
 	id = lb->Search( varname );
 	if ( id < 0 ) {
-		id = lb->Regist( varname, TYPE_VAR, cg_valcnt );
+		id = lb->Regist( varname, TYPE_VAR, cg_valcnt, cg_orgfile, cg_orgline);
 		cg_valcnt++;
 	}
 	lb->SetForceType( id, fixedvalue );
@@ -2105,7 +2111,7 @@ void CToken::GenerateCodePP( char *buf )
 		cg_orgline = val;
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_STRING ) {
-			strcpy ( cg_orgfile, cg_str );
+			strcpy( cg_orgfile, cg_str );
 			if ( cg_debug ) {
 				i = PutDSBuf( cg_str );
 				PutDI( 254, i, cg_orgline );				// ファイル名をデバッグ情報として登録
@@ -2351,7 +2357,8 @@ void CToken::RegisterFuncLabels( void )
 			if ( lb->Search(name) >= 0 ) {
 				throw CGERROR_PP_ALREADY_USE_FUNC;
 			}
-			int id = lb->Regist( name, TYPE_MODCMD, -1 );
+			LABOBJ* lab = tmp_lb->GetLabel(i);
+			int id = lb->Regist( name, TYPE_MODCMD, -1, lab->def_file, lab->def_line );
 			lb->SetData2( id, (char *)&i, sizeof i );
 		}
 	}
@@ -3121,3 +3128,17 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	return res;
 }
 
+
+void CToken::CG_MesLabelDefinition(int label_id)
+{
+	if ( !cg_debug ) return;
+
+	LABOBJ* const labobj = lb->GetLabel(label_id);
+	if ( labobj->def_file ) {
+#ifdef JPNMSG
+		Mesf("#識別子「%s」の定義位置: line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+#else
+		Mesf("#Identifier '%s' has already defined in line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+#endif
+	}
+}

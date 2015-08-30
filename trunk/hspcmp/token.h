@@ -271,6 +271,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
+	void SetErrorSymbolOverdefined(char* keyword, int label_id);
 
 	//		For Code Generate
 	//
@@ -338,6 +339,7 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
+	void CG_MesLabelDefinition(int label_id);
 
 	//		Data
 	//
@@ -456,7 +458,7 @@ private:
 	//
 	int cg_errline;
 	int cg_orgline;
-	char cg_orgfile[256];
+	char cg_orgfile[HSP_MAX_PATH];
 
 	//		for SCNV
 	//
