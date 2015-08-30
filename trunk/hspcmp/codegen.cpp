@@ -1256,7 +1256,7 @@ void CToken::CheckInternalIF( int opt )
 }
 
 
-void CToken::CheckInternalCMD1( int opt )
+void CToken::CheckInternalListenerCMD( int opt )
 {
 	//		命令生成時チェック(命令+命令セット)
 	//
@@ -1267,8 +1267,10 @@ void CToken::CheckInternalCMD1( int opt )
 	t = lb->GetType(i);
 	o = lb->GetOpt(i);
 	if ( t != TYPE_PROGCMD ) return;
-	PutCS( t, o & 0xffff, 0 );
-	GetTokenCG( GETTOKEN_DEFAULT );
+	if ( o == 0x001 ) { // gosub
+		PutCS(t, o & 0xffff, 0);
+	}
+	GetTokenCG(GETTOKEN_DEFAULT);
 }
 
 
@@ -1368,7 +1370,7 @@ void CToken::GenerateCodeCMD( int id )
 	if ( t == TYPE_CMPCMD ) CheckInternalIF( opt );
 	GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( opt & 0x10000 ) CheckInternalCMD1( opt );
+	if ( opt & 0x10000 ) CheckInternalListenerCMD(opt);
 
 	GenerateCodePRM();
 	cg_lastcmd  = CG_LASTCMD_CMD;
