@@ -1939,7 +1939,7 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 		if ( val != ',' ) throw CGERROR_PP_WRONG_PARAM_NAME;
 	}
 
-	ot = PutOT( GetCS() );
+	ot = PutOT( GetCS() ); working_ot_buf->at(ot).ref_count ++;
 	if ( index == -1 ) {
 		index = GET_FI_SIZE();
 		fi_buf->PreparePtr( sizeof(STRUCTDAT) );
@@ -2460,6 +2460,7 @@ void CToken::PutCS( int type, int value, int exflg )
 	//
 	if ( CG_optCode() && type == TYPE_LABEL ) {
 		label_reference_table->emplace(value, GetCS());
+		working_ot_buf->at(value).ref_count ++;
 	}
 
 	int a;
@@ -2572,7 +2573,7 @@ int CToken::PutOT( int value )
 	// 参照先のcs位置が未確定の場合 (if文のジャンプ先など)、value < 0 で登録される。
 	//
 	int i = GetOTCount();
-	working_ot_buf->push_back(value);
+	working_ot_buf->push_back(ot_info { value, 0 });
 	return i;
 }
 
@@ -2581,12 +2582,12 @@ void CToken::SetOT( int id, int value )
 {
 	//		Modify object temp
 	//
-	working_ot_buf->at(id) = value;
+	working_ot_buf->at(id).csindex = value;
 }
 
 int CToken::GetOT(int id)
 {
-	return working_ot_buf->at(id);
+	return working_ot_buf->at(id).csindex;
 }
 
 int CToken::GetOTCount()
@@ -2597,24 +2598,31 @@ int CToken::GetOTCount()
 void CToken::PutOTBuf()
 {
 	// OTバッファを書き出す
-	// 最適化: ラベルの重複を取り除き、otindex を割り振りなおす
+	// 最適化: 未参照ラベルや重複ラベルを取り除く。
+	//        これによりラベルIDがずれるので、コード上に書き込み済みの otindex を修整する。
 
 	assert(ot_buf->GetSize() == 0);
 	int ot_count = 0;
 
 	for ( int i = 0; i < static_cast<int>(working_ot_buf->size()); ++ i ) {
-		int csindex = working_ot_buf->at(i);
+		int csindex = working_ot_buf->at(i).csindex;
 		if ( CG_optCode() ) {
-			// 同じ参照先をもつ既存ラベルをみつける
+			if ( working_ot_buf->at(i).ref_count == 0 ) {
+				if ( CG_optInfo() ) {
+					Mesf("#未参照のラベルを除去 (ot#%d)", i);
+				}
+				continue;
+			}
+
 			int new_ot_index = GetNewOTFromOldOT(i);
-			if ( new_ot_index < 0 ) {
-				otindex_table->emplace(csindex, ot_count);
-			} else {
+			if ( new_ot_index >= 0 ) {
 				if ( CG_optInfo() ) {
 					Mesf("#重複ラベルを除去 (ot#%d -> %d; cs#%d)", i, new_ot_index, csindex);
 				}
 				continue;
 			}
+
+			otindex_table->emplace(csindex, ot_count);
 		}
 		ot_buf->Put(csindex); ot_count ++;
 	}
@@ -2651,7 +2659,7 @@ int CToken::GetNewOTFromOldOT(int old_otindex)
 {
 	if ( !CG_optCode() ) return old_otindex;
 
-	auto&& iter = otindex_table->find(working_ot_buf->at(old_otindex));
+	auto&& iter = otindex_table->find(working_ot_buf->at(old_otindex).csindex);
 	return (iter != otindex_table->end()) ? iter->second : -1;
 };
 

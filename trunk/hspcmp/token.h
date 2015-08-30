@@ -447,9 +447,10 @@ private:
 	CMemBuf *fi2_buf;
 	CMemBuf *hpi_buf;
 
-	std::unique_ptr<std::vector<int>> working_ot_buf;               // コードの解析中にラベルの情報を記憶するもの
-	std::unique_ptr<std::multimap<int, int>> label_reference_table; // ラベルを参照しているcs位置の表
-	std::unique_ptr<std::map<int, int>> otindex_table;              // cd位置を指す新しいラベルのOTインデックス
+	struct ot_info { int csindex; int ref_count; };
+	std::unique_ptr<std::vector<ot_info>> working_ot_buf;           // コードの解析中にラベルの情報を記憶するもの
+	std::unique_ptr<std::multimap<int, int>> label_reference_table; // ラベルID→そのラベルを参照しているCS位置
+	std::unique_ptr<std::map<int, int>> otindex_table;              // CS位置→新しいラベルID
 
 	//		for Header info
 	int hed_option;
