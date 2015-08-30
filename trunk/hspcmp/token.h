@@ -6,6 +6,8 @@
 #define __token_h
 
 #include <vector>
+#include <map>
+#include <memory>
 
 // token type
 #define TK_NONE 0
@@ -27,6 +29,7 @@
 #define DUMPMODE_DLLCMD 4
 #define DUMPMODE_ALL 15
 
+#define CMPMODE_ERROR 0
 #define CMPMODE_PPOUT 1
 #define CMPMODE_OPTCODE 2
 #define CMPMODE_CASE 4
@@ -182,12 +185,17 @@ public:
 	void PutCSSymbol( int label_id, int exflag );
 	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
+	void SetCS(int csindex, int type, int value);
 	int PutOT( int value );
+	void PutOTBuf();
 	int PutDS( char *str );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
-	char *GetDS( int ptr );
+	char *GetDS(int ptr);
 	void SetOT( int id, int value );
+	int GetOT(int id);
+	int GetOTCount();
+	int GetNewOTFromOldOT(int old_otindex);
 	void PutDI( void );
 	void PutDI( int dbg_code, int a, int subid );
 	void PutDIVars( void );
@@ -338,6 +346,8 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
+	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 
 	//		Data
 	//
@@ -436,6 +446,10 @@ private:
 	CMemBuf *mi_buf;
 	CMemBuf *fi2_buf;
 	CMemBuf *hpi_buf;
+
+	std::unique_ptr<std::vector<int>> working_ot_buf;               // コードの解析中にラベルの情報を記憶するもの
+	std::unique_ptr<std::multimap<int, int>> label_reference_table; // ラベルを参照しているcs位置の表
+	std::unique_ptr<std::map<int, int>> otindex_table;              // cd位置を指す新しいラベルのOTインデックス
 
 	//		for Header info
 	int hed_option;
