@@ -433,6 +433,7 @@ static char *code_checkarray_obj( PVal *pval, int *mptype )
 	}
 */
 
+	*mptype = pval->flag;
 	HspVarCoreReset( pval );										// 配列ポインタをリセットする
 
 	if ( type == TYPE_MARK ) {
