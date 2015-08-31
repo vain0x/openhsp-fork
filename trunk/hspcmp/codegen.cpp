@@ -2130,7 +2130,7 @@ void CToken::GenerateCodePP( char *buf )
 	if ( !strcmp( cg_str,"regcmd" ) ) { GenerateCodePP_regcmd(); return; }
 	if ( !strcmp( cg_str,"cmd" ) ) { GenerateCodePP_cmd(); return; }
 	if ( !strcmp( cg_str,"uselib" ) ) { GenerateCodePP_uselib(); return; }
-	if ( !strcmp( cg_str,"func" ) ) { GenerateCodePP_func( STRUCTDAT_OT_STATEMENT ); return; }
+	if ( !strcmp( cg_str,"func" ) ) { GenerateCodePP_func( STRUCTDAT_OT_STATEMENT | STRUCTDAT_OT_FUNCTION ); return; }
 	if ( !strcmp( cg_str,"cfunc" ) ) { GenerateCodePP_func( STRUCTDAT_OT_FUNCTION ); return; }
 	if ( !strcmp( cg_str,"deffunc" ) ) { GenerateCodePP_deffunc(); return; }
 	if ( !strcmp( cg_str,"defcfunc" ) ) { GenerateCodePP_defcfunc(); return; }
