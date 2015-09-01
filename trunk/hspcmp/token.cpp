@@ -2695,9 +2695,9 @@ ppresult_t CToken::PP_Global( void )
 	//
 	if ( IsGlobalMode() ) { SetError("already in global mode"); return PPRESULT_ERROR; }
 	//
-	wrtbuf->PutStr( "#global" );
-	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
+	wrtbuf->PutCR();
+	wrtbuf->PutStr( "#global" );
 	wrtbuf->PutCR();
 	SetModuleName( "" );
 	return PPRESULT_WROTE_LINES;
