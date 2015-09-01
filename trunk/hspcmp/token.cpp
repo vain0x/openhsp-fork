@@ -1857,13 +1857,15 @@ ppresult_t CToken::PP_Const( void )
 {
 	//		#const解析
 	//
+	enum ConstType { Indeterminate, Double, Int };
+	ConstType valuetype = ConstType::Indeterminate;
+
 	char *word;
-	int id,res,glmode,dblmode;
+	int id, res, glmode;
 	char keyword[256];
 	char strtmp[512];
 	CALCVAR cres;
 	glmode = 0;
-	dblmode = 0;
 	word = (char *)s3;
 	if ( GetToken() != TK_OBJ ) {
 		sprintf( strtmp,"invalid symbol [%s]", word );
@@ -1878,12 +1880,18 @@ ppresult_t CToken::PP_Const( void )
 		glmode=1;
 		strcase( word );
 	}
-	if (tstrcmp(word,"double")) {		// double macro
+
+	// 型指定キーワード
+	if ( tstrcmp(word, "double") ) {
+		valuetype = ConstType::Double;
+	} else if ( tstrcmp(word, "int") ) {
+		valuetype = ConstType::Int;
+	}
+	if (valuetype != ConstType::Indeterminate) {
 		if ( GetToken() != TK_OBJ ) {
-			SetError( "bad double syntax" ); return PPRESULT_ERROR;
+			SetError( "bad #const syntax" ); return PPRESULT_ERROR;
 		}
-		dblmode=1;
-		strcase( word );
+		strcase(word);
 	}
 
 	strcpy( keyword, word );
@@ -1925,7 +1933,8 @@ ppresult_t CToken::PP_Const( void )
 
 
 	id = lb->Regist( keyword, LAB_TYPE_PPVAL, (int)cres );
-	if (( dblmode )||( cres != floor( cres ) )) {
+	if ( valuetype == ConstType::Double
+		|| (valuetype == ConstType::Indeterminate && cres != floor(cres)) ) {
 		lb->SetData2( id, (char *)(&cres), sizeof(CALCVAR) );
 	}
 	if ( glmode ) lb->SetEternal( id );
