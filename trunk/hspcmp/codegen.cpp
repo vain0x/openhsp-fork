@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <functional>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/hsp3debug.h"
@@ -2478,10 +2479,7 @@ void CToken::PutCS( int type, double value, int exflg )
 {
 	//		Register command code (double)
 	//
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->Put( value );
-	PutCS( type, i, exflg );
+	PutCS( type, PutDS(value), exflg );
 }
 
 
@@ -2516,26 +2514,34 @@ int CToken::GetCS( void )
 }
 
 
+int CToken::PutDS(double value)
+{
+	//		Register doubles to data segment
+	//
+	int i = ds_buf->GetSize();
+
+	// literal pool
+	if ( CG_optCode() ) {
+		auto&& it = double_literal_table->find(value);
+		if ( it != double_literal_table->end() ) {
+			i = it->second;
+			if ( CG_optInfo() ) { Mesf("#実数リテラルプール %f", value); }
+			return i;
+		} else {
+			double_literal_table->emplace(value, i);
+		}
+	}
+
+	ds_buf->Put(value);
+	return i;
+}
+
+
 int CToken::PutDS( char *str )
 {
 	//		Register strings to data segment (script string)
 	//
-	int i;
-	int size;
-	char *p;
-	i = ds_buf->GetSize();
-
-	// output as UTF8 format
-	if ( cg_utf8out ) {
-		p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
-		size = (int)strlen(p) + 1;
-		ds_buf->PutData( p, size );
-		return i;
-	}
-
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
+	return PutDSStr(str, cg_utf8out != 0);
 }
 
 
@@ -2543,10 +2549,48 @@ int CToken::PutDSBuf( char *str )
 {
 	//		Register strings to data segment (direct)
 	//
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
+	return PutDSStr(str, false);
+}
+
+
+int CToken::PutDSStr(char *str, bool converts_to_utf8)
+{
+	//		Register strings to data segment (caching)
+
+	char *p;
+
+	// output as UTF8 format
+	if ( converts_to_utf8 ) {
+		p = ExecSCNV(str, SCNV_OPT_SJISUTF8);
+	} else {
+		p = str;
+	}
+
+	int i = ds_buf->GetSize();
+
+	// literal pool
+	if ( CG_optCode() ) {
+		auto&& it = string_literal_table->find(p);
+		if ( it != string_literal_table->end() ) {
+			i = it->second;
+			if ( CG_optInfo() ) {
+				std::unique_ptr<char, decltype(&free)>
+					literalStr(to_hsp_string_literal(str), free);
+				Mesf("#文字列リテラルプール %s", literalStr.get());
+			}
+			return i;
+
+		} else {
+			string_literal_table->emplace(std::string(p), i);
+		}
+	}
+
+	if ( converts_to_utf8 ) {
+		ds_buf->PutData(p, (int)(strlen(p) + 1));
+	} else {
+		ds_buf->PutStr(p);
+		ds_buf->Put((char)0);
+	}
 	return i;
 }
 
@@ -2964,6 +3008,11 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	mi_buf = new CMemBuf;
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
+
+	if ( CG_optCode() ) {
+		string_literal_table.reset(new std::unordered_map<std::string, int>());
+		double_literal_table.reset(new std::unordered_map<double, int>());
+	}
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 

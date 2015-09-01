@@ -6,6 +6,9 @@
 #define __token_h
 
 #include <vector>
+#include <string>
+#include <unordered_map>
+#include <memory>
 
 // token type
 #define TK_NONE 0
@@ -183,7 +186,9 @@ public:
 	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
 	int PutOT( int value );
+	int PutDS( double value );
 	int PutDS( char *str );
+	int PutDSStr( char *str, bool converts_to_utf8 );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
 	char *GetDS( int ptr );
@@ -339,6 +344,8 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
+	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
 	void CG_MesLabelDefinition(int label_id);
 
 	//		Data
@@ -438,6 +445,9 @@ private:
 	CMemBuf *mi_buf;
 	CMemBuf *fi2_buf;
 	CMemBuf *hpi_buf;
+
+	std::unique_ptr<std::unordered_map<double, int>> double_literal_table; // íËêîÉvÅ[Éãóp
+	std::unique_ptr<std::unordered_map<std::string, int>> string_literal_table;
 
 	//		for Header info
 	int hed_option;
