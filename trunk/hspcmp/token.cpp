@@ -1386,6 +1386,9 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 		default:
 			//		通常キーワードはそのまま展開
 			if (wrtbuf!=NULL) {
+				if ( !lb->GetEternal(id) ) { // local func
+					strcpy((char*)s2, lb->GetName(id));
+				}
 				FixModuleName( (char *)s2 );
 				wrtbuf->PutStr( (char *)s2 );
 			}
@@ -3497,10 +3500,9 @@ void CToken::FinishPreprocess( CMemBuf *buf )
 	//
 	int read_pos = 0;
 	int write_pos = 0;
-	size_t i;
 	size_t len = undefined_symbols.size();
 	char *p = buf->GetBuffer();
-	for ( i = 0; i < len; i ++ ) {
+	for ( size_t i = 0; i < len; i ++ ) {
 		undefined_symbol_t sym = undefined_symbols[i];
 		int pos = sym.pos;
 		int len_include_modname = sym.len_include_modname;
