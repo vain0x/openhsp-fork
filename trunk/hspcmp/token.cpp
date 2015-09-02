@@ -1570,7 +1570,14 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 	if (( macopt )||( ctype )) {
 		p = (char *)wp; type = GetToken();
 		if ( ctype ) {
-			if ( type!='(' ) { SetError("C-Type macro syntax error"); return 4; }
+			if ( type!='(' ) {
+#ifdef JPNMSG
+				SetError("ctypeマクロの直後には、丸括弧でくくられた引数リストが必要です");
+#else
+				SetError("C-Type macro syntax error");
+#endif
+				return 4;
+			}
 			p = (char *)wp; type = GetToken();
 		}
 		if ( type != TK_NONE ) {
@@ -1640,7 +1647,14 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 		if ( i>macopt ) {
 			noprm=1;
 			if (( ctype )&&( i==1 )&&( macopt==0 )&&( prm[0] == prme[0] )) noprm=0;
-			if ( noprm ) { SetError("too many macro parameter"); return 3; }
+			if ( noprm ) {
+#ifdef JPNMSG
+				SetError("マクロの引数が多すぎます");
+#else
+				SetError("too many macro parameters");
+#endif
+				return 3;
+			}
 		}
 		while(1) {					// 省略パラメータを補完
 			if ( i>=macopt ) break;
@@ -1743,7 +1757,12 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 			if ( p==endp ) {				// 値省略時
 				macbuf = macdef->data + macdef->index[val];
 				if ( *macbuf == 0 ) {
-					SetError("no default parameter"); return 5;
+#ifdef JPNMSG
+					SetError("デフォルトパラメータのないマクロの引数は省略できません");
+#else
+					SetError("no default parameter");
+#endif
+					return 5;
 				}
 				while(1) {
 					a1=*macbuf++;if (a1==0) break;
@@ -2688,7 +2707,14 @@ ppresult_t CToken::PP_Global( void )
 {
 	//		#global解析
 	//
-	if ( IsGlobalMode() ) { SetError("already in global mode"); return PPRESULT_ERROR; }
+	if ( IsGlobalMode() ) {
+#ifdef JPNMSG
+		SetError("#module と対応していない #global があります");
+#else
+		SetError("already in global mode");
+#endif
+		return PPRESULT_ERROR;
+	}
 	//
 	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
 	wrtbuf->PutCR();
@@ -3429,7 +3455,11 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 				strcpy( cname, common_path );strcat( cname, search_path );strcat( cname, purename );
 				if ( fbuf.PutFile( cname ) < 0 ) {
 					if ( fileadd == 0 ) {
-						Mesf( "#Source file not found.[%s]",purename );
+#ifdef JPNMSG
+						Mesf( "#スクリプトファイルが見つかりません [%s]", purename );
+#else
+						Mesf( "#Source file not found.[%s]", purename );
+#endif
 					}
 					return -1;
 				}
@@ -3456,13 +3486,22 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 		//
 		res = tstack->StackCheck( linebuf );
 		if ( res ) {
+#ifdef JPNMSG
+			Mesf( "#スタックが空になっていないマクロタグが%d個あります [%s]", res, refname_copy );
+#else
 			Mesf( "#%d unresolved macro(s).[%s]", res, refname_copy );
+#endif
 			Mes( linebuf );
 		}
 	}
 	
 	if ( res ) {
+
+#ifdef JPNMSG
+		Mes("#重大なエラーが検出されています");
+#else
 		Mes( "#Fatal error reported." );
+#endif
 		return -2;
 	}
 	return 0;

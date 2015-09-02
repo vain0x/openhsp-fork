@@ -1606,7 +1606,7 @@ void CToken::GenerateCodePP_func( int deftype )
 	if ( ref == 0 && (otflag & STRUCTDAT_OT_CLEANUP) == 0 ) {
 		if ( hed_cmpmode & CMPMODE_OPTINFO ) {
 #ifdef JPNMSG
-			Mesf( "#不要な関数呼び出しを削除しました %s", fbase );
+			Mesf( "#未使用の外部DLL関数の登録を削除しました %s", fbase );
 #else
 			Mesf( "#Delete func %s", fbase );
 #endif
@@ -1992,7 +1992,7 @@ void CToken::GenerateCodePP_module( void )
 				cg_flag = CG_FLAG_DISABLE;
 				if ( hed_cmpmode & CMPMODE_OPTINFO ) {
 #ifdef JPNMSG
-					Mesf( "#モジュールを削除しました %s", modname );
+					Mesf( "#未使用のモジュールを削除しました %s", modname );
 #else
 					Mesf( "#Delete module %s", modname );
 #endif
@@ -2410,7 +2410,11 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 		errend = 0;
 		for( a=0; a<lb->GetCount(); a++ ) {
 			if ( lb->GetType(a) == TYPE_XLABEL ) {
-				Mesf( "#ラベルが存在しません [%s]",lb->GetName(a) );
+#ifdef JPNMSG
+				Mesf( "#ラベルの定義が存在しません [%s]", lb->GetName(a) );
+#else
+				Mesf( "#Label definition not found [%s]", lb->GetName(a) );
+#endif
 				errend++;
 			}
 		}
@@ -2418,14 +2422,22 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 		//		関数未処理チェック
 		for( a=0; a<GET_FI_SIZE(); a++ ) {
 			if ( GET_FI(a)->index == STRUCTDAT_INDEX_DUMMY ) {
-				Mesf( "#関数が存在しません [%s]", lb->GetName(GET_FI(a)->otindex) );
+#ifdef JPNMSG
+				Mesf( "#関数が定義されていません [%s]", lb->GetName(GET_FI(a)->otindex) );
+#else
+				Mesf( "#Function not found [%s]", lb->GetName(GET_FI(a)->otindex) );
+#endif
 				errend++;
 			}
 		}
 		
 		//      ブレース対応チェック 
-		if ( iflev > 0 ) { 
-				Mesf( "#波括弧が閉じられていません。" );
+		if ( iflev > 0 ) {
+#ifdef JPNMSG
+				Mesf( "#波括弧が閉じられていません" );
+#else
+				Mesf( "#Missing closing braces" );
+#endif
 				errend ++;
 		}
 
