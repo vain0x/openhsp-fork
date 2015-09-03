@@ -9,6 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <algorithm>
 
 #include "hsp3config.h"
 
@@ -61,112 +62,37 @@ typedef struct {
 		double dkey;
 		char *skey;
 	} as;
-	int info;
+	int info; // ソートの前にこの要素があった位置
 } DATA;
 
-static void swap(DATA *a, DATA *b)
+
+static int less_int(DATA const& lhs, DATA const& rhs)
 {
-    DATA t;
-    t = *a;
-    *a = *b;
-    *b = t;
+	return lhs.as.ikey < rhs.as.ikey;
 }
-
-static void rquickSort(DATA *data, int asdes, int first, int last)
+static int greater_int(DATA const& lhs, DATA const& rhs)
 {
-	//		クイックソート
-	//
-    int i, j, x;
-
-    i = first;
-    j = last;
-	x = (data[i].as.ikey + data[j].as.ikey)/2; 
-
-    while (1) {
-        if (asdes == 0) {
-            while (data[i].as.ikey < x) i++;
-            while (data[j].as.ikey > x) j--;
-        } else {
-            while (data[i].as.ikey > x) i++;
-            while (data[j].as.ikey < x) j--;
-        }
-
-        if (i >= j) break;
-        swap(&data[i], &data[j]);
-        i++;
-        j--;
-    }
-    if (first < i - 1) rquickSort(data, asdes, first, i - 1);
-    if (last  > j + 1) rquickSort(data, asdes, j + 1, last);
-}
-
-static void QuickSort( DATA *data, int nmem, int asdes )
-{
-    if (nmem <= 1) return;
-    rquickSort(data, asdes, 0, nmem - 1);
+	return lhs.as.ikey > rhs.as.ikey;
 }
 
 
-static int compare_int( const void *a, const void *b )
+static bool less_double(DATA const& lhs, DATA const& rhs)
 {
-    const DATA *data_a = (DATA *)a;
-    const DATA *data_b = (DATA *)b;
-
-    return data_a->as.ikey > data_b->as.ikey ? 1 : data_a->as.ikey == data_b->as.ikey ? 0 : -1;
+	return lhs.as.dkey < rhs.as.dkey;
+}
+static bool greater_double(DATA const& lhs, DATA const& rhs)
+{
+	return lhs.as.dkey > rhs.as.dkey;
 }
 
 
-static int compare_intr( const void *a, const void *b )
+static bool less_str(DATA const& lhs, DATA const& rhs)
 {
-    const DATA *data_a = (DATA *)a;
-    const DATA *data_b = (DATA *)b;
-
-	return data_b->as.ikey > data_a->as.ikey ? 1 : data_a->as.ikey == data_b->as.ikey ? 0 : -1;
+	return strcmp(lhs.as.skey, rhs.as.skey) < 0;
 }
-
-
-static void QuickSort2( DATA *data, int nmem, int asdes )
+static bool greater_str(DATA const& lhs, DATA const& rhs)
 {
-    if (nmem <= 1) return;
-	if ( asdes == 0 ) {
-		qsort( data, nmem, sizeof(DATA), compare_int );
-	} else {
-		qsort( data, nmem, sizeof(DATA), compare_intr );
-	}
-}
-
-
-static void BubbleSortStr( DATA *data, int nmem, int asdes )
-{
-	int i, j;
-	for (i = 0; i < nmem - 1; i++) {
-	  for (j = nmem - 1; j >= i + 1; j--) {
-	    if (asdes == 0) {
-		  if ( strcmp( data[j].as.skey, data[j-1].as.skey)<0 )
-				swap(&data[j], &data[j-1]);
-		}
-		else {
-		  if ( strcmp( data[j].as.skey, data[j-1].as.skey)>0 )
-				swap(&data[j], &data[j-1]);
-		}
-	  }
-	}
-}
-
-
-static void BubbleSortDouble( DATA *data, int nmem, int asdes )
-{
-	int i, j;
-	for (i = 0; i < nmem - 1; i++) {
-	  for (j = nmem - 1; j >= i + 1; j--) {
-	    if (asdes == 0) {
-			if ( data[j].as.dkey < data[j-1].as.dkey ) swap(&data[j], &data[j-1]);
-		}
-		else {
-			if ( data[j].as.dkey > data[j-1].as.dkey ) swap(&data[j], &data[j-1]);
-		}
-	  }
-	}
+	return strcmp(lhs.as.skey, rhs.as.skey) > 0;
 }
 
 
@@ -239,33 +165,6 @@ static void DataToNote( DATA *data, char *adr, int num )
 		*p++=13; *p++=10;			// Add CR/LF
 	}
 	*p=0;
-}
-
-
-static void StrToData( char *adr, int num, int len, DATA *data )
-{
-	int a;
-	char *p;
-	p=adr;
-	for(a=0;a<num;a++) {
-		data[a].as.skey=p;
-		data[a].info=a;
-		p+=len;
-	}
-}
-
-
-static void DataToStr( DATA *data, char *adr, int num, int len )
-{
-	int a;
-	char *p;
-	char *s;
-	p=adr;
-	for(a=0;a<num;a++) {
-		s=data[a].as.skey;
-		strncpy( p, s, len );
-		p+=len;
-	}
 }
 
 
@@ -1241,8 +1140,6 @@ static int cmdfunc_intcmd( int cmd )
 	case 0x02d:								// sortval
 		{
 		int a,i;
-		int *p;
-		double *dp;
 		PVal *p1;
 		APTR ap;
 		int order;
@@ -1253,30 +1150,40 @@ static int cmdfunc_intcmd( int cmd )
 		i=p1->len[1];
 		if (i<=0) throw HSPERR_ILLEGAL_FUNCTION;
 		switch(p1->flag) {
-		case 3:						// double
+			case HSPVAR_FLAG_DOUBLE:
+			{
+			double **dp;
 			dp=(double *)p1->pt;
 			DataIni( i );
 			for(a=0;a<i;a++) {
 				dtmp[a].as.dkey=dp[a];
 				dtmp[a].info=a;
 			}
-			BubbleSortDouble( dtmp, i, order );
+			std::sort(dtmp, dtmp + i,
+				(order == 0 ? less_double : greater_double)
+				);
 			for(a=0;a<i;a++) {
 				code_setva( p1, a, HSPVAR_FLAG_DOUBLE, &(dtmp[a].as.dkey) );	// 変数に値を代入
 			}
 			break;
-		case 4:						// int
+			}
+		case HSPVAR_FLAG_INT:
+			{
+			int *p;
 			p=(int *)p1->pt;
 			DataIni( i );
 			for(a=0;a<i;a++) {
 				dtmp[a].as.ikey=p[a];
 				dtmp[a].info=a;
 			}
-			QuickSort2( dtmp, i, order );
+			std::sort(dtmp, dtmp + i,
+				(order == 0 ? less_int : greater_int)
+				);
 			for(a=0;a<i;a++) {
 				p[a]=dtmp[a].as.ikey;
 			}
 			break;
+			}
 		default:
 			throw HSPERR_ILLEGAL_FUNCTION;
 		}
@@ -1285,7 +1192,7 @@ static int cmdfunc_intcmd( int cmd )
 
 	case 0x02e:								// sortstr
 		{
-		int i,len,sflag;
+		int i,len,order;
 		char *p;
 		PVal *pv;
 		APTR ap;
@@ -1293,7 +1200,7 @@ static int cmdfunc_intcmd( int cmd )
 		char **pvstr;
 
 		ap = code_getva( &pv );		// パラメータ1:変数
-		sflag = code_getdi( 0 );	// パラメータ2:数値
+		order = code_getdi( 0 );	// パラメータ2:数値
 
 		if ( pv->flag != 2 ) throw HSPERR_TYPE_MISMATCH;
 		if (( pv->len[2] != 0 )||( ap != 0 )) throw HSPERR_ILLEGAL_FUNCTION;
@@ -1309,14 +1216,19 @@ static int cmdfunc_intcmd( int cmd )
 			dtmp[i].info = i;
 		}
 
-		BubbleSortStr( dtmp, len, sflag );
+		std::sort(dtmp, dtmp + i,
+			(order == 0 ? less_str : greater_str)
+			);
 
 		pvstr = (char **)(pv->master);	// 変数に直接sbポインタを書き戻す
 		for(i=0;i<len;i++) {
 			if ( i == 0 ) {
 				pv->pt = dtmp[i].as.skey;
+				sbSetOption(pv->pt, &pv->pt);
+			} else {
+				pvstr[i] = dtmp[i].as.skey;
+				sbSetOption(pvstr[i], &pvstr[i]);
 			}
-			pvstr[i] = dtmp[i].as.skey;
 		}
 		break;
 		}
@@ -1339,7 +1251,9 @@ static int cmdfunc_intcmd( int cmd )
 		DataIni( i );
 
 		NoteToData( p, dtmp );
-		BubbleSortStr( dtmp, i, sflag );
+		std::sort(dtmp, dtmp + i,
+			(sflag == 0 ? less_str : greater_str)
+			);
 		stmp = code_stmp( (int)DataToNoteLen( dtmp, i ) + 1 );
 		DataToNote( dtmp, stmp, i );
 
