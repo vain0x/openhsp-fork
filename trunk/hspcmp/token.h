@@ -191,6 +191,7 @@ public:
 	int PutDSStr( char *str, bool converts_to_utf8 );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
+	void PutDSMethods();
 	char *GetDS( int ptr );
 	void SetOT( int id, int value );
 	void PutDI( void );
@@ -445,6 +446,8 @@ private:
 	CMemBuf *mi_buf;
 	CMemBuf *fi2_buf;
 	CMemBuf *hpi_buf;
+
+	std::unordered_map<std::string, std::unordered_map<std::string, int>> methods; // モジュールクラスの名前→メソッド名→fi_index
 
 	std::unique_ptr<std::unordered_map<double, int>> double_literal_table; // 定数プール用
 	std::unique_ptr<std::unordered_map<std::string, int>> string_literal_table;

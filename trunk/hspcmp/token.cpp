@@ -2402,28 +2402,33 @@ ppresult_t CToken::PP_Deffunc( int mode )
 		}
 
 		strcase2( word, fixname );
-		if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-		i = lb->Search( fixname );if ( i != -1 ) {
-			if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-				SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
+		if ( i == TK_OBJ ) {
+			i = lb->Search( fixname );if ( i != -1 ) {
+				if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
+					SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
+				}
+				id = i;
 			}
-			id = i;
-		}
 
-		if ( glmode ) AddModuleName( fixname );
+			if ( glmode ) AddModuleName( fixname );
+
+			if ( id == -1 ) {
+				id = lb->Regist( fixname, premode, 0 );
+				if ( glmode == 0 ) lb->SetEternal( id );
+				if ( *mod != 0 ) { lb->AddRelation( mod, id ); }		// モジュールラベルに依存を追加
+			} else {
+				lb->SetFlag( id, premode );
+			}
+		} else if ( i == TK_STRING ) {
+			//
+		} else {
+			SetError("invalid func name"); return PPRESULT_ERROR;
+		}
 
 		if ( premode == LAB_TYPE_PP_PREMODFUNC ) {
 			wrtbuf->PutStrf( "#deffunc prep %s ",fixname );
 		} else {
 			wrtbuf->PutStrf( "#deffunc %s ",fixname );
-		}
-
-		if ( id == -1 ) {
-			id = lb->Regist( fixname, premode, 0 );
-			if ( glmode == 0 ) lb->SetEternal( id );
-			if ( *mod != 0 ) { lb->AddRelation( mod, id ); }		// モジュールラベルに依存を追加
-		} else {
-			lb->SetFlag( id, premode );
 		}
 
 		if ( mode ) {
