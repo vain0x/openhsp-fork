@@ -37,7 +37,7 @@ char *CHsc3::GetError( void )
 
 int CHsc3::GetErrorSize( void )
 {
-	return errbuf->GetBufferSize();
+	return errbuf->GetSize() + 1;
 }
 
 
@@ -172,7 +172,11 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 	if ( cmpopt & CMPMODE_PPOUT	 ) {
 		res = outbuf->SaveFile( outname );
 		if ( res<0 ) {
+#ifdef JPNMSG
+			tk.Mes( "#プリプロセッサファイルの出力に失敗しました" );
+#else
 			tk.Mes( "#Can't write output file." );
+#endif
 			return -2;
 		}
 	}
@@ -193,7 +197,11 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 		res = packbuf->SaveFile( "packfile" );
 		delete packbuf;
 		if ( res<0 ) {
+#ifdef JPNMSG
+			tk.Mes( "#packfileの出力に失敗しました" );
+#else
 			tk.Mes( "#Can't write packfile." );
+#endif
 			return -3;
 		}
 		tk.Mes( "#packfile generated." );

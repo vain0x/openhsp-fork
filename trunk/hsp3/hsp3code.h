@@ -68,6 +68,7 @@ char *code_getsptr( int *type );
 
 int code_debug_init( void );
 int code_getdebug_line( void );
+int code_getdebug_line( unsigned short *pt );
 char *code_getdebug_name( void );
 int code_getdebug_seekvar( const char *name );
 char *code_getdebug_varname( int val_id );
@@ -102,6 +103,7 @@ char *code_dbgvarinf( char *target, int option );
 void code_dbgcurinf( void );
 void code_dbgclose( char *buf );
 int code_dbgset( int id );
+char *code_dbgcallstack( void );
 void code_dbgtrace( void );
 
 void code_delstruct( PVal *in_pval, APTR in_aptr );
@@ -109,8 +111,8 @@ void code_delstruct_all( PVal *pval );
 
 /*
 	rev 43
-	mingw‚Å‚ÌƒGƒ‰[‚É‘ÎˆB
-//  ŠÖ”ƒ|ƒCƒ“ƒ^ -> void *@‚Ö‚Ì•ÏŠ·—pB 
+	mingwï¿½Å‚ÌƒGï¿½ï¿½ï¿½[ï¿½É‘Îï¿½ï¿½B
+//  ï¿½Öï¿½ï¿½|ï¿½Cï¿½ï¿½ï¿½^ -> void *ï¿½@ï¿½Ö‚Ì•ÏŠï¿½ï¿½pï¿½B 
 */
 #define fpconv( fp )  ( reinterpret_cast< void * >( reinterpret_cast< long >( fp ) ) )
 

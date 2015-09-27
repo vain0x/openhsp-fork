@@ -438,7 +438,7 @@ int CToken::GetToken( void )
 	if ((a1>=0x5b)&&(a1<=0x5e)) rval=TK_NONE;
 	if ((a1>=0x7b)&&(a1<=0x7f)) rval=TK_NONE;
 
-	if (a1==':') {							// multi statement
+	if (a1==':' || a1 == '{' || a1 == '}') {   // multi statement
 		wp++;
 		return TK_SEPARATE;
 	}
@@ -1386,6 +1386,9 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 		default:
 			//		通常キーワードはそのまま展開
 			if (wrtbuf!=NULL) {
+				if ( !lb->GetEternal(id) ) { // local func
+					strcpy((char*)s2, lb->GetName(id));
+				}
 				FixModuleName( (char *)s2 );
 				wrtbuf->PutStr( (char *)s2 );
 			}
@@ -1567,7 +1570,14 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 	if (( macopt )||( ctype )) {
 		p = (char *)wp; type = GetToken();
 		if ( ctype ) {
-			if ( type!='(' ) { SetError("C-Type macro syntax error"); return 4; }
+			if ( type!='(' ) {
+#ifdef JPNMSG
+				SetError("ctypeマクロの直後には、丸括弧でくくられた引数リストが必要です");
+#else
+				SetError("C-Type macro syntax error");
+#endif
+				return 4;
+			}
 			p = (char *)wp; type = GetToken();
 		}
 		if ( type != TK_NONE ) {
@@ -1637,7 +1647,14 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 		if ( i>macopt ) {
 			noprm=1;
 			if (( ctype )&&( i==1 )&&( macopt==0 )&&( prm[0] == prme[0] )) noprm=0;
-			if ( noprm ) { SetError("too many macro parameter"); return 3; }
+			if ( noprm ) {
+#ifdef JPNMSG
+				SetError("マクロの引数が多すぎます");
+#else
+				SetError("too many macro parameters");
+#endif
+				return 3;
+			}
 		}
 		while(1) {					// 省略パラメータを補完
 			if ( i>=macopt ) break;
@@ -1740,7 +1757,12 @@ int CToken::ReplaceLineBuf( char *str1, char *str2, char *repl, int opt, MACDEF 
 			if ( p==endp ) {				// 値省略時
 				macbuf = macdef->data + macdef->index[val];
 				if ( *macbuf == 0 ) {
-					SetError("no default parameter"); return 5;
+#ifdef JPNMSG
+					SetError("デフォルトパラメータのないマクロの引数は省略できません");
+#else
+					SetError("no default parameter");
+#endif
+					return 5;
 				}
 				while(1) {
 					a1=*macbuf++;if (a1==0) break;
@@ -1857,13 +1879,15 @@ ppresult_t CToken::PP_Const( void )
 {
 	//		#const解析
 	//
+	enum ConstType { Indeterminate, Double, Int };
+	ConstType valuetype = ConstType::Indeterminate;
+
 	char *word;
-	int id,res,glmode,dblmode;
+	int id, res, glmode;
 	char keyword[256];
 	char strtmp[512];
 	CALCVAR cres;
 	glmode = 0;
-	dblmode = 0;
 	word = (char *)s3;
 	if ( GetToken() != TK_OBJ ) {
 		sprintf( strtmp,"invalid symbol [%s]", word );
@@ -1878,19 +1902,25 @@ ppresult_t CToken::PP_Const( void )
 		glmode=1;
 		strcase( word );
 	}
-	if (tstrcmp(word,"double")) {		// double macro
+
+	// 型指定キーワード
+	if ( tstrcmp(word, "double") ) {
+		valuetype = ConstType::Double;
+	} else if ( tstrcmp(word, "int") ) {
+		valuetype = ConstType::Int;
+	}
+	if (valuetype != ConstType::Indeterminate) {
 		if ( GetToken() != TK_OBJ ) {
-			SetError( "bad double syntax" ); return PPRESULT_ERROR;
+			SetError( "bad #const syntax" ); return PPRESULT_ERROR;
 		}
-		dblmode=1;
-		strcase( word );
+		strcase(word);
 	}
 
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		sprintf( strtmp,"symbol in use [%s]", keyword );
-		SetError( strtmp ); return PPRESULT_ERROR;
+		SetErrorSymbolOverdefined(keyword, res);
+		return PPRESULT_ERROR;
 	}
 
 	if ( Calc(cres) ) return PPRESULT_ERROR;
@@ -1925,7 +1955,8 @@ ppresult_t CToken::PP_Const( void )
 
 
 	id = lb->Regist( keyword, LAB_TYPE_PPVAL, (int)cres );
-	if (( dblmode )||( cres != floor( cres ) )) {
+	if ( valuetype == ConstType::Double
+		|| (valuetype == ConstType::Indeterminate && cres != floor(cres)) ) {
 		lb->SetData2( id, (char *)(&cres), sizeof(CALCVAR) );
 	}
 	if ( glmode ) lb->SetEternal( id );
@@ -1962,8 +1993,8 @@ ppresult_t CToken::PP_Enum( void )
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		sprintf( strtmp,"symbol in use [%s]", keyword );
-		SetError( strtmp ); return PPRESULT_ERROR;
+		SetErrorSymbolOverdefined(keyword, res);
+		return PPRESULT_ERROR;
 	}
 
 	if ( GetToken() == '=' ) {
@@ -2082,10 +2113,10 @@ ppresult_t CToken::PP_Define( void )
 	strcpy( keyword, word );
 	if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
 	res = lb->Search( keyword );if ( res != -1 ) {
-		sprintf( strtmp,"symbol in use [%s]", keyword );
-		SetError( strtmp ); return PPRESULT_ERROR;
+		SetErrorSymbolOverdefined(keyword, res);
+		return PPRESULT_ERROR;
 	}
-
+	
 	//		skip space,tab code
 	if ( wp==NULL ) a1=0;
 	else {
@@ -2265,7 +2296,7 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
 	i = lb->Search( fixname );if ( i != -1 ) {
 		if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-			SetError("symbol in use"); return PPRESULT_ERROR;
+			SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
 		}
 		id = i;
 	}
@@ -2374,7 +2405,7 @@ ppresult_t CToken::PP_Deffunc( int mode )
 		if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
 		i = lb->Search( fixname );if ( i != -1 ) {
 			if ( lb->GetFlag(i) != LAB_TYPE_PP_PREMODFUNC ) {
-				SetError("symbol in use"); return PPRESULT_ERROR;
+				SetErrorSymbolOverdefined(fixname, i); return PPRESULT_ERROR;
 			}
 			id = i;
 		}
@@ -2480,10 +2511,8 @@ ppresult_t CToken::PP_Struct( void )
 
 	strcpy( tagname, word );
 	if ( glmode ) FixModuleName( tagname ); else AddModuleName( tagname );
-	res = lb->Search( tagname );if ( res != -1 ) {
-		sprintf( strtmp,"symbol in use [%s]", tagname );
-		SetError( strtmp ); return PPRESULT_ERROR;
-	}
+	res = lb->Search( tagname );
+	if ( res != -1 ) { SetErrorSymbolOverdefined(tagname, res); return PPRESULT_ERROR; }
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
 
@@ -2502,10 +2531,8 @@ ppresult_t CToken::PP_Struct( void )
 
 		sprintf( keyword,"%s_%s", tagname, word );
 		if ( glmode ) FixModuleName( keyword ); else AddModuleName( keyword );
-		res = lb->Search( keyword );if ( res != -1 ) {
-			sprintf( strtmp,"symbol in use [%s]", keyword );
-			SetError( strtmp ); return PPRESULT_ERROR;
-		}
+		res = lb->Search( keyword );
+		if ( res != -1 ) { SetErrorSymbolOverdefined(keyword, res); return PPRESULT_ERROR; }
 		id = lb->Regist( keyword, LAB_TYPE_PPDLLFUNC, 0 );
 		if ( glmode ) lb->SetEternal( id );
 		wrtbuf->PutStr( keyword );
@@ -2546,7 +2573,8 @@ ppresult_t CToken::PP_Func( char *name )
 
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	//AddModuleName( word );
-	i = lb->Search( word );if ( i != -1 ) { SetError("symbol in use"); return PPRESULT_ERROR; }
+	i = lb->Search( word );
+	if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 	id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 	if ( glmode ) lb->SetEternal( id );
 	//
@@ -2566,7 +2594,8 @@ ppresult_t CToken::PP_Cmd( char *name )
 	word = (char *)s3;
 	i = GetToken();
 	if ( i != TK_OBJ ) { SetError("invalid func name"); return PPRESULT_ERROR; }
-	i = lb->Search( word );if ( i != -1 ) { SetError("symbol in use"); return PPRESULT_ERROR; }
+	i = lb->Search( word );
+	if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 
 	id = lb->Regist( word, LAB_TYPE_PPINTMAC, 0 );		// 内部マクロとして定義
 	strcat( word, "@hsp" );
@@ -2604,7 +2633,8 @@ ppresult_t CToken::PP_Usecom( void )
 		glmode=1;
 	}
 
-	i = lb->Search( word );if ( i != -1 ) { SetError("symbol in use"); return PPRESULT_ERROR; }
+	i = lb->Search( word );
+	if ( i != -1 ) { SetErrorSymbolOverdefined(word, i); return PPRESULT_ERROR; }
 	if ( glmode ) FixModuleName( word ); else AddModuleName( word );
 	id = lb->Regist( word, LAB_TYPE_COMVAR, 0 );
 	if ( glmode ) lb->SetEternal( id );
@@ -2635,10 +2665,8 @@ ppresult_t CToken::PP_Module( void )
 		SetError("bad module name"); return PPRESULT_ERROR;
 	}
 	sprintf( tagname, "%.*s", MODNAME_MAX, word );
-	res = lb->Search( tagname );if ( res != -1 ) {
-		sprintf( tmp,"symbol in use [%s]", tagname );
-		SetError( tmp ); return PPRESULT_ERROR;
-	}
+	res = lb->Search( tagname );
+	if ( res != -1 ) { SetErrorSymbolOverdefined(tagname, res); return PPRESULT_ERROR; }
 	id = lb->Regist( tagname, LAB_TYPE_PPDLLFUNC, 0 );
 	lb->SetEternal( id );
 	SetModuleName( tagname );
@@ -2655,10 +2683,8 @@ ppresult_t CToken::PP_Module( void )
 		i = GetToken();
 		if ( i != TK_OBJ ) { SetError("invalid module param"); return PPRESULT_ERROR; }
 		AddModuleName( word );
-		res = lb->Search( word );if ( res != -1 ) {
-			sprintf( tmp,"symbol in use [%s]", word );
-			SetError( tmp ); return PPRESULT_ERROR;
-		}
+		res = lb->Search(word);
+		if ( res != -1 ) { SetErrorSymbolOverdefined(word, res); return PPRESULT_ERROR; }
 		id = lb->Regist( word, LAB_TYPE_PPDLLFUNC, 0 );
 		wrtbuf->PutStr( "var " );
 		wrtbuf->PutStr( word );
@@ -2681,11 +2707,18 @@ ppresult_t CToken::PP_Global( void )
 {
 	//		#global解析
 	//
-	if ( IsGlobalMode() ) { SetError("already in global mode"); return PPRESULT_ERROR; }
+	if ( IsGlobalMode() ) {
+#ifdef JPNMSG
+		SetError("#module と対応していない #global があります");
+#else
+		SetError("already in global mode");
+#endif
+		return PPRESULT_ERROR;
+	}
 	//
-	wrtbuf->PutStr( "#global" );
-	wrtbuf->PutCR();
 	wrtbuf->PutStrf( "*_%s_exit",GetModuleName() );
+	wrtbuf->PutCR();
+	wrtbuf->PutStr( "#global" );
 	wrtbuf->PutCR();
 	SetModuleName( "" );
 	return PPRESULT_WROTE_LINES;
@@ -3422,7 +3455,11 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 				strcpy( cname, common_path );strcat( cname, search_path );strcat( cname, purename );
 				if ( fbuf.PutFile( cname ) < 0 ) {
 					if ( fileadd == 0 ) {
-						Mesf( "#Source file not found.[%s]",purename );
+#ifdef JPNMSG
+						Mesf( "#スクリプトファイルが見つかりません [%s]", purename );
+#else
+						Mesf( "#Source file not found.[%s]", purename );
+#endif
 					}
 					return -1;
 				}
@@ -3449,13 +3486,22 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 		//
 		res = tstack->StackCheck( linebuf );
 		if ( res ) {
+#ifdef JPNMSG
+			Mesf( "#スタックが空になっていないマクロタグが%d個あります [%s]", res, refname_copy );
+#else
 			Mesf( "#%d unresolved macro(s).[%s]", res, refname_copy );
+#endif
 			Mes( linebuf );
 		}
 	}
 	
 	if ( res ) {
+
+#ifdef JPNMSG
+		Mes("#重大なエラーが検出されています");
+#else
 		Mes( "#Fatal error reported." );
+#endif
 		return -2;
 	}
 	return 0;
@@ -3488,10 +3534,9 @@ void CToken::FinishPreprocess( CMemBuf *buf )
 	//
 	int read_pos = 0;
 	int write_pos = 0;
-	size_t i;
 	size_t len = undefined_symbols.size();
 	char *p = buf->GetBuffer();
-	for ( i = 0; i < len; i ++ ) {
+	for ( size_t i = 0; i < len; i ++ ) {
 		undefined_symbol_t sym = undefined_symbols[i];
 		int pos = sym.pos;
 		int len_include_modname = sym.len_include_modname;
@@ -3761,4 +3806,15 @@ char *CToken::ExecSCNV( char *srcbuf, int opt )
 	return scnvbuf;
 }
 
+void CToken::SetErrorSymbolOverdefined(char* keyword, int label_id)
+{
+	// 識別子の多重定義エラー
 
+	char strtmp[0x100];
+#ifdef JPNMSG
+	sprintf( strtmp,"定義済みの識別子は使用できません [%s]", keyword );
+#else
+	sprintf( strtmp,"symbol in use [%s]", keyword );
+#endif
+	SetError(strtmp);
+}

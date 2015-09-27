@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 
 #define	maxname	256				// label name max
 #define def_maxsymbol 0x10000	// Symbol Table Size (default)
@@ -44,6 +45,7 @@
 #define LAB_TYPEFIX_INT 4
 #define LAB_TYPEFIX_DOUBLE 3
 
+typedef std::set<std::string> FileNameSet;
 typedef std::multimap<std::string, int> LabelMap;
 typedef struct LABREL LABREL;
 
@@ -65,6 +67,9 @@ typedef struct LABOBJ {
 	LABREL	*rel;				// relation id
 	short	init;				// initalize flag
 	short	typefix;			// force type
+
+	char const* def_file;
+	int def_line;
 } LABOBJ;
 
 //  label manager class
@@ -73,8 +78,9 @@ public:
 	CLabel();
 	CLabel( int symmax, int worksize );
 	~CLabel();
-	void Reset( void );
+	void Reset(void);
 	int Regist( char *name, int type, int opt );
+	int Regist( char *name, int type, int opt, char const *filename, int line );
 	void SetEternal( int id );
 	int GetEternal( int id );
 	void SetOpt( int id, int val );
@@ -107,6 +113,7 @@ public:
 	void AddRelation( char *name, int rel_id );
 	int SearchRelation( int id, int rel_id );
 	void SetCaseMode( int flag );
+	void SetDefinition(int id, char const *filename, int line);
 
 private:
 	int StrCase( char *str );
@@ -138,7 +145,7 @@ private:
 	int casemode;						// Case sensitive (0=none/other=ON)
 
 	LabelMap labels;		    		// Lookup table
+	FileNameSet filenames;				// Pool of file names (pointed from def_file)
 };
-
 
 #endif

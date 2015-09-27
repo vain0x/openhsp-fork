@@ -103,6 +103,7 @@ typedef struct HSP3DEBUG
 	void	(* dbg_close) (char *);			// debug情報取得終了
 	void	(* dbg_curinf)( void );			// 現在行・ファイル名の取得
 	int		(* dbg_set) (int);				// debugモード設定
+	char *  (* dbg_callstack) ( void );     // コールスタックの取得
 
 } HSP3DEBUG;
 

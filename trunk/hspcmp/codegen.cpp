@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <functional>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/hsp3debug.h"
@@ -1256,7 +1257,7 @@ void CToken::CheckInternalIF( int opt )
 }
 
 
-void CToken::CheckInternalCMD1( int opt )
+void CToken::CheckInternalListenerCMD( int opt )
 {
 	//		命令生成時チェック(命令+命令セット)
 	//
@@ -1267,8 +1268,10 @@ void CToken::CheckInternalCMD1( int opt )
 	t = lb->GetType(i);
 	o = lb->GetOpt(i);
 	if ( t != TYPE_PROGCMD ) return;
-	PutCS( t, o & 0xffff, 0 );
-	GetTokenCG( GETTOKEN_DEFAULT );
+	if ( o == 0x001 ) { // gosub
+		PutCS(t, o & 0xffff, 0);
+	}
+	GetTokenCG(GETTOKEN_DEFAULT);
 }
 
 
@@ -1368,7 +1371,7 @@ void CToken::GenerateCodeCMD( int id )
 	if ( t == TYPE_CMPCMD ) CheckInternalIF( opt );
 	GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( opt & 0x10000 ) CheckInternalCMD1( opt );
+	if ( opt & 0x10000 ) CheckInternalListenerCMD(opt);
 
 	GenerateCodePRM();
 	cg_lastcmd  = CG_LASTCMD_CMD;
@@ -1502,7 +1505,7 @@ void CToken::GenerateCodePP_cmd( void )
 	if ( ttype != TK_NUM ) throw CGERROR_PP_NO_REGCMD;
 	id = val;
 
-	lb->Regist( cmd, cg_pptype, id );
+	lb->Regist( cmd, cg_pptype, id , cg_orgfile, cg_orgline );
 	//Mesf( "#%x:%d [%s]",cg_pptype, id, cmd );
 }
 
@@ -1539,6 +1542,7 @@ void CToken::GenerateCodePP_usecom( void )
 
 	i = lb->Search( libname );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
@@ -1561,7 +1565,7 @@ void CToken::GenerateCodePP_usecom( void )
 
 	PutStructStart();
 	prmid = PutStructEndDll( "*", cg_libindex, STRUCTPRM_SUBID_COMOBJ, -1 );
-	lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ );
+	lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ, cg_orgfile, cg_orgline );
 
 	//Mesf( "#usecom %s [%s][%s]",libname,clsname,iidname );
 }
@@ -1603,7 +1607,7 @@ void CToken::GenerateCodePP_func( int deftype )
 	if ( ref == 0 && (otflag & STRUCTDAT_OT_CLEANUP) == 0 ) {
 		if ( hed_cmpmode & CMPMODE_OPTINFO ) {
 #ifdef JPNMSG
-			Mesf( "#不要な関数呼び出しを削除しました %s", fbase );
+			Mesf( "#未使用の外部DLL関数の登録を削除しました %s", fbase );
 #else
 			Mesf( "#Delete func %s", fbase );
 #endif
@@ -1682,6 +1686,7 @@ void CToken::GenerateCodePP_func( int deftype )
 
 	i = lb->Search( fbase );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_FUNCNAME;
 	}
 	subid = STRUCTPRM_SUBID_DLL;
@@ -1690,11 +1695,10 @@ void CToken::GenerateCodePP_func( int deftype )
 		//Mesf( "Warning:Old func expression [%s]", fbase );
 	}
 	i = PutStructEndDll( fname, cg_libindex, subid, otflag );
-	lb->Regist( fbase, TYPE_DLLFUNC, i );
+	lb->Regist( fbase, TYPE_DLLFUNC, i, cg_orgfile, cg_orgline );
 
 	//Mesf( "#func [%s][%s][%d]",fbase, fname, i );
 }
-
 
 void CToken::GenerateCodePP_comfunc( void )
 {
@@ -1737,11 +1741,12 @@ void CToken::GenerateCodePP_comfunc( void )
 
 	i = lb->Search( fbase );
 	if ( i >= 0 ) {
+		CG_MesLabelDefinition(i);
 		throw CGERROR_PP_ALREADY_USE_TAGNAME;
 	}
 	subid = STRUCTPRM_SUBID_COMOBJ;
 	i = PutStructEndDll( "*", cg_libindex, subid, imp_index );
-	lb->Regist( fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ );
+	lb->Regist(fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ, cg_orgfile, cg_orgline);
 
 	//Mesf( "#comfunc [%s][%d][%d]",fbase, imp_index, i );
 }
@@ -1872,9 +1877,12 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	index = -1;
 	int label_id = lb->Search( funcname );
 	if ( label_id >= 0 ) {
-		if ( lb->GetType(label_id) != TYPE_MODCMD ) throw CGERROR_PP_ALREADY_USE_FUNC;
+		if ( lb->GetType(label_id) != TYPE_MODCMD ) {
+			CG_MesLabelDefinition(label_id); throw CGERROR_PP_ALREADY_USE_FUNC;
+		}
 		index = lb->GetOpt(label_id);
 		if ( index >= 0 && GET_FI(index)->index != STRUCTDAT_INDEX_DUMMY ) {
+			CG_MesLabelDefinition(label_id);
 			throw CGERROR_PP_ALREADY_USE_FUNC;
 		}
 	}
@@ -1925,9 +1933,10 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 				//	引数のエイリアス
 				i = lb->Search( cg_str );
 				if ( i >= 0 ) {
+					CG_MesLabelDefinition(i);
 					throw CGERROR_PP_ALREADY_USE_PARAM;
 				}
-				i = lb->Regist( cg_str, TYPE_STRUCT, prmid );
+				i = lb->Regist( cg_str, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline );
 				cg_localstruct[ cg_localcur++ ] = i;
 				GetTokenCG( GETTOKEN_DEFAULT );
 			}
@@ -1943,7 +1952,7 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 		index = GET_FI_SIZE();
 		fi_buf->PreparePtr( sizeof(STRUCTDAT) );
 		if ( regflag ) {
-			lb->Regist( funcname, TYPE_MODCMD, index );
+			lb->Regist( funcname, TYPE_MODCMD, index, cg_orgfile, cg_orgline);
 		}
 	}
 	if ( label_id >= 0 ) {
@@ -1984,7 +1993,7 @@ void CToken::GenerateCodePP_module( void )
 				cg_flag = CG_FLAG_DISABLE;
 				if ( hed_cmpmode & CMPMODE_OPTINFO ) {
 #ifdef JPNMSG
-					Mesf( "#モジュールを削除しました %s", modname );
+					Mesf( "#未使用のモジュールを削除しました %s", modname );
 #else
 					Mesf( "#Delete module %s", modname );
 #endif
@@ -2008,12 +2017,12 @@ void CToken::GenerateCodePP_struct( void )
 	strncpy( funcname, cg_str, 1023 );
 	i = lb->Search( funcname );
 	if ( i >= 0 ) {
-		throw CGERROR_PP_ALREADY_USE_PARAM;
+		CG_MesLabelDefinition(i); throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
 	PutStructStart();
 	prmid = PutStructParamTag();					// modinit用のTAG
-	lb->Regist( funcname, TYPE_STRUCT, prmid );
+	lb->Regist( funcname, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline);
 	//Mesf( "%d:%s",prmid, funcname );
 
 	while(1) {
@@ -2030,9 +2039,9 @@ void CToken::GenerateCodePP_struct( void )
 
 		i = lb->Search( cg_str );
 		if ( i >= 0 ) {
-			throw CGERROR_PP_ALREADY_USE_PARAM;
+			CG_MesLabelDefinition(i); throw CGERROR_PP_ALREADY_USE_PARAM;
 		}
-		lb->Regist( cg_str, TYPE_STRUCT, prmid );
+		lb->Regist( cg_str, TYPE_STRUCT, prmid, cg_orgfile, cg_orgline);
 
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype >= TK_EOL ) break;
@@ -2080,7 +2089,7 @@ int CToken::SetVarsFixed( char *varname, int fixedvalue )
 	int id;
 	id = lb->Search( varname );
 	if ( id < 0 ) {
-		id = lb->Regist( varname, TYPE_VAR, cg_valcnt );
+		id = lb->Regist( varname, TYPE_VAR, cg_valcnt, cg_orgfile, cg_orgline);
 		cg_valcnt++;
 	}
 	lb->SetForceType( id, fixedvalue );
@@ -2103,7 +2112,7 @@ void CToken::GenerateCodePP( char *buf )
 		cg_orgline = val;
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_STRING ) {
-			strcpy ( cg_orgfile, cg_str );
+			strcpy( cg_orgfile, cg_str );
 			if ( cg_debug ) {
 				i = PutDSBuf( cg_str );
 				PutDI( 254, i, cg_orgline );				// ファイル名をデバッグ情報として登録
@@ -2130,7 +2139,7 @@ void CToken::GenerateCodePP( char *buf )
 	if ( !strcmp( cg_str,"regcmd" ) ) { GenerateCodePP_regcmd(); return; }
 	if ( !strcmp( cg_str,"cmd" ) ) { GenerateCodePP_cmd(); return; }
 	if ( !strcmp( cg_str,"uselib" ) ) { GenerateCodePP_uselib(); return; }
-	if ( !strcmp( cg_str,"func" ) ) { GenerateCodePP_func( STRUCTDAT_OT_STATEMENT ); return; }
+	if ( !strcmp( cg_str,"func" ) ) { GenerateCodePP_func( STRUCTDAT_OT_STATEMENT | STRUCTDAT_OT_FUNCTION ); return; }
 	if ( !strcmp( cg_str,"cfunc" ) ) { GenerateCodePP_func( STRUCTDAT_OT_FUNCTION ); return; }
 	if ( !strcmp( cg_str,"deffunc" ) ) { GenerateCodePP_deffunc(); return; }
 	if ( !strcmp( cg_str,"defcfunc" ) ) { GenerateCodePP_defcfunc(); return; }
@@ -2349,7 +2358,8 @@ void CToken::RegisterFuncLabels( void )
 			if ( lb->Search(name) >= 0 ) {
 				throw CGERROR_PP_ALREADY_USE_FUNC;
 			}
-			int id = lb->Regist( name, TYPE_MODCMD, -1 );
+			LABOBJ* lab = tmp_lb->GetLabel(i);
+			int id = lb->Regist( name, TYPE_MODCMD, -1, lab->def_file, lab->def_line );
 			lb->SetData2( id, (char *)&i, sizeof i );
 		}
 	}
@@ -2401,7 +2411,11 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 		errend = 0;
 		for( a=0; a<lb->GetCount(); a++ ) {
 			if ( lb->GetType(a) == TYPE_XLABEL ) {
-				Mesf( "#ラベルが存在しません [%s]",lb->GetName(a) );
+#ifdef JPNMSG
+				Mesf( "#ラベルの定義が存在しません [%s]", lb->GetName(a) );
+#else
+				Mesf( "#Label definition not found [%s]", lb->GetName(a) );
+#endif
 				errend++;
 			}
 		}
@@ -2409,14 +2423,22 @@ int CToken::GenerateCodeMain( CMemBuf *buf )
 		//		関数未処理チェック
 		for( a=0; a<GET_FI_SIZE(); a++ ) {
 			if ( GET_FI(a)->index == STRUCTDAT_INDEX_DUMMY ) {
-				Mesf( "#関数が存在しません [%s]", lb->GetName(GET_FI(a)->otindex) );
+#ifdef JPNMSG
+				Mesf( "#関数が定義されていません [%s]", lb->GetName(GET_FI(a)->otindex) );
+#else
+				Mesf( "#Function not found [%s]", lb->GetName(GET_FI(a)->otindex) );
+#endif
 				errend++;
 			}
 		}
 		
 		//      ブレース対応チェック 
-		if ( iflev > 0 ) { 
-				Mesf( "#波括弧が閉じられていません。" );
+		if ( iflev > 0 ) {
+#ifdef JPNMSG
+				Mesf( "#波括弧が閉じられていません" );
+#else
+				Mesf( "#Missing closing braces" );
+#endif
 				errend ++;
 		}
 
@@ -2457,10 +2479,7 @@ void CToken::PutCS( int type, double value, int exflg )
 {
 	//		Register command code (double)
 	//
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->Put( value );
-	PutCS( type, i, exflg );
+	PutCS( type, PutDS(value), exflg );
 }
 
 
@@ -2495,26 +2514,36 @@ int CToken::GetCS( void )
 }
 
 
+int CToken::PutDS(double value)
+{
+	//		Register doubles to data segment
+	//
+	int i = ds_buf->GetSize();
+
+#if 0
+	// literal pool
+	if ( CG_optCode() ) {
+		auto&& it = double_literal_table->find(value);
+		if ( it != double_literal_table->end() ) {
+			i = it->second;
+			if ( CG_optInfo() ) { Mesf("#実数リテラルプール %f", value); }
+			return i;
+		} else {
+			double_literal_table->emplace(value, i);
+		}
+	}
+#endif
+
+	ds_buf->Put(value);
+	return i;
+}
+
+
 int CToken::PutDS( char *str )
 {
 	//		Register strings to data segment (script string)
 	//
-	int i;
-	int size;
-	char *p;
-	i = ds_buf->GetSize();
-
-	// output as UTF8 format
-	if ( cg_utf8out ) {
-		p = ExecSCNV( str, SCNV_OPT_SJISUTF8 );
-		size = (int)strlen(p) + 1;
-		ds_buf->PutData( p, size );
-		return i;
-	}
-
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
-	return i;
+	return PutDSStr(str, cg_utf8out != 0);
 }
 
 
@@ -2522,10 +2551,50 @@ int CToken::PutDSBuf( char *str )
 {
 	//		Register strings to data segment (direct)
 	//
-	int i;
-	i = ds_buf->GetSize();
-	ds_buf->PutStr( str );
-	ds_buf->Put( (char)0 );
+	return PutDSStr(str, false);
+}
+
+
+int CToken::PutDSStr(char *str, bool converts_to_utf8)
+{
+	//		Register strings to data segment (caching)
+
+	char *p;
+
+	// output as UTF8 format
+	if ( converts_to_utf8 ) {
+		p = ExecSCNV(str, SCNV_OPT_SJISUTF8);
+	} else {
+		p = str;
+	}
+
+	int i = ds_buf->GetSize();
+
+#if 0
+	// literal pool
+	if ( CG_optCode() ) {
+		auto&& it = string_literal_table->find(p);
+		if ( it != string_literal_table->end() ) {
+			i = it->second;
+			if ( CG_optInfo() ) {
+				std::unique_ptr<char, decltype(&free)>
+					literalStr(to_hsp_string_literal(str), free);
+				Mesf("#文字列リテラルプール %s", literalStr.get());
+			}
+			return i;
+
+		} else {
+			string_literal_table->emplace(std::string(p), i);
+		}
+	}
+#endif
+
+	if ( converts_to_utf8 ) {
+		ds_buf->PutData(p, (int)(strlen(p) + 1));
+	} else {
+		ds_buf->PutStr(p);
+		ds_buf->Put((char)0);
+	}
 	return i;
 }
 
@@ -2944,6 +3013,13 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
 
+#if 0
+	if ( CG_optCode() ) {
+		string_literal_table.reset(new std::unordered_map<std::string, int>());
+		double_literal_table.reset(new std::unordered_map<double, int>());
+	}
+#endif
+
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 
 	cg_debug = mode & COMP_MODE_DEBUG;
@@ -3119,3 +3195,17 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	return res;
 }
 
+
+void CToken::CG_MesLabelDefinition(int label_id)
+{
+	if ( !cg_debug ) return;
+
+	LABOBJ* const labobj = lb->GetLabel(label_id);
+	if ( labobj->def_file ) {
+#ifdef JPNMSG
+		Mesf("#識別子「%s」の定義位置: line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+#else
+		Mesf("#Identifier '%s' has already defined in line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+#endif
+	}
+}

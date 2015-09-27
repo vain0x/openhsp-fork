@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hsp3config.h"
-#include "hsp3.h"
 #include "hsp3debug.h"
 
 /*------------------------------------------------------------*/

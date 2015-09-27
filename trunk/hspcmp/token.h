@@ -183,7 +183,9 @@ public:
 	int GetCS( void );
 	void PutCS( int type, double value, int exflg );
 	int PutOT( int value );
+	int PutDS( double value );
 	int PutDS( char *str );
+	int PutDSStr( char *str, bool converts_to_utf8 );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
 	char *GetDS( int ptr );
@@ -271,6 +273,7 @@ private:
 	char *SendLineBufPP( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
+	void SetErrorSymbolOverdefined(char* keyword, int label_id);
 
 	//		For Code Generate
 	//
@@ -317,7 +320,7 @@ private:
 	char *PickStringCG2( char *str, char **strsrc );
 	char *PickLongStringCG( char *str );
 	int PickNextCodeCG( void );
-	void CheckInternalCMD1( int opt );
+	void CheckInternalListenerCMD(int opt);
 	void CheckInternalProgCMD( int opt, int orgcs );
 	void CheckInternalIF( int opt );
 	void CheckCMDIF_Set( int mode );
@@ -338,6 +341,9 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
+	bool CG_optCode() const { return (hed_cmpmode & CMPMODE_OPTCODE) != 0; }
+	bool CG_optInfo() const { return (hed_cmpmode & CMPMODE_OPTINFO) != 0; }
+	void CG_MesLabelDefinition(int label_id);
 
 	//		Data
 	//
@@ -456,7 +462,7 @@ private:
 	//
 	int cg_errline;
 	int cg_orgline;
-	char cg_orgfile[256];
+	char cg_orgfile[HSP_MAX_PATH];
 
 	//		for SCNV
 	//

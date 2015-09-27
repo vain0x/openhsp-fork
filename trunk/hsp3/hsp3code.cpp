@@ -433,6 +433,7 @@ static char *code_checkarray_obj( PVal *pval, int *mptype )
 	}
 */
 
+	*mptype = pval->flag;
 	HspVarCoreReset( pval );										// 配列ポインタをリセットする
 
 	if ( type == TYPE_MARK ) {
@@ -481,6 +482,9 @@ char *code_get_proxyvar( char *ptr, int *mptype )
 	case MPTYPE_LOCALSTRING:
 		*mptype = MPTYPE_STRING;
 		return *(char **)ptr;
+	case MPTYPE_LABEL:
+		*mptype = HSPVAR_FLAG_LABEL;
+		return ptr;
 	case MPTYPE_ARRAYVAR:
 		var = (MPVarData *)ptr;
 		getv_pval = var->pval;
@@ -1316,6 +1320,9 @@ void code_expandstruct( char *p, STRUCTDAT *st, int option )
 			var->aptr = refap;
 			break;
 			}
+		case MPTYPE_LABEL:
+			*(unsigned short **)out = code_getlb2();
+			break;
 		case MPTYPE_DNUM:
 			{
 			//*(double *)out = code_getd();
@@ -2359,6 +2366,10 @@ void code_call( const unsigned short *pc )
 //
 int code_getdebug_line( void )
 {
+	return code_getdebug_line( mcsbak );
+}
+int code_getdebug_line( unsigned short* pt )
+{
 	//		Get current debug line info
 	//		(最後に実行した場所を示す)
 	//			result :  0=none  others=line#
@@ -2369,8 +2380,8 @@ int code_getdebug_line( void )
 	int cl,a,tmp,curpt,debpt;
 
 	mem_di = hspctx->mem_di;
-	curpt = (int)( mcsbak - ( hspctx->mem_mcs ) );
 	debpt=0;
+	curpt = (int)( pt - hspctx->mem_mcs );
 	if ( mem_di[0]==255) return -1;
 
 	cl=0;a=0;
@@ -2678,6 +2689,7 @@ void code_init( void )
 	dbginfo.dbg_close = code_dbgclose;
 	dbginfo.dbg_curinf = code_dbgcurinf;
 	dbginfo.dbg_set = code_dbgset;
+	dbginfo.dbg_callstack = code_dbgcallstack;
 #endif
 
 }
@@ -3627,6 +3639,31 @@ int code_dbgset( int id )
 	return -1;
 }
 
+char *code_dbgcallstack( void )
+{
+	STMDATA* it;
+	HSPROUTINE* routine;
+	int  line;
+
+	char tmp[HSP_MAX_PATH + 5 + 1];
+
+	code_inidbg();
+
+	for (it = mem_stm; it != stm_cur; it++)
+	{
+		if (it->type == TYPE_EX_SUBROUTINE ||
+			it->type == TYPE_EX_CUSTOMFUNC)
+		{
+			routine = (HSPROUTINE *)STM_GETPTR(it);
+
+			line = code_getdebug_line(routine->mcsret);
+			sprintf(tmp, "%s:%4d\r\n", code_getdebug_name(), line);
+			sbStrAdd(&dbgbuf, tmp);
+		}
+	}
+
+	return dbgbuf;
+}
 
 void code_dbgtrace( void )
 {
