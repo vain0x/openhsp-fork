@@ -191,6 +191,7 @@ public:
 	int PutDSStr( char *str, bool converts_to_utf8 );
 	int PutDSBuf( char *str );
 	int PutDSBuf( char *str, int size );
+	void PutDSMethods();
 	char *GetDS( int ptr );
 	void SetOT( int id, int value );
 	void PutDI( void );
@@ -450,6 +451,8 @@ private:
 	std::map<double, int> double_literal_table; // 定数プール用
 	std::map<std::string, int> string_literal_table;
 #endif
+
+	std::unordered_map<std::string, std::unordered_map<std::string, int>> methods; // モジュールクラスの名前→メソッド名→fi_index
 
 	//		for Header info
 	int hed_option;

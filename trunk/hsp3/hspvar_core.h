@@ -247,6 +247,4 @@ inline PDAT *HspVarCorePtrAPTR( PVal *pv, APTR ofs )
 }
 
 
-
-
 #endif

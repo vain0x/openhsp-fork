@@ -1236,6 +1236,54 @@ static int code_callfunc( int cmd )
 	return RUNMODE_RUN;
 }
 
+int code_callfunc_impl( int cmd, void *prmstack, int prmstack_size)
+{
+	//	ユーザー拡張命令を呼び出す
+	//
+	STRUCTDAT *st;
+	HSPROUTINE *r;
+	int size;
+	char *p;
+
+	st = &hspctx->mem_finfo[cmd]; 
+
+	size = sizeof(HSPROUTINE) + prmstack_size;
+	r = (HSPROUTINE *)StackPushSize( TYPE_EX_CUSTOMFUNC, size );
+	p = (char *)(r+1);
+	memcpy(p, prmstack, prmstack_size);
+
+	r->oldtack = hspctx->prmstack;				// 以前のスタックを保存
+	hspctx->prmstack = (void *)p;				// 新規スタックを設定
+
+	r->mcsret = mcsbak;							// 戻り場所
+	r->stacklev = hspctx->sublev++;				// ネストを進める
+	r->param = st;
+
+	mcs = (unsigned short *)( hspctx->mem_mcs + (hspctx->mem_ot[ st->otindex ]) );
+	code_next();
+
+	//		命令内で呼び出しを完結させる
+	//
+	while(1) {
+
+#ifdef HSPDEBUG
+		if ( dbgmode ) code_dbgtrace();					// トレースモード時の処理
+#endif
+		if ( GetTypeInfoPtr( type )->cmdfunc( val ) ) {	// タイプごとの関数振り分け
+			if ( hspctx->runmode == RUNMODE_END ) {
+				throw HSPERR_NONE;
+			}
+			if ( hspctx->runmode == RUNMODE_RETURN ) {
+				cmdfunc_return();
+				break;
+			} else {
+				hspctx->msgfunc( hspctx );
+			}
+		}
+	}
+
+	return RUNMODE_RUN;
+}
 
 /*------------------------------------------------------------*/
 /*
@@ -1965,6 +2013,7 @@ static int cmdfunc_prog( int cmd )
 	case 0x12:								// newmod
 	case 0x13:								// setmod
 		{
+		extern void HspVarStruct_LoadMethods(HSPCTX* ctx, STRUCTDAT* stdat_module);
 		char *p;
 		PVal *pval;
 		APTR aptr;
@@ -1979,6 +2028,8 @@ static int cmdfunc_prog( int cmd )
 			aptr = code_getva( &pval );
 		}
 		st = code_getstruct();
+		HspVarStruct_LoadMethods(hspctx, st);
+
 		fv = code_setvs(pval, aptr, NULL, st->size, st->prmindex);
 		fv->type = FLEXVAL_TYPE_ALLOC;
 		p = sbAlloc( fv->size );

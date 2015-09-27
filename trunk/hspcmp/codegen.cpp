@@ -1854,17 +1854,8 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	STRUCTPRM *prm;
 	STRUCTDAT *st;
 
-	prep = 0;
-	GetTokenCG( GETTOKEN_DEFAULT );
-	if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
-
-	if ( is_command && !strcmp( cg_str,"prep" ) ) {				// プロトタイプ宣言
-		prep = 1;
-		GetTokenCG( GETTOKEN_DEFAULT );
-		if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
-	}
-
-	strncpy( funcname, cg_str, 1023 );
+	bool is_member = false;
+	std::string modname = "";
 
 	for(i=0;i<cg_localcur;i++) {
 		lb->SetFlag( cg_localstruct[i], -1 );		// 以前に指定されたパラメーター名を削除する
@@ -1872,18 +1863,35 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	cg_localcur = 0;
 	funcflag = 0;
 	regflag = 1;
+	int label_id = -1;
+	
+	prep = 0;
+	GetTokenCG( GETTOKEN_DEFAULT );
+	if ( ttype == TK_OBJ ) {
+		if ( is_command && !strcmp( cg_str,"prep" ) ) {				// プロトタイプ宣言
+			prep = 1;
+			GetTokenCG( GETTOKEN_DEFAULT );
+			if ( ttype != TK_OBJ ) throw CGERROR_PP_NAMEREQUIRED;
+		}
 
-	index = -1;
-	int label_id = lb->Search( funcname );
-	if ( label_id >= 0 ) {
-		if ( lb->GetType(label_id) != TYPE_MODCMD ) {
-			CG_MesLabelDefinition(label_id); throw CGERROR_PP_ALREADY_USE_FUNC;
+		strncpy( funcname, cg_str, 1023 );
+
+		index = -1;
+		label_id = lb->Search( funcname );
+		if ( label_id >= 0 ) {
+			if ( lb->GetType(label_id) != TYPE_MODCMD ) {
+				CG_MesLabelDefinition(label_id); throw CGERROR_PP_ALREADY_USE_FUNC;
+			}
+			index = lb->GetOpt(label_id);
+			if ( index >= 0 && GET_FI(index)->index != STRUCTDAT_INDEX_DUMMY ) {
+				CG_MesLabelDefinition(label_id);
+				throw CGERROR_PP_ALREADY_USE_FUNC;
+			}
 		}
-		index = lb->GetOpt(label_id);
-		if ( index >= 0 && GET_FI(index)->index != STRUCTDAT_INDEX_DUMMY ) {
-			CG_MesLabelDefinition(label_id);
-			throw CGERROR_PP_ALREADY_USE_FUNC;
-		}
+	} else if ( ttype == TK_STRING ) {
+		is_member = true;
+	} else {
+		throw CGERROR_PP_NAMEREQUIRED;
 	}
 
 	PutStructStart();
@@ -1906,6 +1914,7 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 			i = lb->Search( cg_str );
 			if ( i < 0 ) throw CGERROR_PP_BAD_STRUCT;
 			if ( lb->GetType(i) != TYPE_STRUCT ) throw CGERROR_PP_BAD_STRUCT;
+			modname = cg_str;
 			prm = (STRUCTPRM *)mi_buf->GetBuffer();
 			subid = prm[ lb->GetOpt(i) ].subid;
 			//Mesf( "%s:struct%d",cg_str,subid );
@@ -1959,6 +1968,10 @@ void CToken::GenerateCodePP_deffunc0( int is_command )
 	}
 	int dat_index = is_command ? STRUCTDAT_INDEX_FUNC : STRUCTDAT_INDEX_CFUNC;
 	PutStructEnd( index, funcname, dat_index, ot, funcflag );
+
+	if ( is_member ) {
+		methods[modname][funcname] = index; //TODO: 上書きはエラーにする
+	}
 }
 
 
@@ -2603,6 +2616,38 @@ int CToken::PutDSBuf( char *str, int size )
 	return i;
 }
 
+void CToken::PutDSMethods()
+{
+	for ( auto&& kv1 : methods ) {
+		auto&& modname = kv1.first;
+		auto&& table   = kv1.second;
+
+		// メソッド名の ds_index と、それが表す関数の fi_index を交互に出力
+		std::vector<int> buf;
+		for ( auto&& kv : table ) {
+			buf.push_back(PutDS((char*)kv.first.c_str()));
+			buf.push_back(PutDS((char*)kv.second));
+		}
+
+		int const dsi_table = ds_buf->GetSize();
+		ds_buf->Put((int)buf.size() / 2);
+		ds_buf->PutData(buf.data(), buf.size() * sizeof(int));
+
+		// モジュールの STRUCTDAT::funcflag をテーブル情報の ds_index にする
+		// (線型探索)
+		STRUCTDAT* stdat = nullptr;
+		for ( int i = 0; i < GET_FI_SIZE(); ++i ) {
+			if ( &ds_buf->GetBuffer()[GET_FI(i)->nameidx] == modname ) {
+				stdat = GET_FI(i); break;
+			}
+		}
+		if ( !stdat ) throw CGERROR_PP_BAD_STRUCT;
+
+		assert(stdat->funcflag == 0);
+		stdat->funcflag = dsi_table;
+	}
+}
+
 
 int CToken::PutOT( int value )
 {
@@ -3048,6 +3093,8 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 			PutDIParams();
 		}
 		PutDI( -1, 0, 0 );								// デバッグ情報終端
+
+		PutDSMethods();
 
 		sz_hed = sizeof(HSPHED);
 		memset( &hsphed, 0, sz_hed );

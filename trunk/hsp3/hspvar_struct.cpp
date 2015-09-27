@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_map>
 #include "hsp3code.h"
 #include "hspvar_core.h"
 #include "hsp3debug.h"
@@ -18,6 +19,39 @@
 		HSPVAR core interface (struct)
 */
 /*------------------------------------------------------------*/
+
+// モジュールのfi_index → メソッド名 → ユーザ定義コマンドのSTRUCTDAT
+std::unordered_map<int, std::unordered_map<std::string, STRUCTDAT*>> g_methods;
+
+void HspVarStruct_LoadMethods(HSPCTX* ctx, STRUCTDAT* stdat_module)
+{
+	if ( g_methods.find(stdat_module->subid) == g_methods.end()
+		|| ctx->mem_minfo[stdat_module->prmindex].mptype != MPTYPE_STRUCTTAG ) return;
+
+	std::unordered_map<std::string, STRUCTDAT*> table;
+
+	int* buf = (int*)ctx->mem_mds[stdat_module->funcflag];
+	int size = buf[0];
+	for ( int i = 0; i < size; ++i ) {
+		table.emplace(
+			std::string(&ctx->mem_mds[buf[i * 2 + 1]]),
+			&ctx->mem_finfo[buf[i * 2 + 2]]);
+	}
+
+	g_methods.emplace(std::string(&ctx->mem_mds[stdat_module->nameidx]),
+		std::move(table));
+}
+
+
+STRUCTDAT* HspVarStruct_FindMethod(int kls_id, std::string name)
+{
+	auto&& it = g_methods[kls_id].find(name);
+	if ( it != g_methods[kls_id].end() ) {
+		return it->second;
+	} else {
+		return nullptr;
+	}
+}
 
 
 // Core
@@ -138,11 +172,24 @@ static void HspVarStruct_Set( PVal *pval, PDAT *pdat, const void *in )
 	FlexValue *fv;
 	FlexValue *fv_src;
 	fv = (FlexValue *)in;
-	fv->type = FLEXVAL_TYPE_CLONE;
 	fv_src = (FlexValue *)pdat;
-	if ( fv_src->type == FLEXVAL_TYPE_ALLOC ) { sbFree( fv_src->ptr ); }
-	memcpy( pdat, fv, sizeof(FlexValue) );
-	//sbCopy( (char **)pdat, (char *)fv->ptr, fv->size );
+
+	if ( STRUCTDAT* op_copy = HspVarStruct_FindMethod(fv->customid, "copy") ) {
+		code_delstruct(pval, pval->offset);
+
+		// TODO: modvar, struct, local... でなければならない
+		// TODO: local 列を初期化する必要がある
+		extern int code_callfunc_impl(int cmd, void* prmstack, int prmstack_size);
+		std::vector<char> prmstack; prmstack.resize(op_copy->size, 0);
+		*(MPModVarData*)prmstack.data() = { fv->customid, MODVAR_MAGICCODE, pval, pval->offset };
+		*(FlexValue*)(prmstack.data()[sizeof(MPModVarData)]) = *fv;
+		code_callfunc_impl(op_copy->subid, prmstack.data(), prmstack.size());
+	} else {
+		fv->type = FLEXVAL_TYPE_CLONE;
+		if ( fv_src->type == FLEXVAL_TYPE_ALLOC ) { sbFree( fv_src->ptr ); }
+		memcpy( pdat, fv, sizeof(FlexValue) );
+		//sbCopy( (char **)pdat, (char *)fv->ptr, fv->size );
+	}
 }
 
 /*
