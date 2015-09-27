@@ -94,7 +94,7 @@ int CLabel::StrCmp( char *str1, char *str2 )
 
 int CLabel::Regist( char *name, int type, int opt )
 {
-	return Regist(name, type, opt, nullptr, -1);
+	return Regist(name, type, opt, NULL, -1);
 }
 
 
@@ -129,7 +129,8 @@ int CLabel::Regist( char *name, int type, int opt, char const *filename, int lin
 	lab->typefix = LAB_TYPEFIX_NONE;
 	SetDefinition(label_id, filename, line);
 
-	labels.emplace(lab->name, label_id);
+	labels.insert(std::make_pair(lab->name, label_id));
+//	labels.emplace(lab->name, label_id);
 	return label_id;
 }
 
@@ -779,7 +780,7 @@ void CLabel::SetCaseMode( int flag )
 
 void CLabel::SetDefinition(int id, char const* filename, int line)
 {
-	if ( !(filename != nullptr && line >= 0) ) return;
+	if ( !(filename != NULL && line >= 0) ) return;
 
 	LABOBJ* const it = GetLabel(id);
 	it->def_file = filenames.insert(filename).first->c_str();

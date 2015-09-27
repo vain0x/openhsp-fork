@@ -2520,6 +2520,7 @@ int CToken::PutDS(double value)
 	//
 	int i = ds_buf->GetSize();
 
+#if 0
 	// literal pool
 	if ( CG_optCode() ) {
 		auto&& it = double_literal_table->find(value);
@@ -2531,6 +2532,7 @@ int CToken::PutDS(double value)
 			double_literal_table->emplace(value, i);
 		}
 	}
+#endif
 
 	ds_buf->Put(value);
 	return i;
@@ -2568,6 +2570,7 @@ int CToken::PutDSStr(char *str, bool converts_to_utf8)
 
 	int i = ds_buf->GetSize();
 
+#if 0
 	// literal pool
 	if ( CG_optCode() ) {
 		auto&& it = string_literal_table->find(p);
@@ -2584,6 +2587,7 @@ int CToken::PutDSStr(char *str, bool converts_to_utf8)
 			string_literal_table->emplace(std::string(p), i);
 		}
 	}
+#endif
 
 	if ( converts_to_utf8 ) {
 		ds_buf->PutData(p, (int)(strlen(p) + 1));
@@ -3009,10 +3013,12 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
 
+#if 0
 	if ( CG_optCode() ) {
 		string_literal_table.reset(new std::unordered_map<std::string, int>());
 		double_literal_table.reset(new std::unordered_map<double, int>());
 	}
+#endif
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 

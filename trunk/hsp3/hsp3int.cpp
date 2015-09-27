@@ -65,30 +65,46 @@ typedef struct {
 	int info; // ソートの前にこの要素があった位置
 } DATA;
 
-template<bool ascending>
-static inline bool stable_compare(DATA const& lhs, DATA const& rhs, int cmp)
+static bool less_int_1(DATA const& lhs, DATA const& rhs)
 {
-	return (ascending ? cmp < 0 : cmp > 0)
+	int cmp = (lhs.as.ikey - rhs.as.ikey);
+	return (cmp < 0)
 		|| (cmp == 0 && lhs.info < rhs.info);
 }
 
-template<bool ascending>
-static bool less_int(DATA const& lhs, DATA const& rhs)
+static bool less_int_0(DATA const& lhs, DATA const& rhs)
 {
-	return stable_compare<ascending>(lhs, rhs, lhs.as.ikey - rhs.as.ikey);
+	int cmp = (lhs.as.ikey - rhs.as.ikey);
+	return (cmp > 0)
+		|| (cmp == 0 && lhs.info < rhs.info);
 }
 
-template<bool ascending>
-static bool less_double(DATA const& lhs, DATA const& rhs)
+static bool less_double_1(DATA const& lhs, DATA const& rhs)
 {
 	int cmp = (lhs.as.dkey < rhs.as.dkey ? -1 : (lhs.as.dkey > rhs.as.dkey ? 1 : 0));
-	return stable_compare<ascending>(lhs, rhs, cmp);
+	return (cmp < 0)
+		|| (cmp == 0 && lhs.info < rhs.info);
 }
 
-template<bool ascending>
-static bool less_str(DATA const& lhs, DATA const& rhs)
+static bool less_double_0(DATA const& lhs, DATA const& rhs)
 {
-	return stable_compare<ascending>(lhs, rhs, strcmp(lhs.as.skey, rhs.as.skey));
+	int cmp = (lhs.as.dkey < rhs.as.dkey ? -1 : (lhs.as.dkey > rhs.as.dkey ? 1 : 0));
+	return (cmp > 0)
+		|| (cmp == 0 && lhs.info < rhs.info);
+}
+
+static bool less_str_1(DATA const& lhs, DATA const& rhs)
+{
+	int cmp = (strcmp(lhs.as.skey, rhs.as.skey));
+	return (cmp < 0)
+		|| (cmp == 0 && lhs.info < rhs.info);
+}
+
+static bool less_str_0(DATA const& lhs, DATA const& rhs)
+{
+	int cmp = (strcmp(lhs.as.skey, rhs.as.skey));
+	return (cmp > 0)
+		|| (cmp == 0 && lhs.info < rhs.info);
 }
 
 
@@ -1155,9 +1171,12 @@ static int cmdfunc_intcmd( int cmd )
 				dtmp[a].as.dkey=dp[a];
 				dtmp[a].info=a;
 			}
-			std::sort(dtmp, dtmp + i,
-				(order == 0 ? less_double<true> : less_double<false>)
-				);
+			if (order == 0) {
+				std::sort(dtmp, dtmp + i, less_double_1);
+			}
+			else {
+				std::sort(dtmp, dtmp + i, less_double_0);
+			}
 			for(a=0;a<i;a++) {
 				code_setva( p1, a, HSPVAR_FLAG_DOUBLE, &(dtmp[a].as.dkey) );	// 変数に値を代入
 			}
@@ -1172,9 +1191,12 @@ static int cmdfunc_intcmd( int cmd )
 				dtmp[a].as.ikey=p[a];
 				dtmp[a].info=a;
 			}
-			std::sort(dtmp, dtmp + i,
-				(order == 0 ? less_int<true> : less_int<false>)
-				);
+			if (order == 0) {
+				std::sort(dtmp, dtmp + i, less_int_1);
+			}
+			else {
+				std::sort(dtmp, dtmp + i, less_int_0);
+			}
 			for(a=0;a<i;a++) {
 				p[a]=dtmp[a].as.ikey;
 			}
@@ -1212,9 +1234,12 @@ static int cmdfunc_intcmd( int cmd )
 			dtmp[i].info = i;
 		}
 
-		std::sort(dtmp, dtmp + i,
-			(order == 0 ? less_str<true> : less_str<false>)
-			);
+		if (order == 0) {
+			std::sort(dtmp, dtmp + i, less_str_1);
+		}
+		else {
+			std::sort(dtmp, dtmp + i, less_str_0);
+		}
 
 		pvstr = (char **)(pv->master);	// 変数に直接sbポインタを書き戻す
 		for(i=0;i<len;i++) {
@@ -1247,9 +1272,13 @@ static int cmdfunc_intcmd( int cmd )
 		DataIni( i );
 
 		NoteToData( p, dtmp );
-		std::sort(dtmp, dtmp + i,
-			(sflag == 0 ? less_str<true> : less_str<false>)
-			);
+		if (sflag == 0) {
+			std::sort(dtmp, dtmp + i, less_str_1);
+		}
+		else {
+			std::sort(dtmp, dtmp + i, less_str_0);
+		}
+
 		stmp = code_stmp( (int)DataToNoteLen( dtmp, i ) + 1 );
 		DataToNote( dtmp, stmp, i );
 
