@@ -130,7 +130,6 @@ int CLabel::Regist( char *name, int type, int opt, char const *filename, int lin
 	SetDefinition(label_id, filename, line);
 
 	labels.insert(std::make_pair(lab->name, label_id));
-//	labels.emplace(lab->name, label_id);
 	return label_id;
 }
 

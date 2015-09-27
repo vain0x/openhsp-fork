@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <functional>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/hsp3debug.h"
@@ -2520,16 +2519,14 @@ int CToken::PutDS(double value)
 	//
 	int i = ds_buf->GetSize();
 
-#if 0
-	// literal pool
+#ifdef HSP_DS_POOL
 	if ( CG_optCode() ) {
-		auto&& it = double_literal_table->find(value);
-		if ( it != double_literal_table->end() ) {
-			i = it->second;
+		int i_cache =
+			double_literal_table.insert(std::make_pair(value, i))
+			.first->second;
+		if ( i != i_cache ) {
 			if ( CG_optInfo() ) { Mesf("#実数リテラルプール %f", value); }
-			return i;
-		} else {
-			double_literal_table->emplace(value, i);
+			return i_cache;
 		}
 	}
 #endif
@@ -2570,21 +2567,18 @@ int CToken::PutDSStr(char *str, bool converts_to_utf8)
 
 	int i = ds_buf->GetSize();
 
-#if 0
-	// literal pool
+#ifdef HSP_DS_POOL
 	if ( CG_optCode() ) {
-		auto&& it = string_literal_table->find(p);
-		if ( it != string_literal_table->end() ) {
-			i = it->second;
+		int i_cache =
+			string_literal_table.insert(std::make_pair(std::string(p), i))
+			.first->second;
+		if ( i != i_cache ) {
 			if ( CG_optInfo() ) {
-				std::unique_ptr<char, decltype(&free)>
-					literalStr(to_hsp_string_literal(str), free);
-				Mesf("#文字列リテラルプール %s", literalStr.get());
+				char *literal_str = to_hsp_string_literal(str);
+				Mesf("#文字列プール %s", literal_str);
+				free(literal_str);
 			}
-			return i;
-
-		} else {
-			string_literal_table->emplace(std::string(p), i);
+			return i_cache;
 		}
 	}
 #endif
@@ -3012,13 +3006,6 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	mi_buf = new CMemBuf;
 	fi2_buf = new CMemBuf;
 	hpi_buf = new CMemBuf;
-
-#if 0
-	if ( CG_optCode() ) {
-		string_literal_table.reset(new std::unordered_map<std::string, int>());
-		double_literal_table.reset(new std::unordered_map<double, int>());
-	}
-#endif
 
 	bakbuf.PutStr( srcbuf->GetBuffer() );				// プリプロセッサソースを保存する
 

@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <memory>
 
 // token type
@@ -446,8 +446,10 @@ private:
 	CMemBuf *fi2_buf;
 	CMemBuf *hpi_buf;
 
-	std::unique_ptr<std::unordered_map<double, int>> double_literal_table; // 定数プール用
-	std::unique_ptr<std::unordered_map<std::string, int>> string_literal_table;
+#ifdef HSP_DS_POOL
+	std::map<double, int> double_literal_table; // 定数プール用
+	std::map<std::string, int> string_literal_table;
+#endif
 
 	//		for Header info
 	int hed_option;
