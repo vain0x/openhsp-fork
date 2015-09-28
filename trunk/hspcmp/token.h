@@ -272,8 +272,7 @@ private:
 	char *ExpandHex( char *str, int *val );
 	char *ExpandToken( char *str, int *type, int ppmode );
 	int ExpandTokens( char *vp, CMemBuf *buf, int *lineext, int is_preprocess_line );
-	char *SendLineBuf( char *str );
-	char *SendLineBufPP( char *str, int *lines );
+	char *SendLineBuf( char *str, int *lines );
 	int ReplaceLineBuf( char *str1, char *str2, char *repl, int macopt, MACDEF *macdef );
 
 	void SetErrorSymbolOverdefined(char* keyword, int label_id);

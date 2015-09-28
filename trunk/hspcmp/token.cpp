@@ -1453,35 +1453,10 @@ char *CToken::SkipLine( char *str, int *pline )
 	return (char *)vs;
 }
 
-
-char *CToken::SendLineBuf( char *str )
-{
-	//		１行分のデータをlinebufに転送
-	//
-	char *p;
-	char *w;
-	char a1;
-	p = str;
-	w = linebuf;
-	while(1) {
-		a1 = *p;if ( a1==0 ) break;
-		p++;
-		if ( a1 == 10 ) break;
-		if ( a1 == 13 ) {
-			if ( *p==10 ) p++;
-			break;
-		}
-		*w++=a1;
-	}
-	*w=0;
-	return p;
-}
-
-
 #define IS_CHAR_HEAD(str, pos) \
 	is_sjis_char_head((unsigned char *)(str), (int)((pos) - (unsigned char *)(str)))
 
-char *CToken::SendLineBufPP( char *str, int *lines )
+char *CToken::SendLineBuf( char *str, int *lines )
 {
 	//		１行分のデータをlinebufに転送
 	//			(行末の'\'は継続 linesに行数を返す)
@@ -3340,14 +3315,13 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 		                         mulstr != LMODE_STR &&
 		                         mulstr != LMODE_COMMENT;
 
-		//		行データをlinebufに展開
+		//		行データをlinebufに展開 ('\'継続)
 		int mline;
 		if ( is_preprocess_line ) {
-			p = SendLineBufPP( p + 1, &mline );// 行末までを取り出す('\'継続)
+			p = SendLineBuf( p + 1, &mline );
 			wrtbuf = NULL;
 		} else {
-			p = SendLineBuf( p );			// 行末までを取り出す
-			mline = 0;
+			p = SendLineBuf( p, &mline );
 			wrtbuf = buf;
 		}
 
@@ -3423,8 +3397,8 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 		}
 
 		//		マクロ展開後に行数が変わった場合の処理
-		pline += 1+mline;
-		if ( lineext != mline ) {
+		pline += mline;
+		if ( lineext != mline - 1 ) {
 			wrtbuf->PutStrf( "##%d\r\n", pline );
 		}
 	}
