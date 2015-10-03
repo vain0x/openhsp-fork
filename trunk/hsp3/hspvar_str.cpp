@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "hspvar_core.h"
 #include "hsp3debug.h"
 
@@ -155,6 +156,22 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 	free( oldvar.master );
 }
 
+
+static void HspVarStr_MoveAlloc( PVal *pval, PVal *pval2 )
+{
+	HspVarCoreMoveAllocDefault(pval, pval2);
+
+	// STRINF::opt ‚ð“\‚è’¼‚·
+	if ( pval->mode == HSPVAR_MODE_MALLOC ) {
+		int size = GetVarSize(pval);
+		for ( int i = 0; i < (int)(size / sizeof(char*)); ++i ) {
+			char **pp = GetFlexBufPtr(pval, i);
+			sbSetOption( *pp, pp );
+		}
+	}
+}
+
+
 /*
 static void *HspVarStr_ArrayObject( PVal *pval, int *arg )
 {
@@ -260,6 +277,7 @@ void HspVarStr_Init( HspVarProc *p )
 //	p->ArrayObject = HspVarStr_ArrayObject;
 	p->Alloc = HspVarStr_Alloc;
 	p->Free = HspVarStr_Free;
+	p->MoveAlloc = HspVarStr_MoveAlloc;
 
 	p->AddI = HspVarStr_AddI;
 //	p->SubI = HspVarStr_Invalid;

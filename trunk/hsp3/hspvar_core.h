@@ -40,6 +40,7 @@
 #define HSPVAR_SUPPORT_USER1 0x4000				// ユーザーフラグ1
 #define HSPVAR_SUPPORT_USER2 0x8000				// ユーザーフラグ2
 
+#define HSPVAR_SUPPORT_VARATTR (HSPVAR_SUPPORT_TEMPVAR) // 変数自体がもつ属性のフラグ
 #define HSPVAR_SUPPORT_MISCTYPE (HSPVAR_SUPPORT_ARRAYOBJ)
 
 typedef void * PDAT;							// データの実態へのポインタ
@@ -158,6 +159,10 @@ typedef struct
 
 	void (*RrI)( PDAT *pval, const void *val );
 	void (*LrI)( PDAT *pval, const void *val );
+
+	//		システム参照
+	// (ver3.X)
+	void(*MoveAlloc)(PVal *pval, PVal *pval2);
 } HspVarProc;
 
 extern HspVarProc *hspvarproc;
@@ -206,6 +211,8 @@ HspVarProc *HspVarCoreSeekProc( const char *name );
 
 //		low level support functions
 //
+void HspVarCoreSwap(PVal *pval, PVal *pval2);
+void HspVarCoreMoveAllocDefault(PVal *pval1, PVal *pval2);
 void HspVarCoreDup( PVal *pval, PVal *arg, APTR aptr );
 void HspVarCoreDupPtr( PVal *pval, int flag, void *ptr, int size );
 void HspVarCoreClear( PVal *pval, int flag );

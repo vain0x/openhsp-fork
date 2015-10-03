@@ -1307,6 +1307,16 @@ static int cmdfunc_intcmd( int cmd )
 		break;
 		}
 
+	case 0x031:								// swaparray
+	{
+		PVal *pv[2];
+		for ( int i = 0; i < 2; ++i ) {
+			pv[i] = code_getpval();
+		}
+		HspVarCoreSwap(pv[0], pv[1]);
+		break;
+	}
+
 	default:
 		throw HSPERR_UNSUPPORTED_FUNCTION;
 	}
