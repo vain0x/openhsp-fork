@@ -1,0 +1,30 @@
+	;	ステータスバーの表示
+	;	mod_stbar.asを使用してステータスバーを表示します。
+	;	stbar_ini命令で初期化、stbar_text命令で文字列を設定するだけの
+	;	シンプルなモジュールです。
+	;	mod_stbar.asは、各ウィンドウごとに設定を保持するので、
+	;	複数のウィンドウにステータスバーを表示することができます。
+	;
+
+#include "mod_stbar.as"
+
+	screen 0,640,480
+	stbar_ini				; ステータスバー作成
+
+	screen 1,640,480
+
+	stbar_ini				; ステータスバー作成
+	oncmd gosub *event_WM_SIZE, 0x0005	; WM_SIZE割り込み
+
+
+	gsel 0
+	stbar_text "テストです"			; テキストを設定
+	gsel 1
+	stbar_text "リサイズに対応しています"	; テキストを設定
+
+	stop
+
+
+*event_WM_SIZE
+	stbar_resize		; ステータスバーのリサイズ
+	return

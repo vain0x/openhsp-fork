@@ -1,0 +1,17 @@
+#aht name "画像"
+#aht class "hsp3.std.rsrc.image"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 8
+#aht exp "パーツに対して画像ファイルを割り当てます。"
+#aht exp "割り当てたリソースは、他のパーツから参照可能になります。"
+#aht flag 256
+
+#define ファイル名	"画像"	;;file,prm="bmp;*.jpg;*.gif",refname
+#define ファイルパス	""	;;str
+#define バッファID	0	;;popt,prm="glid",opt="my"
+
+#ahtmes "	buffer "+バッファID+"+_ahtgbuf"
+#ahtmes "	picload \""+ファイルパス+ファイル名+"\""
+#ahtmes "	gsel 0"
+

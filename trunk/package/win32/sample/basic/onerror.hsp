@@ -1,0 +1,15 @@
+
+	;	エラートラップ
+	;
+	onerror *emsg
+	a="kkk"*4		; エラーが起こります
+	stop
+
+*emsg
+	;	エラー発生時にここに飛んできます
+	;
+	dialog "エラーが発生しました。\nERROR="+wparam+"\nLINE="+lparam
+	;
+	;	エラートラップ後はendで終了することを推奨
+	end
+

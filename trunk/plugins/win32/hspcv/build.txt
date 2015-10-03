@@ -1,0 +1,12 @@
+
+・OpenCVライブラリの準備
+
+	以下のURLからOpenCVライブラリをインストールする必要があります。
+	http://sourceforge.net/projects/opencvlibrary/
+
+	OpenCVのライブラリをすべて「スタティック　マルチスレッド ライブラリ」
+	としてビルドし直します。
+	otherlibsにある外部ライブラリもすべてスタティックでビルドし直し。
+	jasperは含まれていないので、jasper-1.701.0.zipをダウンロードして、
+	やっぱりビルドし直して下さい。
+

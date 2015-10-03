@@ -1,0 +1,103 @@
+#include "hspext.as"
+#include "hsp261cmp.as"
+
+	title "dircsv ver0.1"
+	wx=400:wy=200
+	screen 0,wx,wy
+	cls 1
+	gsel 0,1
+
+	sdim work,1024
+	sdim tmp,1024
+	sdim tools,256
+	sdim opt1,1024
+	sdim opt2,1024
+	sdim sname,1024
+
+	tools=curdir+"\\"
+
+	work="C:\\"
+	opt1=""
+	opt2=""
+
+	objmode 1,1
+	objsize 380,24
+	mes "ディレクトリ"
+	input work
+
+	objsize 24,24
+	pos 170,48
+	button "A",*drv_a
+	pos 200,48
+	button "C",*drv_c
+	pos 230,48
+	button "D",*drv_d
+	pos 260,48
+	button "E",*drv_e
+	pos 290,48
+	button "F",*drv_f
+	pos 320,48
+	button "G",*drv_g
+	pos 354,48
+	button "?",*mkwork
+	pos 144,150
+	objsize 160,40
+	button "作成",*process
+	pos 316,150
+	objsize 64,40
+	button "終了",*owari
+
+	curobj=0
+	onkey *keyprs
+	stop
+*keyprs
+	if iparam=27 : goto *owari
+	stop
+
+*drv_a
+	objprm 0,"a:\\"
+	stop
+*drv_c
+	objprm 0,"c:\\"
+	stop
+*drv_d
+	objprm 0,"d:\\"
+	stop
+*drv_e
+	objprm 0,"e:\\"
+	stop
+*drv_f
+	objprm 0,"f:\\"
+	stop
+*drv_g
+	objprm 0,"g:\\"
+	stop
+*mkwork
+	selfolder tmp,""
+	if stat=0 : objprm 0,tmp
+	stop
+
+*process
+	strlen a,work
+	peek a,work,a-1
+	if a!='\\' : work+="\\" : objprm 0,work
+
+	chdir work
+	dirlist2h 0,','
+	dirlist2 a,"*.*", 0, '\\'
+	;mes "DATA SIZE="+a
+	;mes "FILE NUM="+stat
+	sdim ftmp,a
+	dirlist2r ftmp
+	strlen fs,ftmp
+	;mes "STRSIZE="+fs
+	;mes ftmp
+
+	sname=tools+"dir.csv"
+	bsave sname,ftmp,fs
+
+	dialog "["+sname+"]\n作成完了しました"
+	stop
+*owari
+	end
+

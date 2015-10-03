@@ -1,0 +1,52 @@
+
+	;
+	;	簡易CDプレイヤーサンプル
+	;	( 現在演奏中のトラックを監視するバージョン)
+	;
+	mci "capability cdaudio can play"
+	if stat!0 : dialog "デバイスは使用中です",1:end
+
+	mci "status cdaudio number of tracks"
+	if stat<0 : dialog "CDがセットされていません",1:end
+	maxtrack=stat
+
+	onexit *owari			; 終了した時のジャンプ先
+
+	mci "open cdaudio alias myid"	; CDにmyidというエイリアスをつける
+	mci "set myid time format tmsf"	; トラック単位でアクセス
+
+	tr=1
+	button "PLAY",*cdplay
+	button "STOP",*cdstop
+	button "<-",*cdback
+	button "->",*cdnext
+
+*cdplay
+	mci "play myid from "+tr	; CDプレイ
+	wait 5
+*plloop
+	mci "status myid current track"	; 現在のトラックを得る
+	tr=stat
+	title "CD player (track"+tr+")"
+	wait 10
+	goto *plloop
+
+*cdstop
+	mci "stop myid"			; 演奏ストップ
+	stop
+
+*cdback
+	if tr=1 : goto *plloop
+	tr=tr-1				; 1つ前のトラックへ
+	goto *cdplay
+
+*cdnext
+	if tr=maxtrack : goto *plloop
+	tr=tr+1				; 1つ後のトラックへ
+	goto *cdplay
+
+*owari
+	mci "stop myid"
+	mci "close myid"		; 最後に必ずcloseする
+	end
+

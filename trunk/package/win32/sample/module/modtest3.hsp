@@ -1,0 +1,27 @@
+
+#module
+#deffunc strnum var _p1,int _p2
+
+	;	strnum 変数, 数値
+	;
+	;	で、変数に[数値]という文字列を代入する。
+	;
+	_p1="["+_p2+"]"
+	return
+#global
+
+	;	strnumで指定された変数は、強制的に文字列型になる。
+	;	変数aをためしに数値(0)で初期化。
+	;
+	a=0
+
+	;	strnumを呼び出す
+	;
+	strnum a,123
+
+	;	変数aを表示。変数aは文字列になっている。
+	;
+	mes a
+
+	stop
+

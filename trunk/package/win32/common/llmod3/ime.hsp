@@ -1,0 +1,474 @@
+	;================================================================================
+	;モジュール ime
+	;ver 2.1
+	;	IME
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; imeモジュール命令一覧
+	;
+	; imeinit			IME情報を取得
+	; imeopen			IMEウィンドウを開く
+	; imestr			IMEに文字列を送る
+	; imesend			IMEにメッセージを送る
+	; linesel			mesbox内の一行を選択
+	; selget			mesbox内の選択部分の文字列を取得
+	;
+	; 計	6個
+
+
+	;使い方
+	;================================================================================
+	; imeinit v1,n2				IME情報を取得
+	;
+	;  v1 : IME情報を代入する変数
+	;  n2 : mesboxのID
+	;================================================================================
+	;
+	;<>説明
+	; IME情報を取得します。
+	; n2にmesboxのIDを代入します。
+	;
+	;<>例
+	;	#include "llmod.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,64*1024 : buf=""
+	;	mesbox buf,winx,winy,1
+	;	mb0_id=0
+	;	imeinit mb0_ime,mb0_id
+	;
+
+	;================================================================================
+	; imeopen v1,n2				IMEウィンドウを開く
+	;
+	;  v1 : imeinitに使用した変数
+	;  n2 : 開くか閉じるかを示すフラグ
+	;================================================================================
+	;
+	;<>説明
+	; imeinitで取得したIMEを開きます。
+	; n2を1にするとIMEウィンドウを閉じることができます。
+	;
+	;<>例
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,64 * 1024 : buf = ""
+	;	mesbox buf,winx,winy,1
+	;	mb0_id = 0
+	;	imeinit mb0_ime,mb0_id
+	;	imeopen mb0_ime
+	;
+
+	;================================================================================
+	; imestr v1,"s2"			IMEに文字列を送る
+	;
+	;  v1 : imeinitに使用した変数
+	;  s2 : IMEに送る文字列
+	;================================================================================
+	;
+	;<>説明
+	; IMEに文字列を送ります。
+	; 文字列内にタブや改行があっては行けません。
+	; 文字列には半角文字(英字、かな)、全角文字(英字、ひらがな、カタカナ)
+	; が使用できます。
+	;
+	;<>例
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,64 * 1024 : buf = ""
+	;	mesbox buf,winx,winy,1
+	;	mb0_id = 0
+	;	imeinit mb0_ime,mb0_id
+	;	imeopen mb0_ime			;IMEを開く
+	;	imestr  mb0_ime,"ｱｲｳｴｵ"		;文字列"ｱｲｳｴｵ"をIMEに送る
+	;
+
+	;================================================================================
+	; imesend v1,n2,n3,n4			IMEにメッセージを送る
+	;
+	;  v1 : imeinitに使用した変数
+	;  n2 : IMEに送るメッセージ
+	;  n3 : パラメータ1
+	;  n4 : パラメータ2
+	;================================================================================
+	;
+	;<>説明
+	; IMEのメッセージを送ります。
+	;
+	; n2の値
+	; 0		候補ウィンドウを開く
+	; 1		候補ウィンドウを閉じる
+	; 2		n3ページのn4番目の候補を選択
+	; 3		候補ウィンドウのn4番目のページを表示
+	; 4		決定(0)、変換実行(1)、戻す(2)、キャンセル(3)(括弧内はn3の値)
+	; 5		候補ウィンドウのサイズを変える(n3:0～31)
+	;
+	;<>例
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,64 * 1024 : buf = ""
+	;	mesbox buf,winx,winy,1
+	;	mb0_id = 0
+	;	imeinit mb0_ime,mb0_id
+	;	imeopen mb0_ime			;IMEを開く
+	;
+	;	imestr  mb0_ime,"ﾅﾂﾒｿｳｾｷ"	;文字列"ﾅﾂﾒｿｳｾｷ"をIMEに送る
+	;	imesend mb0_ime,4,1		;"ﾅﾂﾒｿｳｾｷ"を変換実行
+	;	imesend mb0_ime,4,0		;決定
+	;
+	;	imestr  mb0_ime,"のいえ"	;文字列"のいえ"をIMEに送る
+	;	imesend mb0_ime,4,1		;"のいえ"を変換実行
+	;	imesend mb0_ime,4,0		;決定
+	;
+	;	imestr	mb0_ime,"ｱｵｲ"
+	;	imesend mb0_ime,0		;候補ウィンドウを開く
+	;
+
+	;================================================================================
+	; linesel n1.n2				mesbox内の一行を選択
+	;
+	;  n1 : mesboxのID
+	;  n2 : 選択する行
+	;================================================================================
+	;
+	;<>説明
+	; mesbox n1 内のn2行を選択します。n2は0から数えます。
+	; n2を-1にするとカーソルがある行を選択します。
+	; n2を-2にするとmesbox内の文字全てを選択します。
+	;
+	;<>例
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,1024 : buf = "123456\n7890"
+	;	mesbox buf,300,200,1
+	;	mb_id = 0
+	;	linesel mb_id,1		;1行目を選択(7890が選択される)
+	;
+
+	;================================================================================
+	; selget v1,n2				mesbox内の選択部分の文字列を取得
+	;
+	;  v1 : mesbox内の選択されている部分を代入する変数
+	;  n2 : mesboxのID
+	;================================================================================
+	;
+	;<>説明
+	; mesbox n2 の選択されている部分を取得します。
+	;
+	;<>例
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,1024 : buf = "123456\n7890"
+	;	mesbox buf,300,200,1
+	;	mb_id = 0
+	;	linesel mb_id,1
+	;	selget line_buf,mb_id
+	;	dialog line_buf
+	;
+
+
+	; lineselとselgetはHSP標準の命令のみで作られています。
+	; imeの命令と組み合わせて使用すると便利でしょう。
+	; 例)
+	;	#include "llmod3.as"
+	;	#include "ime.as"
+	;
+	;	alloc linebuf,1024
+	;	alloc buf,1024 * 32 : buf = ""
+	;	mesbox buf,winx,winy-100,1
+	;	mb_id = 0
+	;	imeinit ime,mb_id
+	;
+	;	objsize 100,24
+	;	button "選択部分変換",*do_sel_translate
+	;	button "行変換",*do_line_translate
+	;	stop
+	;
+	;*do_line_translate
+	;	objsel mb_id
+	;	linesel mb_id,-1
+	;*do_sel_translate
+	;	objsel mb_id
+	;	selget linebuf,mb_id
+	;	imeopen ime
+	;	imestr ime,linebuf
+	;	stop
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "ime"
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;linesel
+	;mesbox内の一行を選択
+	;................................................................................
+	#deffunc linesel int v1,int v2
+
+	#define EM_LINEINDEX	187
+	#define EM_LINELENGTH	193
+	#define EM_SETSEL	177
+
+	prm = 0
+	sendmsg objinfo(v1,2),EM_LINEINDEX,v2,prm	: a = stat
+	sendmsg objinfo(v1,2),EM_LINELENGTH,a,prm	: prm = stat + a
+
+	if(v2 == -2) : a = 0 : prm = -1
+	sendmsg objinfo(v1,2),EM_SETSEL,a,prm
+
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;selget
+	;mesbox内の選択部分の文字列を取得
+	;................................................................................
+	#deffunc selget var v1,int v2
+
+	#define EM_GETSEL	176
+
+	v1 = ""
+	sendmsg objinfo(v2,2),EM_GETSEL,0,0
+	a = stat
+	prm = wpeek(a,0)
+	prm.1 = wpeek(a,2)
+
+	#define WM_GETTEXT		13
+	#define WM_GETTEXTLENGTH	14
+
+	sendmsg objinfo(v2,2),WM_GETTEXTLENGTH,0,0
+	a = stat + 1 : if(a > 64) : alloc p,a
+	p = ""
+	sendmsg objinfo(v2,2),WM_GETTEXT,a,varptr(p)
+
+	a = 64
+	a.1 = prm.1 - prm
+	if(a.1 < a) : a = a.1
+
+	v1 = strmid(p,prm,a)
+	alloc p,64
+
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;load_immdll
+	;................................................................................
+*load_immdll
+	ll_libload immdll,"imm32"
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imeinit
+	;IMEのコンテキストを取得
+	;................................................................................
+	#deffunc imeinit array v1,int v2
+
+	if(immdll == 0) : gosub *load_immdll
+
+	a = v2
+	_is_wnd a : if(stat == 0) : a = objinfo(a,2)
+	dllproc "ImmGetContext",a,1,immdll
+	v1 = stat,a
+	await
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imefin
+	;IMEのコンテキストを開放
+	;................................................................................
+	#deffunc imefin array v1
+	prm = v1(1),v1(0)
+	dllproc "ImmReleaseContext",prm,2,immdll
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imeopen
+	;IMEを開く
+	;................................................................................
+	#deffunc imeopen var v1,int v2
+	if(v2) {
+		prm = v1,0
+		dllproc "ImmSetOpenStatus",prm,2,immdll
+	} else {
+		dllproc "ImmGetOpenStatus",v1,1,immdll
+		if(stat == 0) {
+			prm = v1,1
+			dllproc "ImmSetOpenStatus",prm,2,immdll
+		}
+	}
+	await
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imestr
+	;IMEに文字列を送る
+	;................................................................................
+	#deffunc imestr var v1,str v2
+
+	#define	SCS_SETSTR 9
+	#define	SCS_CHANGEATTR 18
+	#define	SCS_CHANGECLAUSE $24
+
+	a = strlen(v2) : if(a >= 64) : alloc s,a + 1
+	s = v2
+	getptr p,s
+
+	prm = v1,SCS_SETSTR,0,0,p,a
+	dllproc "ImmSetCompositionStringA",prm,6,immdll
+	await
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imesend
+	;IMEにWM_IME_NOTIFYを送る
+	;................................................................................
+	#deffunc imesend var v1,int v2,int v3,int v4
+
+	; 0	候補ウィンドウを開くv3ページ
+	; 1	候補ウィンドウを閉じる
+	; 2	v3ページのv4番目の候補を選択
+	; 3	候補ウィンドウのv4番目のページを表示
+	;? 4	?
+	; 5	変換を決定、変換実行、戻す、キャンセル(v3:1～4)
+	;? 6	v3番目
+	; 7	候補ウィンドウのサイズを変える(v3:0～31)<-dwValueの値が使われているようだ
+	;? 8	ime
+
+	;#define	NI_OPENCANDIDATE		0x10
+	;#define	NI_CLOSECANDIDATE		0x11
+	;#define	NI_SELECTCANDIDATESTR		0x12
+	;#define	NI_CHANGECANDIDATELIST		0x13
+	;#define	NI_FINALIZECONVERSIONRESULT	0x14
+	;#define	NI_COMPOSITIONSTR		0x15
+	;#define	NI_SETCANDIDATE_PAGESTART	0x16
+	;#define	NI_SETCANDIDATE_PAGESIZE	0x17
+	;;#define	NI_IMEMENUSELECTED		0x18
+
+	;#define	CPS_COMPLETE	1
+	;#define	CPS_CONVERT	2
+	;#define	CPS_REVERT	3
+	;#define	CPS_CANCEL	4
+
+	_v3 = v3
+	a = 0,1,2,3,5,7
+	_v2 = a(v2)
+	if(_v2 == 5) : _v3++
+	_v2 += $10
+	prm = v1,_v2,_v3,v4
+	dllproc "ImmNotifyIME",prm,4,immdll
+	await
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imesetwnd ?
+	;................................................................................
+	#deffunc imesetwnd var v1,int v2,int v3,int v4,int v5,int v6,int v7,int v8
+
+	; immscw  imeval,  style  x,y,  x0,y0,x1,y1
+
+	;typedef _tagCOMPOSITIONFORM {
+	;    DWORD  dwStyle;       
+	;    POINT  ptCurrentPos;  
+	;    RECT   rcArea;        
+	;} COMPOSITIONFORM;
+
+	;style
+	;#define	CFS_DEFAULT		0x0
+	;#define	CFS_RECT		1
+	;#define	CFS_POINT		2
+	;#define	CFS_FORCE_POSITION	0x20
+	;#define	CFS_CANDIDATEPOS	0x40
+	;#define	CFS_EXCLUDE		0x80
+
+	mref v2,1
+	a = v2
+	a(2) = v3,v4,v5,v6,v7,v8
+	getptr p,a
+	prm = v1,p
+	dllproc "ImmSetCompositionWindow",prm,2,immdll
+	await
+	return
+
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;imegetcand ?
+	;................................................................................
+	;例)
+	;	#include "llmod.as"
+	;	#include "ime.as"
+	;
+	;	alloc buf,64*1024 : buf=""
+	;	mesbox buf,winx,winy,1
+	;	mb_id=0
+	;	imeinit ime,mb_id
+	;	imeopen ime
+	;
+	;	imestr  ime,"ｶﾝ"
+	;	imesend ime,0
+	;	imegetcand ime,tmp,1
+	;	if stat=0 : stop
+	;	if stat>63 : alloc tmp,stat	;必要なサイズ
+	;	imegetcand ime,tmp
+	;	objprm mb_id,tmp
+	;	alloc tmp,64
+	;	imeopen ime,1
+	;	stop
+	;
+
+	#deffunc imegetcand var v1,var v2,int v3
+
+	prm = v1
+	getptr prm.1,a
+	dllproc "ImmGetCandidateListCountA",prm,2,immdll
+	p = stat
+	if(p >= 64) : alloc a,p + 1 : alloc s,p + 1
+
+	prm = v1,0,0,p
+	getptr prm.2,a
+	dllproc "ImmGetCandidateListA",prm,4,immdll
+
+	s = "" : ss = ""
+	repeat a(2)
+		p = cnt + 6
+		ss = peek(a,a.p)
+		s += ss + "\n"
+	loop
+	alloc a,64
+
+	if(v3) : a = strlen(s) : else : v2 = s : a = 0
+	alloc s,64
+
+	return a
+
+	#undef	EM_LINEINDEX
+	#undef	EM_LINELENGTH
+	#undef	EM_SETSEL
+
+	#undef	EM_GETSEL
+	#undef	WM_GETTEXT
+	#undef	WM_GETTEXTLENGTH
+
+	#undef	SCS_SETSTR
+	#undef	SCS_CHANGEATTR
+	#undef	SCS_CHANGECLAUSE
+
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */

@@ -1,0 +1,11 @@
+; クッキーの書き込みCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/cookie_set.exe
+
+#runtime "hsp3cl"			; HSPCLランタイムを使用する
+
+	mes "Set-Cookie: hspauthor=onitama&HSP3.0; expires=Sunday, 31-Dec-2010 23:59:59 GMT\n"
+
+; ここでは"hspauthor=onitama&HSP3.0"という部分がクッキーに保存される文字列になっています。
+; "expires="以降にはクッキーの保存期限を記述します。

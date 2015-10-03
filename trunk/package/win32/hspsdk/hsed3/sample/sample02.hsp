@@ -1,0 +1,24 @@
+#include "hsedsdk.as"
+
+hsed_exist
+if stat == 0: mes "Script editor isn't found": stop
+
+hsed_getwnd ret, HGW_MAIN
+if stat: mes "Main window: Error(Error code: "+stat+")": else: mes "Main window: " + strf("%p", ret)
+
+hsed_getwnd ret, HGW_CLIENT
+if stat: mes "Client window: Error(Error code: "+stat+")": else: mes "Client window: " + strf("%p", ret)
+
+hsed_getwnd ret, HGW_TAB
+if stat: mes "Tab window: Error(Error code: "+stat+")": else: mes "Tab window: " + strf("%p", ret)
+
+hsed_getwnd ret, HGW_TOOLBAR
+if stat: mes "Toolbar: Error(Error code: "+stat+")": else: mes "Toolbar: " + strf("%p", ret)
+
+hsed_getwnd ret, HGW_STATUSBAR
+if stat: mes "Statusbar: Error(Error code: "+stat+")": else: mes "Statusbar: " + strf("%p", ret)
+
+repeat
+	hsed_getwnd ret, HGW_EDIT, cnt
+	if stat: break: else: mes "Footy("+cnt+"): "+strf("%p", ret)
+loop

@@ -1,0 +1,327 @@
+
+	;	2Dマップ編集ツール
+	;
+	;	パーツを組み合わせたマップを編集するための簡易ツールです。
+	;	[操作]
+	;	マウス左クリック = 選択中のパーツを置く
+	;	マウス右クリック = カーソル位置のパーツを選択する
+	;	(パーツは、画面下のパーツリストでも選択できます)
+	;	マップのスクロールは、カーソルキーで行なうことができます。
+	;	スペースキーを押しながら、左クリックドラッグでもスクロール可能。
+	;
+	;	編集したマップは、ファイルに保存することができます。
+	;	データは、「ファイル名.map」に保存されます。
+	;	また、設定項目(option windowの内容)が「ファイル名.txt」に出力されます。
+
+	;	ツールでは、設定項目も含めてセーブ・ロードすることができます。
+	;	option windowでは、以下の内容を変更することができます。
+	;	(設定変更を行なう場合は、「初期化」ボタンを押してください)
+	;
+	;		マップサイズ    : 編集するマップの全体サイズ
+	;		パーツサイズX,Y : パーツ1つあたりのサイズ
+	;		パーツファイル  : パーツの画像ファイル
+	;
+	goto *boot
+
+	;	簡易的な2Dマップ管理するルーチン
+	;
+
+#deffunc mapinit int _p1, int _p2
+
+	;	マップ初期化
+	;	mapinit vx,vy
+	;	(マップを初期化します)
+	;	vx=表示Xサイズ、vy=表示Yサイズ
+	;
+	cx=64:cy=64	; パーツXYサイズ
+	mapsx=32	; マップ全体Xサイズ
+	mapsy=32	; マップ全体Yサイズ
+	celname="mapbg.bmp"			; パーツ画像ファイル
+	csrc=ginfo_newid			; パーツのあるウィンドウID
+	buffer csrc
+	mapvx=_p1:mapvy=_p2			; 表示XYチップ数
+	vx=mapvx*cx:vy=mapvy*cy			; 画面内のマップ表示サイズ
+	return
+
+
+#deffunc mapload str _p1
+	;	マップ読み込み
+	;	(ファイルからマップを読み込みます)
+	;	mapload "filename"
+	;	(*.map)のファイルを読み込みます。
+	;	付加情報(*.txt)がある場合は、それも読み込みます。
+	;
+	fn=_p1
+	minf=getpath(fn,1)+".txt"
+	exist minf
+	if strsize>0 : gosub *load_minf
+	dim map,mapsx,mapsy
+	mapx=0:mapy=0				; マップ表示位置
+	bload fn,map
+	return
+
+
+*load_minf
+	;	付属情報ファイル(txt)をロード
+	;
+	notesel buf
+	noteload minf
+	i=0
+	noteget s1,i:i++
+	if s1!="$mapedit data" : dialog "付属情報が無効です" : return
+
+	repeat
+		if i>=notemax : break
+		noteget s1,i:i++
+		noteget s2,i
+		if s1="%mapsx" : mapsx = 0+s2 : i++
+		if s1="%mapsy" : mapsy = 0+s2 : i++
+		if s1="%celname" : celname = s2 : i++
+		if s1="%cx" : cx = 0+s2 : i++
+		if s1="%cy" : cy = 0+s2 : i++
+	loop
+	return
+
+
+#deffunc mapsave str _p1
+	;	マップ保存
+	;	(ファイルにマップを保存します)
+	;	mapsave "filename"
+	;	(*.map)のファイルを保存します。
+	;	付加情報(*.txt)も同時に保存します。
+	;
+	fn=_p1
+	bsave fn,map
+	minf=getpath(fn,1)+".txt"
+	;	付属情報ファイル(txt)を保存
+	buf="$mapedit data\n"
+	buf+="%mapsx\n"+mapsx+"\n"
+	buf+="%mapsy\n"+mapsy+"\n"
+	buf+="%celname\n"+celname+"\n"
+	buf+="%cx\n"+cx+"\n"
+	buf+="%cy\n"+cy+"\n"
+	notesel buf
+	notesave minf
+	return
+
+
+#deffunc mapdraw int _p1, int _p2
+
+	;	マップ描画
+	;	(マップを描画します)
+	;	mapdraw x,y
+	;	(x,y=描画開始位置)
+	;
+	gmode 0
+	xx=_p1:yy=_p2			; マップを描き始める位置
+	repeat mapvy
+	y=cnt
+	pos xx,y*cy+yy
+	repeat mapvx
+		celput csrc,map(mapx+cnt,mapy+y)
+	loop
+	loop
+	return
+
+;------------------------------------------------------------------
+
+*boot
+	;
+	;	簡易マップ編集ツール
+	;
+	ttl="簡易マップ編集ツール"
+
+	mapinit 11,9				; マップ初期化
+	toolwin = ginfo_newid			; ツール用ウィンドウID
+
+	screen 0,vx,vy+32
+	title ttl
+	fname=""
+
+	;	マップの配列変数初期化
+	dim map,mapsx,mapsy
+	mapx=0:mapy=0				; マップ表示位置
+
+*start
+	;	パーツ初期化
+	celload celname,csrc	
+	celdiv csrc,cx,cy			; パーツ分割を設定する
+	mapcode=0
+	mpsx=cx/2:mpsy=cy/2			; ミニパーツのサイズ
+	gsel csrc
+	x=ginfo_sx/cx:y=ginfo_sy/cy
+	mpn=x*y					; ミニパーツの表示数
+
+	gsel 0
+	cls 1
+	parts_x=0:parts_y=mapvy*cy
+	gosub *put_parts
+
+	;	ツールウィンドウ
+	screen toolwin,120,400,screen_tool
+	title "option window"
+	cls 1
+
+	ox=120:x=0:y=0
+	objsize ox,32
+	pos x,y
+	button "保存",*cmd_save
+	button "上書き",*cmd_save2
+	mes ""
+	button "読み込み",*cmd_load
+
+	new_sx = mapsx
+	new_sy = mapsy
+	new_celname = celname
+	new_cx = cx
+	new_cy = cy
+
+	mes ""
+	mes "マップサイズ:"
+	x=ginfo_cx:y=ginfo_cy
+	objsize 40,24
+	pos x+5,y:input new_sx
+	pos x+54,y:mes "x"
+	pos x+75,y:input new_sy
+	pos x,y+26
+	objsize 100,24
+	mes "パーツ画像"
+	input new_celname
+	objsize 40,24
+	mes "パーツXサイズ"
+	input new_cx
+	mes "パーツYサイズ"
+	input new_cy
+
+	objsize 60,24
+	button "初期化",*cmd_clr
+
+	gsel 0
+	handtool=0
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf 0,0,vx-1,vy-1				; 背景を消す
+
+	mapdraw	0,0					; マップ表示
+
+	redraw 1					; 描画終わり
+	await 20
+
+	if ginfo_act!=0 : goto *main
+
+	stick key,$11f					; キー入力
+
+	if key&1 : mapx-
+	if key&4 : mapx+
+	if key&2 : mapy-
+	if key&8 : mapy+
+	mapx=limit(mapx,0,mapsx-mapvx)
+	mapy=limit(mapy,0,mapsy-mapvy)
+
+	if key&$10 : goto *cmd_space
+	handtool=0
+
+	if key&$100 : goto *cmd_put
+	if key&$200 : goto *cmd_get
+
+	goto *main
+
+*cmd_space
+	if handtool : goto *cmd_hand1
+	if key&$100 {
+		handtool=1
+		handx=ginfo_mx:handy=ginfo_my
+		handmx=mapx:handmy=mapy
+	}
+	goto *main
+*cmd_hand1
+	if (key&$100)=0 {
+		handtool=0
+		goto *main
+	}
+
+	x=ginfo_mx-handx
+	y=ginfo_my-handy
+	mapx=handmx-(x/cx)
+	mapy=handmy-(y/cy)
+	mapx=limit(mapx,0,mapsx-mapvx)
+	mapy=limit(mapy,0,mapsy-mapvy)
+	goto *main
+
+*cmd_put
+	if mousey >=parts_y : goto *cmd_partssel
+	x=mousex/cx:y=mousey/cy
+	if y>=mapvy or x>=mapvx : goto *main
+	map(mapx+x,mapy+y)=mapcode
+	goto *main
+*cmd_partssel
+	if mousex<parts_x : goto *main
+	x=(mousex-parts_x)/mpsx
+	if x<mpn : mapcode=x : gosub *put_parts
+	goto *main
+
+*cmd_get
+	x=mousex/cx:y=mousey/cy
+	if y>=mapvy : goto *main
+	mapcode=map(mapx+x,mapy+y)
+	goto *main
+*cmd_save
+	dialog "map",17,"マップファイル"
+	if stat=0 : goto *main
+	fname = refstr
+*cmd_save2
+	if fname="" : goto *main
+	exname=getpath(fname,2)		; ファイル名の拡張子を取得
+	if exname="" : fname+=".map"	; 拡張子がなければ.mapを追加
+	title getpath(fname,8)+" - "+ttl
+	mapsave fname
+	goto *main
+*cmd_load
+	dialog "map",16,"マップファイル"
+	if stat=0 : goto *main
+	fname = refstr
+	title getpath(fname,8)+" - "+ttl
+	mapload fname
+	goto *start
+*cmd_clr
+	dialog "設定を更新するとデータはクリアされます。続行していいですか?",2
+	if stat=7 : goto *main
+
+	mapsx = new_sx
+	mapsy = new_sy
+	celname = new_celname
+	cx = new_cx
+	cy = new_cy
+
+	dim map,mapsx,mapsy
+	mapx=0:mapy=0				; マップ表示位置
+	goto *start
+
+;---------------------------------------------------------------------------
+
+*put_parts
+	;	パーツ一覧(ミニパーツ)表示
+	;
+	gmode 0
+	repeat mpn
+	pos cnt*mpsx+parts_x, parts_y
+	celput csrc,cnt,0.5,0.5
+	loop
+
+	color 255,0,0
+	x=mapcode*mpsx+parts_x:y=parts_y
+	line x+mpsx-1,y,x,y
+	line x+mpsx-1,y+mpsy-1
+	line x,y+mpsy-1
+	line x,y
+
+	return
+
+*putmes
+	sysfont 17
+	pos 0,0:color 255,255,255
+	mes "カーソルキーでマップを移動させてください。"
+	return
+

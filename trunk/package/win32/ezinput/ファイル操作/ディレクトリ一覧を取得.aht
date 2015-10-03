@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "dirlist"
+
+#define ディレクトリ一覧を格納する文字列型変数	""	;;str
+#define 一覧のためのファイルマスク	""	;;str
+#define ディレクトリ取得モード	"0"	;;str
+
+#ahtmes "dirlist "+ディレクトリ一覧を格納する文字列型変数+" , "+一覧のためのファイルマスク+" , "+ディレクトリ取得モード+

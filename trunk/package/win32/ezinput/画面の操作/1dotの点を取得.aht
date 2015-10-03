@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "pget"
+
+#define 画面上のX座標	"0"	;;str
+#define 画面上のY座標	"0"	;;str
+
+#ahtmes "pget "+画面上のX座標+" , "+画面上のY座標+

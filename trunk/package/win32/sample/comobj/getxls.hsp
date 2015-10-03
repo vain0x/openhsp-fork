@@ -1,0 +1,36 @@
+
+	;
+	;	xlsのデータを取得する
+	;
+	myname = "test.xls"
+	fname = dir_cur+"\\"+myname	; フルパスを作成する
+	;
+	newcom xlApp, "Excel.Application"
+	xlApp("Visible") = 0; Excelウィンドウは非表示
+	xlApp("DisplayAlerts") = 0; 警告メッセージを表示させない
+	xlBooks = xlApp("Workbooks") ; Workbooks コレクション取得
+	xlBooks->"Open" fname		; 指定ファイルを開く
+	xlBook = xlBooks("Item",myname)		; book取得
+	xlSheet = xlBook("Worksheets","Sheet1") ; Sheet取得
+	xlRange = xlSheet("Range","A1")
+	xlCurReg = xlRange("CurrentRegion")
+	xlRows = xlCurReg("Rows")
+	xlColumns = xlCurReg("Columns")
+
+	sy = 0+xlRows("Count")			; 縦の項目数を取得
+	sx = 0+xlColumns("Count")		; 横の項目数を取得
+
+	repeat sy:y=cnt
+	repeat sx:x=cnt
+		xlCur = xlRange("Offset",y,x)	; X,Yのセルを取得
+		data = xlCur("Text")		; 内容テキストを取り出す
+		mes "("+x+","+y+")="+data	; 表示する
+	loop
+	loop
+
+	;	COMのあとしまつ
+	delcom xlCur : delcom xlColumns : delcom xlRows
+	delcom xlCurReg : delcom xlRange : delcom xlSheet
+	delcom xlBook
+	xlBooks->"Close" : delcom xlBooks
+	xlApp->"Quit" : delcom xlApp

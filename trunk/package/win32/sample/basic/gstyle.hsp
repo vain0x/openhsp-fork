@@ -1,0 +1,24 @@
+
+	;
+	;	gstyle命令テスト
+	;
+
+	screen 0,320,24
+	cls 3
+	color 255,255,255
+	mes "新しいウインドゥスタイル"
+
+	screen 2,320,120,4
+	cls 2
+	mes "ID2以降のサイズ固定Window"
+
+	screen 3,320,120,8
+	cls 2
+	mes "ツールWindow(タスクバーに出ません)"
+
+	screen 4,320,120,16
+	cls 2
+	mes "縁の深いWindow"
+
+	stop
+

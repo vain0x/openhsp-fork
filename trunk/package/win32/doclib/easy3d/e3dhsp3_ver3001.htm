@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=SHIFT_JIS">
+<META name="GENERATOR" content="IBM WebSphere Studio Homepage Builder Version 9.0.0.0 for Windows">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<P><B><FONT size="+2">ver3.0.0.1での変更点</FONT></B><BR>
+<BR>
+<B>頂点シェーダー２．０</B>が付いているマシンではハードウェアで、それ以外のマシンでは、ソフトウェアで実行されます。<BR>
+頂点シェーダ２．０が付いているマシンでは、<B>旧バージョンの２から４倍程度の速度で描画できます</B>。<BR>
+<BR>
+<BR>
+頂点シェーダが無い場合の、<BR>
+ソフトウェア処理は、旧バージョンではオリジナルの頂点処理でしたが、<BR>
+新しいバージョンでは、DirectXに用意されているソフトウェア処理で描画します。<BR>
+これにより、<B>全ての環境で、sigの大きなポリゴンが見切れたときにも、画面が乱れなくなりました</B>。<BR>
+<BR>
+<BR>
+ハードウェアでボーン変形するようになったので、モデルデータに制限が出来ました。<BR>
+一つの頂点に影響するボーンの総数は<B>４個</B>までです。<BR>
+一つのパーツに影響するボーンの総数は<B>４４個</B>を超えると、描画処理にオーバーヘッドが生じます。<BR>
+<BR>
+当たり判定がバージョンアップしました。<BR>
+詳しくは、<A href="e3dhsp3_collision.htm">新しいあたり判定について</A>をご覧ください。<BR>
+<BR>
+<BR>
+ライトにも制限があります。<BR>
+対応するライトは、平行光源とポイントライトのみです。<BR>
+ライトの総数は３個まで画面に反映されます。<BR>
+<BR>
+<BR>
+updateflag引数について。<BR>
+E3DSetDiffuse, E3DSetAlpha, E3DSetAlpha2には、updateflag引数があります。<BR>
+旧バージョンでは、通常０を指定し、色計算をスキップするフラグを使用しているときのみ１を指定していましたが、<BR>
+新しいバージョンでは、常に、１を指定してください。<BR>
+引数を省略した場合には、自動的に１が適用されます。<BR>
+<BR>
+<BR>
+<BR>
+シェーダーの制限について。<BR>
+シェーダの肥大化を避けるために、色の計算方法にも制限をつけました。<BR>
+RokDeBone2の「色B」と頂点シェーダーでのトゥーン、ピクセルシェーダーでのトゥーンのみ有効です。<BR>
+E3DSetLightBlendModeも実装は見送りました。<BR>
+<BR>
+<BR>
+E3DCreateAfterImage、E3DGetCullingFlagは、内部データの持ち方が大きく変わったため、<BR>
+使用できなくなりました。<BR>
+<BR>
+<BR>
+<BR>
+関数を追加しました<BR>
+　　E3DGetMoaInfo<BR>
+　　　　moaファイルを読み込んだ場合の、モーションの名前とIDを取得します。<BR>
+　　　　使い方は、e3dhsp3b_MotionAccelerator.hspをご覧ください。<BR>
+　　E3DGetNextMotionFrameNo<BR>
+　　　　E3DSetNextMotionFrameNoでセットした内容を取得します。<BR>
+　　　　使い方は、e3dhsp3b_MotionAccelerator.hspをご覧ください。<BR>
+　　E3DGetScreenPos3<BR>
+　　　　スクリーン座標のZ成分も取得できるようになりました。<BR>
+　　　　このZ座標は、スプライトの描画時のZ指定に使用することが出来ます。<BR>
+　　　　使い方は、e3dhsp3b_pickvert.hspをご覧ください。<BR>
+<BR>
+<BR>
+<BR>
+<A href="index.htm">トップページに戻る</A><BR>
+</P>
+</BODY>
+</HTML>

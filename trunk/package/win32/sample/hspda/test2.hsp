@@ -1,0 +1,23 @@
+
+	#include "hspda.as"
+
+	;	•¶š—ñ‚Ìƒ\[ƒg
+	;
+	sdim st,1000
+	st={"peach
+apple
+orange
+banana
+kiwi
+grape"}
+
+	pos 0,0
+	mes st
+
+	sortnote st,0
+
+	pos 320,0
+	mes st
+
+	stop
+

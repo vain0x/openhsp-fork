@@ -1,0 +1,35 @@
+	;
+	;	objimage命令によるカスタムボタンの作成
+	;
+	buffer 1
+	picload "btn_normal.bmp"
+
+	screen 0,640,480
+	gradf ,,,, 1, 0, $c0
+
+	font "Arial",20
+	objmode 2
+	objsize 128,32
+	objimage 1, 0,0, 0,64, 0,32	; ボタン画像の指定
+	button gosub "CALL",*call
+	button "JUMP",*jmp
+
+	objimage -1			; 通常のボタンに戻す
+	button gosub "CALL",*call
+	button "JUMP",*jmp
+
+	font msgothic,20,1
+	color 255,255,255
+	pos 140,0:mes "←カスタムボタンです"
+	pos 140,64:mes "←通常のWindowsボタンです"
+
+	sysfont 17
+	pos 0,140
+	stop
+
+*jmp
+	mes "JUMP"
+	stop
+*call
+	mes "CALL"
+	return

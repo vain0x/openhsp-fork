@@ -1,0 +1,26 @@
+#include "hspext.as"
+
+
+	;	ディレクトリ一覧表示サンプル
+	;	(CHDIRを押すと、入力したディレクトリに移動します)
+	;
+	sdim dirbuf,32000
+	dirbuf=""
+	sel=0
+	ad=""
+	objsize 200,24:pos 0,30
+	listbox sel,200,dirbuf
+	button "Browse",*chg
+*getdir
+	color 255,255,255:boxf 0,0,640,24
+	color 0,0,0:pos 0,0:mes "DIR="+curdir
+	dirlist dirbuf,"*.*"
+	objprm 0,dirbuf
+	stop
+*chg
+	selfolder ad,"フォルダを選んでください。"
+	if stat : dialog "キャンセルされました" : stop
+	chdir ad
+	if stat : dialog "ERROR!"
+	goto *getdir
+

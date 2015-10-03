@@ -1,0 +1,76 @@
+
+	;
+	;	画像font maker
+	;
+
+	name="System"
+	sname="font"
+	anti=1
+
+	sx=32:sy=32
+	sx2=16:sy2=8
+
+	syscolor 15:boxf	; オブジェクトの表面色で背景を塗りつぶす
+	color 0,0,0
+
+	mes "HGIMG3及びmod_picfontモジュールで使用することができるフォント画像を生成します。"
+	mes "固定幅で、英文字のみのデータが作成可能です。"
+
+	objsize 100,24
+	pos 0,64
+	mes "フォント名"
+	input name
+
+	pos 120,64
+	mes "Xサイズ"
+	input sx
+
+	pos 240,64
+	mes "Yサイズ"
+	input sy
+
+	pos 0,120
+	mes "保存ファイル名(bmp形式)"
+	input sname
+	mes ""
+	chkbox "アンチエイリアス",anti
+
+
+	button "作成",*go
+	stop
+
+
+*go
+	screen 0,sx*sx2,sy*sy2
+	cls 4
+
+	buffer 3,sx*sx2*2,sy*sy2*2
+	cls 4
+	font name,sy*2,16
+	color 255,255,255
+
+	st=" ":i=0
+
+	repeat sy2
+		y=cnt*sy
+		repeat sx2
+		x=cnt*sx
+		poke st,0,i
+		pos x*2,y*2:mes st
+		i++
+		loop
+	loop
+
+	;bmpsave "font_"+name+".bmp"
+
+	gsel 0
+
+	gzoom sx*sx2,sy*sy2,3,0,0,sx*sx2*2,sy*sy2*2,anti
+
+	sname=getpath(sname,1)+".bmp"
+	bmpsave sname
+
+	dialog sname+"を保存しました。"
+
+	stop
+

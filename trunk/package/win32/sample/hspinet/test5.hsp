@@ -1,0 +1,72 @@
+#include "hspinet.as"
+
+	;
+	;	ftpサーバー上のファイル一覧を得る
+	;
+	title "ftp接続サンプル"
+	;
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	sdim m_adr,256
+	sdim m_user,256
+	sdim m_pass,256
+	sdim m_dir,256
+	sdim m_edit,64
+	sdim m_result,256
+
+	m_adr="127.0.0.1"
+	m_dir="/"
+	m_user="anonymous"
+	m_pass="a@a.com"
+
+	objsize 320,24
+	mes "ftp接続先"
+	input m_adr
+	mes "ユーザー名"
+	input m_user
+	mes "パスワード"
+	input m_pass
+	mes "ディレクトリ"
+	input m_dir
+	button "接続",*go
+	mes "ファイル一覧"
+	mesbox m_result,640,240
+	id_result = stat
+	stop
+
+*go
+	ftpopen m_adr,m_user,m_pass
+	if stat : goto *ftperror
+
+	m_result=""
+	;
+	m_result+="FTP接続しました。\n"
+	ftpresult res
+	m_result+=res
+	;
+	ftpdir mydir,m_dir
+	;
+	ftpdirlist
+	repeat
+		netexec mode
+		if mode : break
+		await 50
+	loop
+	if mode<0 : goto *ftperror
+
+	ftpdirlist2 res
+	m_result+=res
+
+	ftpclose
+	m_result+="FTP切断します。\n"
+
+	objprm id_result,m_result
+	stop
+
+*ftperror
+	ftpresult res
+	m_result="FTP接続エラー。\n"+res
+	objprm id_result,m_result
+	stop
+

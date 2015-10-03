@@ -1,0 +1,84 @@
+#include "hspdx.as"
+#include "hsp3util.as"
+
+	;
+	;	HSPDX.DLL sample4
+	;		リンゴをいっぱい表示。
+	;		[ESC]キーで終了
+	;
+
+	;------------------------------------------------------------------
+
+	wx=640:wy=480
+	es_ini					; system初期化
+	es_screen wx,wy,32,,1,1			; スクリーン初期化
+	if stat=1 : goto *dderr1
+	if stat=2 : goto *dderr2
+
+	goto *start				; 正常に完了
+
+*dderr1
+	dialog {"DirectXの初期化に失敗しました。
+
+"},1
+	end
+*dderr2
+	dialog {"スクリーンの初期化に失敗しました。
+"},1
+	end
+*dderr3
+	es_bye
+	wait 100
+	dialog {"VRAMの容量が不足しています。
+"},1
+	end
+
+	;------------------------------------------------------------------
+
+*start
+
+	chrsx=64:chrsy=64			; キャラクタのサイズを指定
+
+	buffer 3,,,1
+	bmppalette "testchr.bmp"
+	picload "testchr.bmp"
+	es_buffer 0,2
+	if stat : goto *dderr3
+
+	es_size 64,64,60
+	es_pat 0, 0,64
+
+	es_area -64,-64,wx,wy			; 画面ボーダー設定
+
+	gsel 0,1
+	es_cls
+	es_sync
+	wait 100
+
+	repeat 100
+	a=rnd(64):spd=rnd(10)*25+250
+	x=rnd(640):y=rnd(480)
+	es_set cnt,x,y,0
+	es_adir cnt,a,spd
+	es_flag cnt,$6200			; X,Yバウンド設定
+	loop
+
+*gmain
+	es_cls
+	stick ky,$1f				; キーの情報を取得
+	if ky&$e0 : goto *owari			; [ESC]中断チェック
+
+	es_draw
+
+	pos 0,0:es_mes "Bench="+tt
+
+	es_sync 16				; 1/60?
+	tt=stat
+	await 0
+	goto *gmain
+
+*owari
+	es_bye
+	end
+
+

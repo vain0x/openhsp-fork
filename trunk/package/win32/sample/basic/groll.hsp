@@ -1,0 +1,41 @@
+
+	;
+	;	マウスドラッグで描画領域をスクロールさせる
+	;	( groll命令を使用したテスト )
+	;
+	screen 0,1200,600,0,,,480,360
+	repeat 6
+		y=cnt*100:i=cnt
+		repeat 12
+		x=cnt*100
+		if i&1 : color 255,0,0 : else : color 0,0,255
+		boxf x,y,x+100,y+100
+		i++
+		loop
+	loop
+
+	color 255,255,255
+	font msgothic,120
+	pos 20,320: mes "スクロールできます。"
+
+*main
+	stick key,$300
+	if key&$100 {
+		x=ginfo_vx : y=ginfo_vy
+		mx = ginfo_mx : my = ginfo_my
+		goto *main2
+	}
+	await 15
+	goto *main
+*main2
+	stick key,$300
+	if (key&$100)=0 : goto *main
+	groll x+(mx-ginfo_mx),y+(my-ginfo_my)
+	await 15
+	goto *main2
+
+
+
+
+
+

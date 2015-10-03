@@ -1,0 +1,16 @@
+; クッキーの内容を取得するCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/cookie_get.exe
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+
+#include "mod_getenv.as"
+
+	mes "Content-type: text/html\n"		; 出力先をHTMLページに指定
+
+	sdim a,256				; 文字変数aを256バイトで用意
+	getenv a,"HTTP_COOKIE"			; クッキーの内容を変数aに取得
+
+	mes "環境変数を表示します。<br>"
+	mes "HTTP_COOKIE:"+a			; クッキーの内容を表示

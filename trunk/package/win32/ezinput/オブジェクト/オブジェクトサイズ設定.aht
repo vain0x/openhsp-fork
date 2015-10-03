@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "objsize"
+
+#define オブジェクトのX方向のサイズ	"64"	;;str
+#define オブジェクトのY方向のサイズ	"24"	;;str
+#define Y方向の最低確保行サイズ 	"0"	;;str
+
+#ahtmes "objsize "+オブジェクトのX方向のサイズ+" , "+オブジェクトのY方向のサイズ+" , "+Y方向の最低確保行サイズ +

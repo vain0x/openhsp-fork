@@ -1,0 +1,301 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=SHIFT_JIS">
+<META name="GENERATOR" content="IBM WebSphere Studio Homepage Builder Version 9.0.0.0 for Windows">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<P><FONT size="+2"><B>Easy3D For HSP3　HSP2.61版からの変更点</B></FONT></P>
+<P><BR>
+HSP2.61版から変わった点は、<BR>
+１，実数対応になった。<BR>
+２，スワップチェインが使えるようになった。<BR>
+の主に2点です。<BR>
+<BR>
+<B>まずは、１の実数対応について。</B><BR>
+ＨＳＰ３からは、数値に整数だけでなく、実数が使えるようになりました。<BR>
+これで、小数点が混じった値も、少ない誤差で、使用できることになります。<BR>
+<BR>
+Easy3D For HSP3では、<BR>
+座標値、ベクトル（法線など）、角度、影響度、ＵＶ値などを実数型の引数に変更しました。<BR>
+これにより、いままで、実際の値の１００００倍とか100倍とかの整数で使用してきた引数が、<BR>
+誤差の少ない実数に変更になりました。<BR>
+<BR>
+<BR>
+<BR>
+<B>次にスワップチェインについて。</B><BR>
+スワップチェインとは、複数の画面に３Ｄ描画を行うための機構です。<BR>
+この機能を使うと、2つ以上のウインドウに、３Ｄ描画を行ったり、<BR>
+１つのウインドウ内に、複数のボタンを配置し、その上にそれぞれ、３Ｄ描画を行ったりが出来るようになります。<BR>
+<BR>
+Easy3D For HSPでは、scidというスワップチェインを識別するためのＩＤが追加されました。<BR>
+このＩＤは、E3DInitや、E3DCreateSwapChainで取得できるもので、<BR>
+どこの画面に描画するのか、ということを、プログラムに知らせるために使います。<BR>
+画面を識別するための番号、と覚えておいてください。<BR>
+<BR>
+実際の使い方については、関数表のE3DCreateSwapChainの説明と、サンプルe3dhsp3_SwapChain.asをご覧ください。<BR>
+<BR>
+<BR>
+<B>その他の変更</B><BR>
+stat変数への出力をやめて、<BR>
+明示的に、変数で、値を受け取るようになりました。<BR>
+<BR>
+<BR>
+<B>実数対応で、注意するべき点</B><BR>
+実数に対応したことで、注意する点があります。<BR>
+配列変数でなければ、型を整数にしたり、実数にしたりは、かなり自由度が高いですが、<BR>
+配列を使用する場合には、注意してください。<BR>
+<BR>
+実数を格納するための配列は、dimではなくて、ddimで作成します。<BR>
+下の関数表で、<FONT color="#ff0000"><B>「実数型の変数」と書いてある引数に、dimで確保したメモリを渡すと、エラーとなります。</B></FONT><BR>
+実数型の配列は、必ず、ddimで作成してください。<BR>
+<BR>
+<BR>
+<B>バッファからの読み込み関数について。</B><BR>
+Easy3Dには、バッファからモデルデータやモーションなどを読み込む関数があります。<BR>
+これらの関数に渡すbuf引数には、多次元配列を渡さないでください。<BR>
+sdim buf, SIZE<BR>
+のように作成したメモリを渡してください。<BR>
+<BR>
+<BR>
+<BR>
+<B>最後に、HSP2.61版から、引数が増えたり減ったりした関数と<BR>
+引数の倍率が変わった関数を、羅列しておきます。<BR>
+</B><BR>E3DInit<BR>
+　　関数タイプ変更<BR>
+　　COM初期化をなしに<BR>
+　　第一引数にwid、第2引数にobjid追加<BR>
+　　最後の引数に、scidを追加<BR>
+<BR>
+E3DSigLoad<BR>
+　　mult100 --&gt; mult　100倍をやめる。<BR>
+<BR>
+E3DRender <BR>
+　　scid追加<BR>
+			<BR>
+E3DPresent<BR>
+　　scid追加<BR>
+<BR>
+E3DCreateBG<BR>
+　　scid追加<BR>
+　　uanim, vaminを実数に。<BR>
+	<BR>
+E3DSetBGU, E3DSetBGV<BR>
+　　scid追加<BR>
+　　startu10000, endu10000を実数に。 <BR>
+	<BR>
+E3DDestroyBG<BR>
+　　scid追加<BR>
+				<BR>
+E3DBeginScene<BR>
+　　scid追加<BR>
+	<BR>
+E3DSetNewPose, E3DSetNewPause<BR>
+　　frameno引数追加。<BR>
+　　stat出力止め<BR>
+	<BR>
+E3DChkConflict, E3DChkConflict2<BR>
+　　inviewflag追加<BR>
+　　stat出力止め<BR>
+<BR>
+E3DSetAlpha2<BR>
+　　mult引数削除<BR>
+　　alphavalを実数に。<BR>
+	<BR>
+E3DSetPos<BR>
+　　posx, posy, poszを実数に。<BR>
+<BR>
+E3DChkInView<BR>
+　　scid引数追加 <BR>
+<BR>
+	<BR>
+E3DRotateX, E3DRotateY, E3DRotateZ<BR>
+　　mult引数削除<BR>
+　　角度を実数に<BR>
+	<BR>
+E3DCloseTo<BR>
+　　movestep追加<BR>
+	<BR>
+E3DCos, E3DSin, E3DACos, E3DDot, E3DCross, E3DAtan, E3DAtan2, E3DSqrt<BR>
+　　mult, degmult引数削除<BR>
+　　実数対応<BR>
+	<BR>
+E3DWaitByFPS<BR>
+　　retfps引数追加<BR>
+　　stat出力止め <BR>
+		<BR>
+E3DRenderSprite<BR>
+　　scalex, scaley は100倍の値ではなく、実倍率の実数<BR>
+<BR>
+E3DSetSpriteRotation<BR>
+　　mult引数削除<BR>
+　　degを実数に<BR>
+				<BR>
+E3DChkConfBillboard2, E3DChkConfBillboard<BR>
+　　confrate100 --&gt; 100倍でなく実倍率の実数<BR>
+		<BR>
+E3DChkConfGround<BR>
+　　nx10000, ny10000, nz10000の1万倍をやめる。実倍率。<BR>
+<BR>
+E3DGetVertPos, E3DSetVertPos<BR>
+　　mult引数削除。位置を実数に。<BR>
+						<BR>
+E3DRenderBillboard<BR>
+　　scid引数追加 <BR>
+<BR>
+E3DLoadMQOFileAsGround<BR>
+　　mult100の100倍をやめ、実倍率の実数<BR>
+	<BR>
+E3DChkConfWall, E3DChkConfWall2<BR>
+　　nx10000, ny10000, nz10000の1万倍をやめ、実倍率の実数。<BR>
+		<BR>
+E3DVec3Normalize<BR>
+　　mult引数廃止。<BR>
+	<BR>
+E3DVec3RotateY<BR>
+　　degmult引数廃止。<BR>
+	<BR>
+E3DSetSoundTempo<BR>
+　　tempo100をtempoに。<BR>
+	<BR>
+E3DSet3DSoundListener<BR>
+　　doppler100, rolloff100の100倍を止め。<BR>
+	<BR>
+E3DSet3DSoundDistance<BR>
+　　min100, max100の１００倍を止める。<BR>
+	<BR>
+E3DControlByNaviLine<BR>
+　　dirstep100の100倍をやめ。<BR>
+　　newqx10000, newqy10000, newqz10000の１００００倍をやめ。<BR>
+	<BR>
+E3DSetDirQ, E3DGetDirQ<BR>
+　　qx10000, qy10000, qz10000, qw10000の１００００倍をやめる。<BR>
+	<BR>
+			<BR>
+E3DSetScale<BR>
+　　mult引数廃止<BR>
+					<BR>
+<BR>
+E3DGetScreenPos, E3DGetScreenPos2<BR>
+　　scid追加<BR>
+		<BR>
+E3DSetQAxisAndDeg<BR>
+　　degmult引数廃止。<BR>
+	<BR>
+E3DGetQAxisAndDeg<BR>
+　　取得される数は、１００００倍ではなくて、実倍率の実数。<BR>
+	<BR>
+E3DRotateQX, E3DRotateQY, E3DRotateQZ<BR>
+　　mult引数廃止。<BR>
+	<BR>
+E3DTwistQ<BR>
+　　degmult引数廃止<BR>
+	<BR>
+E3DGetTwistQ<BR>
+　　twist10000の１００００倍をやめる。<BR>
+	<BR>
+E3DRotateQLocalX, E3DRotateQLocalY, E3DRotateQLocalZ<BR>
+　　degmult引数廃止。<BR>
+	<BR>
+E3DCreateLine<BR>
+　　posptr 座標が実数になったので、配列作成時は、dimではなくて、ddimで作成しないとエラー<BR>
+	<BR>
+E3DDrawTextByFontID, E3DDrawTextByFontIDWithCnt, E3DDrawTextByFontIDWithCnt2<BR>
+　　表示文字数を、４０９６バイトまでに制限 <BR>
+　　scid引数追加。<BR>
+	<BR>
+E3DGetCharacterNum<BR>
+　　４０９６バイトの文字列まで対応。<BR>
+			<BR>
+E3DSlerpQ, E3DSquadQ<BR>
+　　tdiv引数廃止<BR>
+	<BR>
+E3DSplineVec<BR>
+　　位置を実数に。ddimで確保した変数でないとエラー。<BR>
+　　tdiv引数廃止。<BR>
+		<BR>
+E3DPickVert<BR>
+　　scid引数追加<BR>
+	<BR>
+E3DSetIM2Params, E3DGetIM2Params<BR>
+　　関数廃止<BR>
+　　InfElemをお使いください。<BR>
+	<BR>
+E3DSigImport, E3DSigLoadFromBuf<BR>
+　　mult100の100倍をやめ。 <BR>
+	<BR>
+E3DChkConfLineAndFace<BR>
+　　nx, ny, nzの10000倍をやめる。<BR>
+	<BR>
+E3DRdtscStop<BR>
+　　timeを実数に。<BR>
+		<BR>
+E3DCameraShiftLeft, E3DCameraShiftRight, E3DCameraShiftUp, E3DCameraShiftDown<BR>
+　　shift実数<BR>
+				<BR>
+E3DSetCameraTwist<BR>
+　　mult引数廃止。<BR>
+<BR>
+E3DIKRotateBeta, E3DIKRotateBeta2D<BR>
+　　scid追加<BR>
+	<BR>
+E3DConvScreenTo3D<BR>
+　　z100000の１０００００倍を止める。<BR>
+　　scid引数追加。<BR>
+		<BR>
+E3DSetUV, E3DGetUV<BR>
+　　u10000, v10000の１００００倍をやめる。<BR>
+	<BR>
+E3DShiftBoneTree2D<BR>
+　　scid引数追加<BR>
+	<BR>
+E3DRotateBillboard<BR>
+　　mult引数廃止<BR>
+	<BR>
+E3DRasterScrollTexture<BR>
+　　param1div, param2div引数廃止<BR>
+　　param1, param2を実数に。<BR>
+	<BR>
+E3DLoadGndFile<BR>
+　　mult100の100倍をやめる。<BR>
+	<BR>
+E3DTwistBone<BR>
+　　divdeg引数廃止<BR>
+		<BR>
+E3DImportMQOFileAsGround, E3DLoadMQOFileAsMovableAreaFromBuf<BR>
+E3DLoadMQOFileAsGroundThread, E3DSigLoadThread,<BR>
+E3DSigLoadFromBufThread, E3DLoadMQOFileAsMovableAreaThread,<BR>
+E3DLoadMQOFileAsMovableAreaFromBufThread, <BR>
+E3DLoadGndFileThread, <BR>
+　　mult100の100倍をやめる。<BR>
+	<BR>
+		<BR>
+E3DSetSpecularPower<BR>
+　　mult引数廃止。<BR>
+			<BR>
+E3DGetSpecularPower<BR>
+　　pow100の100倍をやめる。<BR>
+	<BR>
+E3DGetInfElem<BR>
+　　userrate10000, orginf10000, dispinf10000の10000倍をやめる。<BR>
+　　(userrateは％)<BR>
+				<BR>
+E3DSetInfElem<BR>
+　　userrate, directvalの10000倍を止める。<BR>
+　　(userrateは％) <BR>
+						<BR>
+E3DChkConfGroundPart, E3DChkConfGroundPart2<BR>
+　　nx10000, ny10000, nz10000の10000倍をやめる。<BR>
+	<BR>
+								<BR>
+E3DPickFace <BR>
+　　scid追加。 <BR>
+<BR>
+E3DCos, E3DSin, E3DAtan, E3DAtan2, E3DDot, E3DCross<BR>
+　　実数対応に伴い、係数などの引数を削除。<BR>
+<BR>
+</P>
+</BODY>
+</HTML>

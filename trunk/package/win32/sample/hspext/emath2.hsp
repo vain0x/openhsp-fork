@@ -1,0 +1,27 @@
+
+#include "hspext.as"
+
+	;
+	;	固定小数による数学関数テスト2
+	;
+
+	fp=24
+	emath fp
+	mes "小数の精度 = "+fp+"bit"
+
+	b1=""
+	b2=""
+
+	pos 0,64
+	emcnv a,"2.0"
+	emcnv p,"1.0"
+	repeat 15
+	emsqr ans,a
+	emstr b1,a
+	emstr b2,ans
+	mes b1+"のルート = "+b2
+	a=a+p
+	loop
+
+	stop
+

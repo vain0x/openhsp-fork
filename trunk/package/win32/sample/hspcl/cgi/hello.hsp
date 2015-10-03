@@ -1,0 +1,9 @@
+; 最も簡単なCGIプログラム
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/hello.exe
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+
+	mes "Content-type: text/html\n"		; 出力先をHTMLページに指定
+	mes "HSP-CGIの世界へようこそ！"		; メッセージを表示

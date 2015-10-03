@@ -1,0 +1,680 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3">
+	<meta name="description" content="HSP3の概要">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3 概要</title>
+</head>
+<body>
+	<div id="CONTAINER">
+		<!-- ヘッダー -->
+		<p id="COPY">HSP : Hot Soup Processor ver3.2 / onion software 1997-2009(c)</p>
+		<img src="hsp3ttl.jpg" alt="タイトル" width="640" height="200">
+		<h1>HSP3 概要</h1>
+
+		<!-- 目次 -->
+		<ol>
+			<li><a href="#ABOUT_HSP">HSPとは？</a></li>
+			<li><a href="#DOUSA_ENV">動作環境</a></li>
+			<li><a href="#PACKAGE">パッケージ構成</a></li>
+			<li><a href="#INSTALL">インストール</a></li>
+			<li><a href="#DEMO">デモンストレーション</a></li>
+			<li><a href="#CHANGE31">HSP3.1からの変更点</a></li>
+			<li><a href="#CHANGE2">HSP2からの変更点</a></li>
+			<li><a href="#EDITOR">スクリプトエディタ</a></li>
+			<li><a href="#BROWSER">HSPTVブラウザ</a></li>
+			<li><a href="#PEAS">Peasエディタ</a></li>
+			<li><a href="#SUPPORT">HSPのサポート</a></li>
+			<li><a href="#USERCOM">HSPユーザーコミュニティ</a></li>
+			<li><a href="#LICENCE">HSPによって作られたソフトウェアのライセンスについて</a></li>
+			<li><a href="#COPYRIGHT">著作権、ライセンスについて</a></li>
+			<li><a href="#LANG_SPEC">言語仕様の管理について</a></li>
+			<li><a href="#EDUCATION">教育用途の使用について</a></li>
+			<li><a href="#MESSAGE">作者より</a></li>
+			<li><a href="#THANKS">謝辞</a></li>
+		</ol>
+
+		<h2 id="ABOUT_HSP">HSPとは?</h2>
+		<p>
+			<abbr title="Hot Soup Processor">HSP</abbr>は、誰でも手軽に使うことのできるスクリプト言語システムです。
+			テキストによるスクリプトを書くだけで、簡単にWindows上で動作する、
+			画像を使ったゲームプログラム、スクリーンセーバー、ツールや実用ソフトなどのアプリケーションを
+			構築することができます。
+		</p>
+		<p>
+			HSPには、次のような特長があります。
+		</p>
+		<ul>
+			<li>簡単に覚えられる強力な命令セットと付属エディタにより初心者でもすぐに使い始めることができます</li>
+			<li>作ったプログラムは実行ファイルに変換して自由に再配布が可能、ライセンス料も不要です</li>
+			<li>拡張プラグイン・モジュールにより3D表示や通信など数多くの機能を追加可能です</li>
+			<li>10年以上に渡る多くのユーザー資産と使用実績があります</li>
+			<li>詳細なマニュアルとリファレンスヘルプシステムを装備しています</li>
+			<li>純国産のツールとして書籍資料なども豊富です</li>
+			<li>マウス操作によりスクリプトを作成する簡易プログラミングシステムを利用できます</li>
+			<li>同梱されたHSPLetのJava変換機能によりWEBブラウザ上でも動作させることができます</li>
+			<li>インタプリタ動作仕様はオープンソースとして公開されています</li>
+		</ul>
+		<p>
+			HSPはあなたのアイデア次第で色々な場面で使用できます。
+		</p>
+		<ul>
+			<li>ビジュアルノベルから本格的な3Dシューティングまで様々なジャンルのゲーム作成に</li>
+			<li>デスクトップアクセサリ、スクリーンセーバーの作成に</li>
+			<li>画面レイアウトの試作、画像データの変換などの即席ツールに</li>
+			<li>プログラムランチャー、メニュー、ＣＧ集、音楽集などのメディアブラウザに</li>
+			<li>その他、本格的なアプリケーションも開発可能です</li>
+		</ul>
+
+		<h2 id="DOUSA_ENV">動作環境</h2>
+		<ul>
+			<li>Microsoft Windows 98 / Me</li>
+			<li>Microsoft Windows 2000、XP ( NT4.0以降を含む )、Vista、7</li>
+		</ul>
+		<p>
+			HSP3.2は32bitアプリケーションの動作するほぼすべてのWindowsで動作します。
+			Microsoft Windows 95 上で動作させるためには、InternetExplorer4.0以降がインストールされている必要があります。
+		</p>
+		<p>
+			640×480以上の解像度と、256色以上の表示が可能なディスプレイが必要
+			になります。必要なメモリ量は表示する画像サイズなどで変化します。
+		</p>
+		<p>
+			HSPは単体で動作します。それ以外のDLLやランタイムをインストール
+			する必要はありません。
+		</p>
+
+		<h2 id="PACKAGE">パッケージ構成</h2>
+		<p>
+			HSP3.2フルセットは、オープンソースとして公開されているOpenHSP技術をベースに、
+			Windows上で手軽にプログラミングを楽しむことができるよう構成されています。
+			スクリプトを記述するための「HSPスクリプトエディタ」を始めとして、
+			視覚的にプログラムの動作を確認することができるツール「Peas」、
+			WEBブラウザ上でHSPスクリプトを動作させる仕組みを提供する「HSPLet」などを備えた、
+			初心者から上級者まで、あらゆる場面で幅広く使うことのできる統合的な開発環境となっています。
+		</p>
+
+		<h2 id="INSTALL">インストール</h2>
+		<p>
+			HSP3.2フルセットは、インストーラー付きのバージョンと圧縮ファイル版が用意されています。
+			インストーラーを起動するか、または任意のディレクトリにファイルを解凍する
+			ことで使用できるようになります。
+		</p>
+		<p>
+			HSP3.2以前のバージョンが既にインストールされている場合は、以前のものをアンインストール
+			してから、新しいバージョンをインストールすることを推奨します。
+			ただし、HSP3.2のインストーラーは、インストール先のフォルダ以外にファイルの追加を行ないませんので、
+			以前のバージョンと競合することはありません。(過去のバージョンと同時に利用することも可能です。)
+		</p>
+		<p>
+			Windows 2000やXP等では、HSP3.2のインストールフォルダに書き込み権限が必要になります。
+			インストーラーのデフォルトディレクトリ(/HSP32)にインストールを行なった場合なども、
+			管理者権限を持ったユーザーで実行するようにしてください。
+		</p>
+		<p>
+			Windows Vistaをお使いの方は、User Account Control (UAC) の機能により、
+			インストールの際に管理者権限を要求されることがあります。
+			この時は、管理者権限で処理を続行して頂くようお願い致します。
+		</p>
+
+		<h2 id="DEMO">デモンストレーション</h2>
+		<p>
+			まず、「スタートメニュー」のプログラムグループから「Hot Soup Processor 3.2」→「サンプルデモ」
+			を起動させてみてください。HSPのサンプルデモが始まります。
+			（メニュー登録されていない場合は、展開されたディレクトリにある、HSP3DEMO.EXEを起動させてみてください。）
+		</p>
+		<p>
+			このデモは実際にHSPを使って動作しています。メニューから項目を選択することで、
+			色々なデモンストレーションを見ることができます。
+		</p>
+		<p>
+			また、「スタートメニュー」のプログラムグループから「Hot Soup Processor 3.2」→「サンプルスクリプト」
+			を選択することで。HSPサンプルスクリプトを閲覧するための「サンプルビューアー」が起動します。
+			「サンプルビューアー」では、マウス操作だけで同梱のサンプルを選択して、
+			すぐに実行させることができます。
+			また、スクリプトエディタに指定したサンプルスクリプトを読み込ませることも可能です。
+		</p>
+
+		<h2 id="CHANGE31">HSP3.1からの変更点</h2>
+		<p>
+			HSP3.2では、上位互換となる形で機能の修正と追加を行なっています。
+			HSP3.1で動作していたスクリプトは、ほとんどの場合、修正することなくHSP3.2で動作させることができます。
+			詳しくは、<a href="update.htm">アップデートガイド</a>を参照してください。
+		</p>
+		<p>
+			HSP3.2フルセットでは、HSP3.1から主に以下の要素が追加されています。
+		</p>
+		<dl>
+			<dt>本体機能の拡充</dt>
+			<dd>
+				<p>
+					HSP3.1の利便性をさらに高めるため、多くの機能追加と不具合の修正を行なっています。
+					すべてのツール、ドキュメント、サンプルを見直すことで、より細かい要求に応えるものとなっています。
+					また、エラー表示の改善や、実行速度の向上も行なわれています。
+				</p>
+			</dd>
+			<dt>手軽に利用できる新機能</dt>
+			<dd>
+				<p>
+					HSP3.2では、標準命令を大幅に拡充しています。
+					いままで難しかった処理や、手間のかかる記述が効率化され、幅広い場面での利便性が向上します。
+					新機能は、グラフィック、文字列、配置オブジェクト、ラベル変数、プリプロセッサなどすべての項目に渡って拡充されています。
+					また、付属ツールの更新や新規ツール追加により、ソフトウェア製作をより強力にサポートします。
+				</p>
+			</dd>
+			<dt>充実したサンプルスクリプト</dt>
+			<dd>
+				<p>
+					新機能を使ったサンプルはもちろん、各種アプリケーションで必要なサンプルやモジュール、
+					さらに色々なジャンルのゲームに使用できる実践的なサンプルを数多く追加しています。
+					その数は、２５０種類以上に及びます。きっとあなたの目的に合ったサンプルが見つかるはずです。
+				</p>
+			</dd>
+			<dt>かんたん入力機能</dt>
+			<dd>
+				<p>
+					HSP3.1の「かんたん入力」を大幅にパワーアップ。
+					機能のカテゴリから、逆引きで命令を検索することができ、さらにパラメーターの
+					入力機能や、ヘルプ参照機能も備えています。
+				</p>
+			</dd>
+			<dt>新しいヘルプマネージャー</dt>
+			<dd>
+				<p>
+					S.Programs氏製作によるHDL(HSP Document Library)を標準で内蔵しています。
+					ヘルプだけでなく、サンプルやドキュメントも含めて閲覧、検索をすることができます。
+					非常に多機能なブラウザにより、ヘルプの使い勝手も向上しています。
+				</p>
+			</dd>
+			<dt>強力な3Dプラグイン</dt>
+			<dd>
+				<p>
+					HSP3.2には、2つの強力な3Dプラグインが同梱されています。
+					新たに地形メッシュやコリジョン自動移動、カメラ自動制御などに対応したHGIMG3プラグイン。
+					そして、シェーダー対応により高機能、高速化されたEasy3Dプラグイン。
+					どちらも、最新の技術をHSPから手軽に呼び出し、3Dゲームや3Dアプリケーションを
+					構築することができます。
+				</p>
+			</dd>
+			<dt>llmod3</dt>
+			<dd>
+				<p>
+					HSP2.61までの資産を引き継ぐ形で、従来のllmodと呼ばれるモジュールを利用可能にしています。
+					モジュールを追加するだけで、システムやオブジェクト関連の多彩な機能をサポートします。
+				</p>
+			</dd>
+		</dl>
+
+		<h2 id="CHANGE2">HSP2からの変更点</h2>
+		<p>
+			HSP3は、以前までの仕様とプログラムを大幅に見直し、再構築したHSPの最新バージョンです。
+			ver2.61までに培われた親しみやすさ、習得のしやすさ、シンプルさといった資産を継承しながら、
+			より幅広い応用と汎用性を持たせた環境を提供すべく開発されています。
+		</p>
+		<p>
+			以前のバージョンからの変更点や移行のための手順は、
+			<a href="update.htm">アップデートガイド</a>を参照してください。
+		</p>
+
+
+		<h2 id="EDITOR">スクリプトエディタ</h2>
+		<p>
+			HSPスクリプトエディタ(HSED3.EXE)は、HSPのスクリプトを手軽に編集、実行
+			することができる専用のテキストエディタです。
+			余計な準備をすることなく、直接スクリプトを書いてF5キーを押すだけで実行させることができます。
+		</p>
+		<p>
+			キーワードのヘルプ参照(F1キー)や、かんたん入力などの支援機能も豊富に搭載されています。
+		</p>
+		<p>
+			スクリプトエディタの使用方法、スクリプトの詳細については、
+			<a href="hspprog.htm">プログラミングマニュアル</a>をお読み下さい。
+		</p>
+
+		<h2 id="BROWSER">HSPTVブラウザ</h2>
+		<img src="img/tvscr.jpg" alt="HSPTVブラウザ スクリーンショット" width="280" height="219" style="float:right;">
+		<p>
+			HSPTVブラウザを使用することにより、オンライン上のHSP情報、最新ソフトウェアを手軽に
+			ダウンロードして楽しむことができます。
+		</p>
+		<p>
+			「スタートメニュー」のプログラムグループから「Hot Soup Processor 3.2」→「HSPTVブラウザ」
+			を選択することで、HSPTVブラウザが起動されます。
+			(メニュー登録されていない場合は、展開されたディレクトリにある、HSPTV.EXEを起動させてみてください。)
+		</p>
+		<p>
+			HSPTVブラウザは、ネットワークに接続して自動的に最新の情報へ更新します。
+			必ずネットワークへの接続と、設定の確認を行なってください。
+		</p>
+		<p>
+			HSPTVブラウザについての詳細は、<a href="hsptv.htm">別途マニュアル（hsptv.htm）</a>を参照してください。
+		</p>
+
+		<h2 id="PEAS">Peasエディタ</h2>
+		<img src="img/s_peas.jpg" alt="Peasエディタ スクリーンショット" width="320" height="249" style="float:right;">
+		<p>
+			Peasエディタを使用することにより、既存のひな形(テンプレート)を組み合わせて、
+			スクリプトを自動的に生成することができます。
+		</p>
+		<p>
+			「スタートメニュー」のプログラムグループから「Hot Soup Processor 3.2」→「Peasエディタ」
+			を選択することで、Peasエディタが起動されます。
+			（メニュー登録されていない場合は、展開されたディレクトリにある、AHTMAN.EXEを起動させてみてください。）
+		</p>
+		<p>
+			Peasエディタについての詳細は、<a href="peas.htm">別途マニュアル（peas.htm）</a>を参照してください。
+		</p>
+
+		<h2 id="SUPPORT">HSPのサポート</h2>
+		<p>
+			このソフトはインターネット上のホームページでサポートを行なっています。
+			公式ページは、以下のURLです。
+			HSPについての最新情報、サンプル、掲示板、FAQをはじめ多くの情報が得られます。
+			是非アクセスしてみてください。
+		</p>
+		<dl>
+			<dt>HSPTV（HSPに関する情報、ユーザー支援など）</dt>
+			<dd><p><a href="http://hsp.tv/">http://hsp.tv/</a></p></dd>
+			<dt>HSP関連書籍ページ（書店で入手できる参考書の紹介）</dt>
+			<dd><p><a href="http://hsp.tv/make/hspbook.html">http://hsp.tv/make/hspbook.html</a></p></dd>
+			<dt>ONION software（HSP開発元）</dt>
+			<dd><p><a href="http://www.onionsoft.net/">http://www.onionsoft.net/</a></p></dd>
+			<dt>HSPBT（HSPに関するバグトラック、要望事項の蓄積）</dt>
+			<dd><p><a href="http://quasiquote.org/hspbt/guest">http://quasiquote.org/hspbt/guest</a></p></dd>
+		</dl>
+		<p>
+			HSPについてのご意見、不具合の情報、要望などいつでもお待ちしています。
+			電子メールはなるべくインターネットで以下のアドレスまでどうぞ。
+		</p>
+		<p>
+			頂いたメールには、すべて目を通しておりますが、返信や、要望の反映などについては
+			作者がすぐに対応できないこともありますので、予めご了承下さい。
+		</p>
+		<p>
+			HSPについての一般的な質問や、スクリプトの作り方に関するご質問は、
+			ネット上のFAQや、書籍などでも情報を提供していますので、まず調べてみることをお勧め致します。
+		</p>
+		<address>e-mail  : hsp@onionsoft.net</address>
+
+		<h2 id="USERCOM">HSPユーザーコミュニティ</h2>
+		<p>
+			HSPユーザー同士の意見や情報の交換、サポートなども活発に行なわれています。
+			HSP公式ページにある、関連リンクで多くのホームページを紹介しています。
+			また、以下のページでも色々な情報が提供されています。
+		</p>
+		<dl>
+			<dt>HSPセンター（初心者向けの各種情報、講座など）</dt>
+			<dd>
+				<p><a href="http://hspcenter.com">http://hspcenter.com</a></p>
+			</dd>
+			<dt>HSP Users Group（有志のユーザーによる活動）</dt>
+			<dd>
+				<p><a href="http://garde.esprix.net/hsp-users/">http://garde.esprix.net/hsp-users/</a></p>
+			</dd>
+			<dt>HSPメーリングリスト（HSPについてのメーリングリスト案内）</dt>
+			<dd>
+				<p><a href="http://garde.esprix.net/hsp-ml/">http://garde.esprix.net/hsp-ml/</a></p>
+			</dd>
+			<dt>HSPWiKi（誰でも書き込めるHSPに関するWiKi）</dt>
+			<dd>
+				<p><a href="http://quasiquote.org/hspwiki/">http://quasiquote.org/hspwiki/</a></p>
+			</dd>
+			<dt>HSP開発wiki（誰でも書き込めるHSPに関するWiKi）</dt>
+			<dd>
+				<p><a href="http://hspdev-wiki.net/">http://hspdev-wiki.net/</a></p>
+			</dd>
+		</dl>
+
+		<h2 id="LICENCE">HSPによって作られたソフトウェアのライセンスについて</h2>
+		<p>
+			<em>ユーザーがHSPを使って作成したオリジナルのソフトウェア(実行ファイル)の権利は、
+			それを作成したユーザーに属します。</em>
+		</p>
+		<p>
+			<em>ユーザーがHSPを使って作成したオリジナルのソフトウェア(実行ファイル)は、
+			自由に通信、即売会、店頭などで展示、配布、販売をしてかまいません。また、ライセンス料は必要ありません。</em>
+			（商用、非商用、同人ソフトを問わず、どのような形態での使用も可能です。
+			ただし、違法な行為には使用しないでください。）
+		</p>
+		<p>
+			<em>HSPによって生成された実行ファイル以外のファイルを添付、複製、改編する場合は、
+			「著作権、ライセンスについて」の条件に従ってください。</em>
+		</p>
+		<p>
+			ユーザーが作成したソフトウェアには、onion softwareの著作権表示も、HSPを使っている旨を表示する義務も
+			ありません。
+			オリジナルのソフトウェアに対してonion softwareが著作権を主張することはありません。
+		</p>
+		<p>
+			HSPを使用して作られた2次的な開発システム(ゲーム作成システム等)に関しても、
+			そのシステムを作った作者の責任において運用して下さい。
+		</p>
+		<p>
+			製作したソフトウェアを商用として運用することを検討されている方で、有償によるサポートをご希望の方は
+			メールにてinfo@hsp.tvまでご連絡下さい。詳細をご案内させていただきます。
+		</p>
+
+		<h2 id="COPYRIGHT">著作権、ライセンスについて</h2>
+		<p>
+			HSP3.2フルセットは、「HSP開発システム」と「追加コンポーネント」で構成された複合パッケージとなっています。
+			HSP開発システムは、開発の中心となる要素で以下の項目を指します。
+		</p>
+		<ul>
+			<li>HSPスクリプトエディタ(hsed3.exe、hsed3le.exe)</li>
+			<li>デバッグ実行ランタイム(hsp3.exe、hsp3cl.exe、hsp3debug.dll)</li>
+			<li>HSP拡張ランタイム(hsprt、hsp3c.hrt、hsp3cl.hrt)</li>
+			<li>HSPコードコンパイラ(hspcmp.dll)</li>
+			<li>HSPTVブラウザ(hsptv.exe)</li>
+			<li>Peasエディタ(ahtman.exe)</li>
+		</ul>
+		<p>
+			HSP開発システムに含まれるファイルは、<em>BSDライセンスのもと自由に添付・複製・改編・再配布することが
+			できます。その際には<a href="hsplicense.txt">HSPのライセンス表記(hsplicense.txt)</a>を明示するようにしてください。</em>
+		</p>
+		<p>
+			（HSPを使って作られた実行ファイルでは、このライセンスは適用されません。
+			あくまでも、HSP開発システムに含まれるファイルをそのまま公開する場合に適用されます。
+			ユーザーが作成したオリジナルのソフトウェアに関するライセンスについては、
+			「<a href="#LICENCE">HSPによって作られたソフトウェアのライセンスについて</a>」の項目を参照してください。）
+		</p>
+		<p>
+			（ライセンス表記の明示は、配布物の中にhsplicense.txtを含めるか、またはドキュメント内に
+			hsplicense.txtと同じ内容を含めるようにしてください。企業内や学校内などでの利用は
+			無償として扱って頂いて構いません。）
+		</p>
+		<p>
+			HSP開発システムは、基本的に無保証で提供されますが、商利用に関するサポートなどは、
+			onion software(onitama@onionsoft.net)までメールにて連絡を頂ければ、
+			検討させていただきます。 
+		</p>
+		<p>
+			HSP開発システムの著作権はonion softwareにあります。
+			onion softwareは本プログラムによって生じた、いかなる損害についても保証いたしません。
+			自己の責任の範囲で使用してください。
+		</p>
+		<p>
+			追加コンポーネントは、開発の補助と利便性を高める要素で以下の項目を指します。
+			追加コンポーネントの著作権とライセンスは、それぞれ権利者が異なります。
+			詳しくは、以下に示されたドキュメントを参照してください。
+		</p>
+		<ul>
+			<li>HSPLet (hspletフォルダ内のreadme.txtを参照)</li>
+			<li>HSP Document Library (doclib/HSP Document Libraryフォルダ内のreadme.txtを参照)</li>
+			<li>Easy3Dプラグイン (doclib/easy3dフォルダ内のindex.htmを参照)</li>
+			<li>d3module (doclibフォルダ内のd3module.txtを参照)</li>
+			<li>HSPDXプラグイン (doclibフォルダ内のhspdx.txtを参照)</li>
+			<li>HSPCVプラグイン (doclibフォルダ内のhspcv.txtを参照)</li>
+			<li>HGIMG3プラグイン (doclibフォルダ内のhgimg3.txtを参照)</li>
+			<li>HSPOGGプラグイン (doclibフォルダ内のhspogg.txtを参照)</li>
+			<li>HSP3IMPプラグイン(doclibフォルダ内のhsp3imp.txtを参照)</li>
+		</ul>
+		<p>
+			<em>以下に示された追加コンポーネントは、onion softwareが著作権を保有していますが、
+			BSDライセンスのもと自由に添付、複製、改編、再配布することができます。</em>
+			再配布は、有償・無償を問わず行なうことができ、onion softwareの著作権表示義務もありません。
+			以下の追加コンポーネントとともに配布されたオリジナルのソフトウェアに対して
+			onion softwareが著作権を主張することはありません。
+		</p>
+		<ul>
+			<li>HGIMGプラグイン (hgimg.dll、hgimgx.dll)及びそのサンプルスクリプト</li>
+			<li>HSPDAプラグイン (hspda.dll)及びそのサンプルスクリプト</li>
+			<li>HSPDBプラグイン (hspdb.dll)及びそのサンプルスクリプト</li>
+			<li>HSPEXTプラグイン (hspext.dll)及びそのサンプルスクリプト</li>
+			<li>HSPSOCKプラグイン (hspsock.dll)及びそのサンプルスクリプト</li>
+			<li>HSPINETプラグイン (hspinet.dll)及びそのサンプルスクリプト</li>
+			<li>HSP基本サンプルスクリプト(sample/basicフォルダ内のスクリプト)</li>
+			<li>COMサンプルスクリプト(sample/comobjフォルダ内のスクリプト)</li>
+			<li>ゲームサンプルスクリプト(sample/gameフォルダ内のスクリプト)</li>
+			<li>HGIMGサンプルスクリプト(sample/hgimgフォルダ内のスクリプト)</li>
+			<li>HGIMG3サンプルスクリプト(sample/hgimg3フォルダ内のスクリプト)</li>
+			<li>HSPCLサンプルスクリプト(sample/hspclフォルダ内のスクリプト)</li>
+			<li>HSP新規サンプルスクリプト(sample/newフォルダ内のスクリプト)</li>
+			<li>HSPCLサンプルスクリプト(sample/hspclフォルダ内のスクリプト)</li>
+			<li>スクリーンセーバーサンプルスクリプト(sample/ssaverフォルダ内のスクリプト)</li>
+			<li>HSPプログラミングマニュアル等HSPの各種技術資料(doclib/hspsdkフォルダ内)</li>
+		</ul>
+		<p>
+			<em>以下に示されたファイルは、HSPフルセットに限って配布を許可されているものです。
+			単体での複製、改編、再配布は許可していませんので、ご注意ください。</em>
+		</p>
+		<ul>
+			<li>HSPデモンストレーションのデータファイル(sample/demoフォルダ内のデータ)</li>
+			<li>Easy3Dのサンプルデータファイル(sample/Easy3Dフォルダ以下のデータ)</li>
+		</ul>
+
+		<h2 id="LANG_SPEC">言語仕様の管理について</h2>
+		<p>
+			HSP2、HSP3を含むHot Soup Processor(ホットスーププロセッサー)の言語仕様は、
+			Onion Software/onitamaが保守管理を行なっています。
+		</p>
+		<p>
+			HSPの言語仕様変更や、改編の要望については開発者向けのコミュニティや掲示板、
+			HSP3 WishList、HSP Wiki等で受け付け、検討を行なっています。
+		</p>
+		<p>
+			HSPのインタプリタコード生成、実行などの中核を担う処理系は、OpenHSPとして
+			オープンソースにより公開されています。
+			HSP3に関するソースをオープンな仕様で公開することにより、さらに多くの環境への対応と信頼性、
+			メンテナンス性の向上を目指したいと考えています。 
+		</p>
+		<dl>
+			<dt>OpenHSP Development</dt>
+			<dd>
+				<p>
+					<a href="http://www.onionsoft.net/hsp/openhsp/">http://www.onionsoft.net/hsp/openhsp/</a>
+				</p>
+			</dd>
+			<dt>OpenHSPプロジェクト・ポータル</dt>
+			<dd>
+				<p>
+					<a href="http://dev.onionsoft.net/trac/wiki">http://dev.onionsoft.net/trac/wiki</a>
+				</p>
+			</dd>
+		</dl>
+
+
+		<h2 id="EDUCATION">教育用途の使用について</h2>
+		<p>
+			onion softwareでは、HSPを通じたIT基礎教育利用を提案しながら、普及のための活動を続けています。
+		</p>
+		<p>
+			小学校、中学校、および高校の授業、クラブ活動などにも是非ご活用ください。
+			HSP本体はもちろん無償で利用することが可能で、付属するマニュアル、ドキュメント、
+			ヘルプデータなどの文章も自由に引用、改編、再配布をすることができます。
+			また、国内では多くの参考書籍も発売されており、独学する場合も数多くの情報を入手可能です。
+		</p>
+		<p>
+			既に、一部のコンピューター教室で講義が行なわれ、経済産業省が支援する「ITクラフトマンシップ・プロジェクト」 でも、
+			HSPを使用した教育が実践されました。
+		</p>
+		<p>
+			HSPは、入門者、初心者向けとして多くの利点があると考えています。
+			入門者、初心者は、何より楽しく学んでいける環境作りが必要と考え、絵が動く、音が出る、
+            反応するなど、興味を失なうことなく継続して学習することのできる要素を重視しています。
+		</p>
+		<p>
+			以下のページでは、教育用途についての情報を提供しています。
+		</p>
+		<dl>
+			<dt>HSP学校関係者向け情報ページ</dt>
+			<dd>
+				<p>
+					<a href="http://www.onionsoft.net/hsp/education/index.html">http://www.onionsoft.net/hsp/education/index.html</a>
+				</p>
+			</dd>
+			<dt>HSP school center（学校関係者用ページ）</dt>
+			<dd>
+				<p>
+					<a href="http://www.hspcenter.com/school/index.html">http://www.hspcenter.com/school/index.html</a>
+				</p>
+			</dd>
+		</dl>
+
+		<h2 id="MESSAGE">作者より</h2>
+		<p>
+			HSPは他の言語と特に互換性があるわけでもないですし(ほとんどBASICですが)、
+			新しい言語体系をしているわけでもありません。
+		</p>
+		<p>
+			HSPが目指したものは、オールドスタイルなパソコンのシステムです。
+		</p>
+		<p>
+			昔のパソコンは現在のものと比べてメモリもCPUスピードも圧倒的に貧弱ですが、
+			スイッチを入れてすぐに使えるようになったし、BASICでRUNと打てばすぐに結果を見ることができました。
+			そんな手軽で気楽なシステムが現在のパソコンでは失われていっているような気がします。
+		</p>
+		<p>
+			ここには、オブジェクト指向など先端の言語仕様はありませんが、
+			思った順番に書いてもいい気軽さがあります。
+			そして、小規模な開発や初心者のプログラミング学習には、それもまた一つの道かなと思います。
+		</p>
+		<p>
+			HSPは決して万能なシステムではありません。もっと高度なことや大規模な開発をインタプリタでするのであれば、
+			C++やVisualBasic、Javaといった言語の方が向いているでしょう。
+			そんな高級な言語を使うまでもないちょっとした処理に、HSPが小回りをきかせられたらいいなぁ…と思うのです。
+		</p>
+		<p>
+			（おにたま）
+		</p>
+
+
+		<h2 id="THANKS">謝辞</h2>
+		
+		<p>
+			HSP3及びHSPTVデザインワークは、Senchaさん、ゆめゆめゆうかさんに作成して頂きました。
+		</p>
+		<p>
+			HSPスクリプトエディタ(hsed3.exe)は、Lonely Wolfさん、Shark++さんのご協力により作成されています。
+		</p>
+		<p>
+			HSPスクリプトエディタ(hsed3.exe)の、エディタエンジンとしてHyperPageProjectさんのFootyライブラリを使用しています。
+		</p>
+		<p>
+			COMオブジェクトの呼び出し及びイベント処理は、ちょくとさんに協力頂きソースの作成を行なっています。
+		</p>
+		<p>
+			HSP Document LibraryはS.Programsさんが製作されたものを同梱させていただきました。
+		</p>
+		<p>
+			HSPLetは、山田 雄己(Yuki)さんが製作されたものを同梱させていただきました。
+		</p>
+		<p>
+			Easy3Dプラグインは、おちゃっこさんが製作されたものを同梱させていただきました。
+		</p>
+		<p>
+			llmod3モジュールは、tomさん、芝やんさんが開発したものを使用させて頂きました。
+		</p>
+		<p>
+			switch関連の標準マクロは、USKさん、NGND001さんが作成したものを使用させていただきました。
+		</p>
+		<p>
+			標準マクロ、_continue および _breakは、testさんが作成したものを使用させていただきました。
+		</p>
+		<p>
+			命令ヘルプ、ドキュメントの作成にあたり、yoshisさん、nakaさん、JETさん、ellerさんにご協力いただきました。
+		</p>
+		<p>
+			WIN32API関連の定義ファイル(advapi32.as,comctl32.as,comdlg32.as,gdi32.as,kernel32.as,shell32.as,
+			user32.as,winmm.as)は、さくらさんが製作されたものを同梱させていただきました。
+			さくらさん(HSP-NEXT)のページでは、この他にもHSP3用の資料やTIPSなど役に立つ情報が多数掲載されています。
+		</p>
+		<p>
+			cgi関連のサンプル及びヘッダは、悠黒 喧史さんが製作されたものを同梱させていただきました。
+		</p>
+		<p>
+			tomさんにloadlib/llmod関連やWIN32APIについて参考になる助言を頂きました。
+		</p>
+		<p>
+			数学関連マクロ(hspmath.as)は、HSPWiKiにて公開されているものを同梱させて頂きました。
+		</p>
+		<p>
+			HSP3ユーティリティマクロ(hsp3util.as)は、HSPWiKi及び、ぷまさんが作成したものを同梱させて頂きました。
+		</p>
+		<p>
+			OpenHSPで多くの修正及び助言を頂いた皆様、特にfujidigさん、Shark++さん、naznyarkさんに感謝致します。
+		</p>
+		<p>
+			その他、HSP周辺ツール開発者ML(HSPDev-ML)の皆様及び、β版のテスト報告や、
+			ご意見をお寄せいただいた多くの方々に感謝致します。
+		</p>
+		<dl>
+			<dt>ちょくと さん</dt>
+			<dd>
+				<p>
+		<a href="http://yokohama.cool.ne.jp/chokuto/">http://yokohama.cool.ne.jp/chokuto/</a>
+				</p>
+			</dd>
+			<dt>S.Programs NET (S.Programsさん)</dt>
+			<dd>
+				<p>
+		<a href="http://sprocket.babyblue.jp/">http://sprocket.babyblue.jp/</a>
+				</p>
+			</dd>
+			<dt>悠黒 喧史 さん</dt>
+			<dd>
+				<p>
+		<a href="http://www.geocities.jp/tko_soft/">http://www.geocities.jp/tko_soft/</a>
+				</p>
+			</dd>
+			<dt>HSP-NEXT (さくら さん)</dt>
+			<dd>
+				<p>
+		<a href="http://hspnext.com/">http://hspnext.com/</a>
+				</p>
+			</dd>
+			<dt>ぷまさん</dt>
+			<dd>
+				<p>
+		<a href="http://dream.freespace.jp/puma/">http://dream.freespace.jp/puma/</a>
+				</p>
+			</dd>
+			<dt>HyperPageProjectさん</dt>
+			<dd>
+				<p>
+		<a href="http://www.hpp.be/">http://www.hpp.be/</a>
+				</p>
+			</dd>
+			<dt>おちゃっこさん</dt>
+			<dd>
+				<p>
+		<a href="http://www5d.biglobe.ne.jp/~ochikko/">http://www5d.biglobe.ne.jp/~ochikko/</a>
+				</p>
+			</dd>
+			<dt>山田 雄己(Yuki)さん</dt>
+			<dd>
+				<p>
+		<a href="http://www.group-finity.com/">http://www.group-finity.com/</a>
+				</p>
+			</dd>
+			<dt>fujidigさん</dt>
+			<dd>
+				<p>
+		<a href="http://www.fujidig.com/">http://www.fujidig.com/</a>
+				</p>
+			</dd>
+			<dt>Shark++さん</dt>
+			<dd>
+				<p>
+		<a href="http://www.sharkpp.net/">http://www.sharkpp.net/</a>
+				</p>
+			</dd>
+		</dl>
+
+		<!-- フッター -->
+		<ul id="FOOTER">
+			<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+			<li><a href="../index.htm">ドキュメントの一覧に戻る</a></li>
+			<li><a href="http://hsp.tv/">Go to HSPTV page</a></li>
+		</ul>
+		<a href="http://www.onionsoft.net/hsp/">
+			<img src="img/onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+		</a>
+	</div><!-- container -->
+</body>
+</html>

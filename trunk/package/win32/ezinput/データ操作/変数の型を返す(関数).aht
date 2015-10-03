@@ -1,0 +1,11 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "vartype"
+
+#define Œ^‚ğ’²‚×‚é•Ï”A‚Ü‚½‚Í•¶š—ñ	""	;;str
+
+#ahtmes "vartype( "+Œ^‚ğ’²‚×‚é•Ï”A‚Ü‚½‚Í•¶š—ñ+" )"+

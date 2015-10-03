@@ -1,0 +1,50 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/multiopen.hsp"
+
+	s=dir_cur
+	buf_size=1024*4
+	info_size=128*4
+	alloc buf,buf_size	;ﾌｧｲﾙ名がいくつ入るか分からないので十分なｻｲｽﾞを確保しておく
+	alloc info,info_size
+
+	info=dir_exe
+	buf="複数のﾌｧｲﾙを開く -test title- デフォルトフォルダを "+info+" に設定"
+	multiopen buf,info,0	;タイトル、デフォルトフォルダの設定(0を指定して設定)
+
+	buf=buf_size,info_size	;バッファにbuf,infoのサイズを入れる
+	info="HSP3 ｽｸﾘﾌﾟﾄﾌｧｲﾙ(*.hsp)|*.hsp|ﾃｷｽﾄﾌｧｲﾙ(*.txt)|*.txt|全てのファイル|*.*|"
+	multiopen buf,info,1	;デフォルト拡張子は1番目の'as'(2にすると'txt',3で'*')
+
+	ret=stat
+
+	if ret=0 : mes "キャンセルされました" : else : if ret>0 {
+		notesel buf
+		mx = notemax
+		mes "選択されたファイル数 "+mx
+		wnd=0
+		repeat mx
+			notesel buf
+			noteget a,cnt
+			y=cnt*16+40:pos 220,y:mes a
+			if wnd<5 {
+				y=wnd*80
+				pos 0,y
+				notesel textbuf
+				noteload a
+				mesbox textbuf,200,80,1
+				wnd+
+			}
+		loop
+		pos 200,0
+		if mx=1 : mes "拡張子は"+info : else : mes "フォルダ "+info
+		if ret=2 : mes "read onlyボックスがチェックされています"
+	}
+
+*x8
+	stop

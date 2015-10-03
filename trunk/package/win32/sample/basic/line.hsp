@@ -1,0 +1,33 @@
+
+	;	redraw命令によるバッファ書き込みの速度テスト。
+	;	line命令を400回実行する際の違いを見ることができます。
+	;	ノーマルな描画の速度に比べて、redrawスイッチを0にして書き込んで
+	;	おき、最後にredraw 1を実行した方が圧倒的に速度が違うのがわかると思います。
+	;
+	width 320,80
+	randomize
+	objsize 300,24
+	button "ノーマル",*norm
+	button "バッファ書き込み",*fast
+	stop
+*norm
+	screen 2,640,480
+	pos 320,240
+	repeat 400
+	c1=rnd(256):c2=rnd(256):c3=rnd(256):color c1,c2,c3
+	x=rnd(640):y=rnd(480)
+	line x,y
+	loop
+	stop
+*fast
+	screen 2,640,480
+	pos 320,240
+	redraw 0
+	repeat 400
+	c1=rnd(256):c2=rnd(256):c3=rnd(256):color c1,c2,c3
+	x=rnd(640):y=rnd(480)
+	line x,y
+	loop
+	redraw 1
+	stop
+

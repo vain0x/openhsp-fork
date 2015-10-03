@@ -1,0 +1,91 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; d3texture 命令を用いて、面に画像を貼り付けて描画します。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+	TEX_SIZE = 128 ; 使用するテクスチャの大きさ
+
+
+	; テクスチャを格納する仮想スクリーン
+
+	buffer 2, TEX_SIZE, TEX_SIZE, 0
+	picload "toge.gif", 1
+
+	buffer 3, TEX_SIZE, TEX_SIZE, 0
+	picload "jupiter.gif", 1
+
+	buffer 4, TEX_SIZE, TEX_SIZE, 0
+	picload "crystal.gif", 1
+
+
+	gsel 0
+
+	gmode 5, , , 192 ; 面を描画するときのコピーモードを設定
+
+	time_start = d3timer()
+
+
+*mainloop
+
+	; ループタイマー
+	time = d3timer() - time_start
+
+
+	; フレームレートを表示
+	title "fps = " + d3getfps()
+
+
+	redraw 0
+
+	color : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.002 * time) * 2000, sin(0.002 * time) * 2000, cos(0.001 * time) * 1000
+
+
+	r = 500
+	x = -r,  r,  r, -r
+	y = -r, -r,  r,  r
+	z = -r, -r, -r, -r
+	s =  r,  r,  r,  r
+
+	; キューブ表示
+
+	;------------------------------------------------------------
+	; 面に画像を貼り付けて描画
+
+	d3texture  x, y, z,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  x, y, s,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+
+	d3texture  z, x, y,  3,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  s, x, y,  3,  0, 0,  TEX_SIZE, TEX_SIZE
+
+	d3texture  y, z, x,  4,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  y, s, x,  4,  0, 0,  TEX_SIZE, TEX_SIZE
+
+	;         └┬──┘ │ └┬┘ └┬───────┘
+	;           │       │   │     └ テクスチャの大きさ (h, w)
+	;           │       │   └ テクスチャの左上位置 (x, y)
+	;           │       └ テクスチャを格納したスクリーンの ID
+	;           └ 描画先の四角形の各頂点を格納した配列変数
+	;------------------------------------------------------------
+
+
+	redraw
+	await
+
+
+	goto *mainloop
+

@@ -1,0 +1,41 @@
+#include "hsedsdk.as"
+
+#module
+#deffunc mes2 str sCaption, var content, int nStat
+	if nStat{
+		mes sCaption+": Error(Error code: "+nStat+")"
+	} else {
+		mes sCaption+": "+content
+	}
+	return
+#global
+
+hsed_exist
+if stat == 0: mes "HSP isn't found"
+
+hsed_gettabcount ret
+mes2 "The number of tabs", ret, stat
+
+repeat ret
+	screen 2+cnt, 320, 120
+	title "Tab information(Tab ID: "+cnt+")"
+
+	hsed_getfootyid nFootyID, cnt
+	mes2 "Footy ID", nFootyID, stat
+	if stat: continue
+
+	hsed_gettabid ret, nFootyID
+	mes2 "Tab ID", ret, stat
+
+	hsed_cancopy ret, nFootyID
+	mes2 "Copyable", ret, stat
+
+	hsed_canundo ret, nFootyID
+	mes2 "Undoable", ret, stat
+
+	hsed_canredo ret, nFootyID
+	mes2 "Redoable", ret, stat
+
+	hsed_getmodify ret, nFootyID
+	mes2 "Modify flag", ret, stat
+loop

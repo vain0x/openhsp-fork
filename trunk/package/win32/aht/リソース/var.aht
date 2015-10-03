@@ -1,0 +1,14 @@
+#aht name "変数"
+#aht class "hsp3.std.rsrc.var"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 10
+#aht exp "変数パーツを割り当てます。"
+#aht exp "変数は、他のパーツから参照したり内容を設定することが可能になります。"
+#aht flag 256
+
+#define 変数名	"変数"		;;str,refname,withid
+#define 初期化内容 "0"		;;str,opt="wide",help="最初に設定する値を入力してください。"
+
+#ahtmes "	"+変数名+" = "+初期化内容
+

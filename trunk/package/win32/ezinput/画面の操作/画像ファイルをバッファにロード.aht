@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "celload"
+
+#define ロードするファイル名	""	;;str
+#define 読み込み先ウインドゥID	"-1"	;;str
+#define 初期化する画面モード	"0"	;;str
+
+#ahtmes "celload "+ロードするファイル名+" , "+読み込み先ウインドゥID+" , "+初期化する画面モード+

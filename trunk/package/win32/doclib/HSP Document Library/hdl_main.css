@@ -1,0 +1,124 @@
+
+/* body */
+body {
+	/* ページ全体のフォント設定 */
+	font: 95% 'Arial';
+
+	background: #fff;
+	color: #000;
+
+	margin: 0;
+	padding: 0;
+}
+
+
+/* hoge */
+table {
+	font-size: 1em;
+}
+
+
+/* heading default */
+h1 {
+	background: #669;
+	color: #fff;
+	font-size: 105%;
+
+	margin: 10px 0 -20px 0;
+	padding: 10px 20px;
+}
+h2 {
+	color: #336;
+	font-size: 100%;
+
+	margin: 50px 10px 10px 10px;
+	padding: 0 0 1px 10px;
+
+	border-style: solid;
+	border-color: #669;
+	border-width: 0 0 1px 0;
+}
+h3 {
+	color: #336;
+	font-size: 100%;
+
+	margin: 30px 10px 10px 20px;
+	padding: 0 0 1px 10px;
+
+	border-style: solid;
+	border-color: #88a;
+	border-width: 0 0 1px 0;
+
+	width: 80%;
+}
+
+
+/* anchor default */
+a {
+	background: none;
+	color: #00c;
+	text-decoration: none;
+}
+a:hover, a:active {
+	text-decoration: underline;
+}
+
+
+/* anchor special */
+a.find {
+	color: #040;
+}
+
+
+/* paragraph default */
+pre {
+	font-family : "ＭＳ ゴシック";
+}
+
+
+/* paragraph */
+p,
+pre.para,
+div.para {
+	/* content */
+	margin: 20px 20px;
+	line-height: 125%;
+
+	/* pre で自動折り返し */
+	word-wrap: break-word;
+}
+p.summary {
+	/* サマリー */
+	color: #447;
+	font-weight: bold;
+}
+pre.script {
+	/* script view */
+	background: #eee;
+	margin: 10px 20px;
+	padding: 4px;
+	border: solid #99b;
+	border-width: 0 0 0 3px;
+}
+
+
+/* hoge */
+div.sankou {
+	margin: 20px;
+	padding: 10px;
+	background: #eff;
+	border: solid #777 1px;
+}
+
+
+/* footer */
+#footer {
+	background: #669;
+	color: #fff;
+	font-size: 80%;
+
+	margin: 50px 0 10px 0;
+	padding: 3px 20px;
+
+	text-align: right;
+}

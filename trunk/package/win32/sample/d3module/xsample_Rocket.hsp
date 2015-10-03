@@ -1,0 +1,539 @@
+
+;============================================================
+;                                                 2005/--/--
+;	S.Programs RocketRace! sample
+;	for HSP 3.0
+;
+;============================================================
+/*
+サンプルゲーム  ロケットレース！
+
+【ルール】
+[Space] を押して噴射を開始してから、200km 先の赤いゴール円 (直径 500m) に
+着くまでのタイムを競います。機体がゴール円を通過できなければ失敗です。
+超強力なメインエンジンを吹かすと機体が揺れて姿勢が変わるので、軌道を修正しながら
+進んでください。
+真空中を慣性で飛ぶので、フライトシミュレータとはまるで違った飛行感覚に
+なります。
+
+【操作方法】
+          [Space]  : メインロケット噴射
+          [←][→] : 機体ロール回転 (翼端ロケット)
+          [↑][↓] : 機体ピッチ回転 (翼端ロケット)
+[Shift] + [←][→] : 機体ヨー回転 (翼端ロケット)
+          [Esc]    : ゲーム リトライ
+          [A]      : オートパイロット ON / OFF
+          [S]      : 視点切り替え 外部視点 / コックピット視点
+
+【スペック】
+・推進加速度       : 100 m/s^2 (10G!)
+・ロール角加速度   : 4 rad/s^2
+・ロール角速度制限 : 4 rad/s
+・ピッチ角加速度   : 4 rad/s^2
+・ピッチ角速度制限 : 4 rad/s
+・ヨー角加速度     : 4 rad/s^2
+・ヨー角速度制限   : 4 rad/s
+・自動姿勢安定
+・推進剤無制限
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+
+	title "S.Programs RR!"
+
+	d3mkparticle 0, 255, 255, 255
+	d3mkparticle 1, 255, 192,  32
+	d3mkparticle 2,  64, 128, 255
+	d3mkparticle 3, 500, 500, 128
+
+	viewmode = 0 ; 視点設定
+
+
+;------------------------------------------------------------
+; ゲーム初期化
+*init
+	; 姿勢マトリクス
+	pm00 = 1 : pm01 = 0 : pm02 = 0 ; 前方ベクトル
+	pm10 = 0 : pm11 = 1 : pm12 = 0 ; 左方ベクトル
+	pm20 = 0 : pm21 = 0 : pm22 = 1 ; 上方ベクトル
+
+	; 位置
+	px = 0.0 : py = 0.0 : pz = 0.0
+
+	; 速度
+	vx = 0.0 : vy = 0.0 : vz = 0.0
+
+	vm_r = 0.0 ; ロール角速度
+	vm_p = 0.0 ; ピッチ角速度
+	vm_y = 0.0 ; ヨー角速度
+
+	; keymap
+	xmm = 37
+	xpp = 39
+	ymm = 40
+	ypp = 38
+	trg = 32
+
+	; game
+	goal_x = 200000	; [m]
+	goal_r = 250	; [m]
+	time_s = 0	; [ms] game-start
+	time_e = 0	; [ms] game-end
+	game_f = 0	; fail / goal
+	sstr = "GOAL!", "FAIL! orz"
+
+	mode_ap = 0 ; A/P mode
+
+	time = d3timer() ; sim_start
+
+
+;------------------------------------------------------------
+; ゲームループ
+*mainloop
+
+	dt = 0.001 * (d3timer() - time)
+	time = d3timer()
+
+
+	;------------------------------------------------------------
+	; AUTO PILOT
+
+	getkey k, 'A'
+	mode_ap ^= (apk!k&k) ; A/P 切り替え
+	apk = k
+
+	ap_r = 0 ; ロール 自動操作量
+	ap_p = 0 ; ピッチ 自動操作量
+	ap_y = 0 ; ヨー 自動操作量
+	ap_v = 0 ; 推進 自動操作量
+
+	if mode_ap {
+		; いくつかの噴射パターンで、目標とのなす角の cos が最も大きく操作量を採用
+
+		maxp = -1.0
+		repeat 27
+			; 噴射パターン
+			tm_r = (cnt\3-1)
+			tm_p = (cnt/3\3-1)
+			tm_y = (cnt/9\3-1)
+
+			; copy
+			tm00 = pm00 : tm01 = pm01 : tm02 = pm02 ; 前方ベクトル
+			tm10 = pm10 : tm11 = pm11 : tm12 = pm12 ; 左方ベクトル
+			tm20 = pm20 : tm21 = pm21 : tm22 = pm22 ; 上方ベクトル
+
+			; roll
+			d3vrotate tm10,tm11,tm12, tm10,tm11,tm12, tm00,tm01,tm02, (vm_r + tm_r) * dt
+			d3vrotate tm20,tm21,tm22, tm20,tm21,tm22, tm00,tm01,tm02, (vm_r + tm_r) * dt
+			; pitch
+			d3vrotate tm00,tm01,tm02, tm00,tm01,tm02, tm10,tm11,tm12, (vm_p + tm_p) * dt
+			d3vrotate tm20,tm21,tm22, tm20,tm21,tm22, tm10,tm11,tm12, (vm_p + tm_p) * dt
+			; yow
+			d3vrotate tm00,tm01,tm02, tm00,tm01,tm02, tm20,tm21,tm22, (vm_y + tm_y) * dt
+			d3vrotate tm10,tm11,tm12, tm10,tm11,tm12, tm20,tm21,tm22, (vm_y + tm_y) * dt
+
+
+			vvx = 700.0
+			if px > goal_x : vvx = -100000.0
+			vvy = - vy - py - vy * absf(vy) / 70 - py * absf(py) / 50000
+			vvz = - vz - pz - vz * absf(vz) / 70 - pz * absf(pz) / 50000
+
+			a = (tm00 * vvx + tm01 * vvy + tm02 * vvz) / d3dist(vvx, vvy, vvz)
+
+			if a > maxp {
+				maxp = a
+				ap_r = tm_r
+				ap_p = tm_p
+				ap_y = tm_y
+				ap_v = (maxp > 0.80) * 100
+			}
+		loop
+	}
+	; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+	;------------------------------------------------------------
+	; ctrl
+
+	stick k
+	if k & 128 : goto *init ; [Esc]
+
+	am_r = 0.0 + ap_r
+	am_p = 0.0 + ap_p
+	am_y = 0.0 + ap_y
+
+	getkey k, trg : am_v = k * 100 | ap_v
+
+	getkey k, 16 ; [Shift]
+	if k {
+		; yow
+		getkey k, xpp : am_y -= k * 4
+		getkey k, xmm : am_y += k * 4
+	} else {
+		; roll
+		getkey k, xpp : am_r += k * 4
+		getkey k, xmm : am_r -= k * 4
+	}
+	; pitch
+	getkey k, ypp : am_p += k * 4
+	getkey k, ymm : am_p -= k * 4
+
+
+	;------------------------------------------------------------
+	; v-move
+
+	; メインロケット噴射
+	if am_v {
+		; 加速
+		vx += pm00 * am_v * dt
+		vy += pm01 * am_v * dt
+		vz += pm02 * am_v * dt
+
+		; エンジン振動外乱 (max 8 rad/s^2)
+		vm_r += (sin(0.02 * time) * 5 + sin(0.003 * time) * 5) * dt
+		vm_p += (sin(0.03 * time) * 4 + sin(0.005 * time) * 4) * dt
+		vm_y += (sin(0.05 * time) * 4 + sin(0.007 * time) * 4) * dt
+	}
+
+	dr = dt * 4
+
+	; ロール制御噴射
+	rf = 0
+	if vm_r < am_r {
+		vm_r = limitf(vm_r+dr, vm_r, am_r)
+		rf = 1
+	} else:if vm_r > am_r {
+		vm_r = limitf(vm_r-dr, am_r, vm_r)
+		rf = -1
+	}
+
+	; ピッチ制御噴射
+	pf = 0
+	if vm_p < am_p {
+		vm_p = limitf(vm_p+dr, vm_p, am_p)
+		pf = 1
+	} else:if vm_p > am_p {
+		vm_p = limitf(vm_p-dr, am_p, vm_p)
+		pf = -1
+	}
+
+	; ヨー制御噴射
+	yf = 0
+	if vm_y < am_y {
+		vm_y = limitf(vm_y+dr, vm_y, am_y)
+		yf = 1
+	} else:if vm_y > am_y {
+		vm_y = limitf(vm_y-dr, am_y, vm_y)
+		yf = -1
+	}
+
+
+	;------------------------------------------------------------
+	; p-move
+
+	; roll
+	d3vrotate pm10,pm11,pm12, pm10,pm11,pm12, pm00,pm01,pm02, vm_r * dt
+	d3vrotate pm20,pm21,pm22, pm20,pm21,pm22, pm00,pm01,pm02, vm_r * dt
+
+	; pitch
+	d3vrotate pm00,pm01,pm02, pm00,pm01,pm02, pm10,pm11,pm12, vm_p * dt
+	d3vrotate pm20,pm21,pm22, pm20,pm21,pm22, pm10,pm11,pm12, vm_p * dt
+
+	; yow
+	d3vrotate pm00,pm01,pm02, pm00,pm01,pm02, pm20,pm21,pm22, vm_y * dt
+	d3vrotate pm10,pm11,pm12, pm10,pm11,pm12, pm20,pm21,pm22, vm_y * dt
+
+	; move
+	px += vx * dt
+	py += vy * dt
+	pz += vz * dt
+
+
+	;------------------------------------------------------------
+	; setcam
+
+	getkey k, 'S'
+	viewmode ^= (vmk!k&k) ; 視点切り替え
+	vmk = k
+
+	if viewmode {
+		d3setcam  -40, 0, 10,  0, 0, 10
+		; 機体姿勢行列の転置
+		d3setlocal -(pm00*px+pm01*py+pm02*pz),-(pm10*px+pm11*py+pm12*pz),-(pm20*px+pm21*py+pm22*pz), pm00,pm01,pm02, pm10,pm11,pm12, pm20,pm21,pm22
+	} else {
+		f = 0.0004 * time
+		d3setcam px-sqrt(absf(vx))*15 + sin(f)*200, py-vy + cos(f)*200, pz-vz + sin(f)*100,  px, py, pz
+	}
+
+
+	;------------------------------------------------------------
+	; static obj
+
+	redraw 0
+	color 16, 20, 20 : boxf
+
+	gmode 5, , , 256
+
+	; guide
+	POLYS = 6 ; 分割数
+	dh = 6.2831853 / POLYS
+
+	color 96, 96, 48
+	repeat POLYS
+		x = cos(dh * cnt) * goal_r
+		y = sin(dh * cnt) * goal_r
+
+		repeat goal_x / 1000
+			d3pset cnt * 1000, x, y
+			d3particlem 3, 15
+		loop
+	loop
+
+
+	; goal
+	color 192, 64, 64
+	d3initlineto
+	repeat POLYS + 1
+		d3ribbonto goal_x, 0, 0,  goal_x, cos(dh * cnt)*goal_r, sin(dh * cnt)*goal_r
+	loop
+
+
+	; stars
+	randomize 0
+	repeat 100
+		d3particle 0, (rnd(32768)-16384)*30, (rnd(32768)-16384)*30, (rnd(32768)-16384)*30, 2000
+	loop
+
+
+	;------------------------------------------------------------
+	; ローカル座標系を機体座標系に設定
+
+	if viewmode {
+		d3setlocal
+	} else {
+		d3setlocal px,py,pz, pm00,pm10,pm20, pm01,pm11,pm21, pm02,pm12,pm22
+	}
+
+
+	;------------------------------------------------------------
+	; spacecraft
+
+	POLYS = 8 ; 分割数
+	dh = 6.2831853 / POLYS
+
+	color 255, 255, 255
+
+	repeat 10
+		r0 = cnt
+		r1 = (cnt + 1)
+		d0 = -(cnt * cnt - 50)
+		d1 = -((cnt + 1) * (cnt + 1) - 50)
+
+		d3initlineto
+
+		repeat POLYS + 1
+			a = dh * cnt
+			gmode 5, , , (sin(a) + 1) * 20 + rnd(16) + (50-d1)/2
+			d3ribbonto d0, cos(a)*r0, sin(a)*r0,  d1, cos(a)*r1, sin(a)*r1
+		loop
+	loop
+
+
+	;------------------------------------------------------------
+	; tail
+
+	color 255, 128, 128
+
+	gmode 5, , , 128
+	d3initlineto
+	d3ribbonto -50, 0, 0,  -20, 0, 0
+	d3ribbonto -50, 0, 30,  -40, 0, 30
+
+
+	;------------------------------------------------------------
+	; wing
+
+	repeat 2
+		ox = -50
+		if cnt : ox = 30
+
+		; --- motor 1
+		x0 = ox + 5
+		y0 = 50
+		if cnt = 0 {
+			df = (-pf - rf)
+		} else {
+			df = (pf - rf)
+		}
+		gosub *df_fire
+
+
+		; --- motor 1
+		x0 = ox + 5
+		y0 = -50
+		if cnt = 0 {
+			df = (-pf + rf)
+		} else {
+			df = (pf + rf)
+		}
+		gosub *df_fire
+
+
+		gmode 5, , , 128
+		d3initlineto
+		d3ribbonto ox+10, 50, 0,  ox, 50, 0
+		d3ribbonto ox+20, 0, 0,  ox, 0, 0
+		d3ribbonto ox+10, -50, 0,  ox, -50, 0
+
+
+		color 128, 128, 255
+	loop
+
+
+	; yow motor
+
+	if yf {
+		repeat 2
+			x0 = 40 - cnt * 85
+			y0 = 50
+			df = (cnt*2-1) * yf
+			cf = (cnt*2-1)
+
+			randomize 0
+			c = 7
+			repeat c
+				a = rnd(32768)
+				p = double((time / 10 + cnt)\c) / c
+				r = p
+
+				gmode 5, , , (1.0 - p) * 192
+				d3particle 2, sin(a)*r+x0 + p*11*cf, (p*11+y0)*df, cos(a)*r, 2
+
+				gmode 5, , , (1.0 - p) * 192
+				d3particle 1, sin(a)*r+x0 + p*18*cf, (p*18+y0)*df, cos(a)*r, 6
+
+				gmode 5, , , (1.0 - p) * 56
+				d3particle 0, sin(a)*r+x0 + p*35*cf, (p*35+y0)*df, cos(a)*r, p * 6 + 6
+			loop
+		loop
+	}
+
+
+	;------------------------------------------------------------
+	; rocket gas
+
+	if viewmode = 0 {
+		gmode 5, , , 64
+		d3particle 0, 0,0,0, 50
+	}
+
+	if am_v {
+		gmode 5, , , 64
+		d3particle 2, -50, 0, 0, 60
+
+		; gas
+		randomize 0
+		c = 15
+		repeat c
+			a = rnd(32768)
+
+			p = double((time / 7 + cnt) \ c) / c
+			r = p * 5
+
+			; gas1
+			gmode 5, , , (1.0 - p) * 255
+			d3particle 2, -p * 100 - 50, cos(a) * r, sin(a) * r, (1.0 - p) * 5 + 10
+
+			; gas2
+			gmode 5, , , (1.0 - p) * 48
+			d3particle 1, -p * 160 - 50, cos(a) * r, sin(a) * r, p * 20 + 20
+
+			p = double((time / 20 + cnt) \ c) / c
+			r = p * 7
+
+			; gas3
+			gmode 5, , , (1.0 - p) * 50
+			d3particle 0, -p * p * 400 - 50, cos(a) * r, sin(a) * r, p * 50
+		loop
+	}
+
+
+	;------------------------------------------------------------
+	; game ctrl
+
+	; time-start
+	if (time_s = 0) & (am_v ! 0) {
+		time_s = time
+	}
+
+	; time-stop
+	if (time_e = 0) & (px >= goal_x) {
+		time_e = time
+		game_f = (d3dist(py, pz) > goal_r) ; ファール判定
+	}
+
+
+	color 192, 192, 192
+	pos 0, 0
+
+	font "Arial", ginfo_winx / 30, 1
+	mes ""+d3getfps()+" fps"
+	if time_e {
+		mes "TIME : "+(0.001 * (time_e - time_s))+" sec"
+		font "Arial", ginfo_winx / 15, 1
+		mes sstr(game_f)
+		font "Arial", ginfo_winx / 30, 1
+		mes "press [Esc] to retry."
+	} else:if time_s {
+		mes "TIME : "+(0.001 * (time - time_s))+" sec\nSpeed : "+d3dist(vx, vy, vz)+" m/s\nx = "+px+" m"
+	} else {
+		mes "press [Space] to start."
+		mes "press [A] to auto-pilot."
+	}
+	mes "press [S] to change view."
+
+	if time / 500 \ 2 & mode_ap {
+		color 224, 96, 96
+		font "Arial", ginfo_winx / 25, 1
+		mes "[AUTO PILOT]"
+	}
+
+
+	;------------------------------------------------------------
+	redraw
+	await 10
+
+	goto *mainloop
+
+
+
+;------------------------------------------------------------
+*df_fire
+	df = limitf(df, -1, 1)
+	if df {
+		randomize 0
+		c = 7
+		repeat c
+			a = rnd(32768)
+			p = double((time / 10 + cnt)\c) / c
+			r = p
+
+			gmode 5, , , (1.0 - p) * 192
+			d3particle 2, sin(a)*r+x0, cos(a)*r+y0, p*df*15, 2
+
+			gmode 5, , , (1.0 - p) * 192
+			d3particle 1, sin(a)*r+x0, cos(a)*r+y0, p*df*25, 6
+
+			gmode 5, , , (1.0 - p) * 56
+			d3particle 0, sin(a)*r+x0, cos(a)*r+y0, p*df*50, p * 6 + 6
+		loop
+	}
+
+	return
+
+
+

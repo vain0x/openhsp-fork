@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "clrobj"
+
+#define 消去するオブジェクトID	"0"	;;str
+#define 消去するオブジェクトID	"-1"	;;str
+#define パラメーター3	""	;;str
+
+#ahtmes "clrobj "+消去するオブジェクトID+" , "+消去するオブジェクトID+" , "+パラメーター3+

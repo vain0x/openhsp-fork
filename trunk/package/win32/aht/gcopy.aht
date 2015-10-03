@@ -1,0 +1,23 @@
+#aht name "画像コピー"
+#aht class "hsp3.std.draw"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "指定した画像の一部を画面上にコピーします。"
+#aht exp "あらかじめ、画像リソースのパーツを登録しておく必要があります。"
+
+#const obj_id	0	;;parts,prm="hsp3.std.rsrc.image",help="イメージ"
+#define __refimg	;;pprop,prm="バッファID",help="バッファID",read
+
+#const モード 0	;;combox,prm="0\n2\n3\n5\n6\n7\n",opt="通常\n透明色付き\n半透明合成\n色加算合成\n色減算合成\nピクセルアルファブレンド\n"
+#const 横位置 0	;;help="コピー先位置(X)"
+#const 縦位置 0	;;help="コピー先位置(Y)"
+#const 横位置2 0	;;help="コピー元位置(X)"
+#const 縦位置2 0	;;help="コピー元位置(Y)"
+#const 横サイズ 640	;;help="コピーするサイズ(X)"
+#const 縦サイズ 480	;;help="コピーするサイズ(Y)"
+#const 半透明レート 256	;;help="半透明時の割合0～256"
+
+	gmode モード,横サイズ,縦サイズ,半透明レート
+	pos 横位置,縦位置
+	gcopy __refimg,横位置2,縦位置2

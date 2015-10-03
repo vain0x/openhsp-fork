@@ -1,0 +1,45 @@
+#include "hspext.as"
+
+	;
+	;	レジストリ操作命令テスト
+	;	Windowsアプリケーションの追加と削除の設定を読み込む
+	;
+	rt="Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+
+	regkey 1,rt
+	if stat : dialog "該当するレジストリが見つかりません" : end
+
+	sdim a,10000
+	sdim b,10000
+	sdim ent,10000
+	sdim name,1000
+	reglist a,1
+	objsize 280
+	listbox idx,400,a			; ID0
+	button "SELECT",*sel
+
+	pos 320,0
+	mesbox b,310,400,1			; ID2
+	stop
+
+*sel
+	b=""
+	c=""
+	name=""
+	notesel a
+	noteget name,idx
+	regkey 1,rt+"\\"+name
+
+	reglist ent,0
+	notesel ent
+	repeat notemax
+		noteget name,cnt
+		b+="["+name+"]\n"
+		getreg c,name,1,1000
+		b+=c+"\n"
+	loop
+
+	objprm 2,b
+	stop
+
+

@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "exec"
+
+#define 対象となるファイル名	""	;;str
+#define ファイル実行モード	"0"	;;str
+#define コンテキストメニューの操作名	""	;;str
+
+#ahtmes "exec "+対象となるファイル名+" , "+ファイル実行モード+" , "+コンテキストメニューの操作名+

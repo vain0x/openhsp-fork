@@ -1,0 +1,18 @@
+#include "hspinet.as"
+
+	;
+	;	サーバー上のファイル情報を得る
+	;
+
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+
+	neturl "http://www.onionsoft.net/hsp/"
+
+	netfileinfo info,"index.html"
+	if stat : dialog "情報の取得に失敗しました。" : end
+
+	mes info
+
+	stop
+

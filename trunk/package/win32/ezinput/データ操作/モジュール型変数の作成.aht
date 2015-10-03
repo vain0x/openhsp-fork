@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "newmod"
+
+#define 変数名	""	;;str
+#define モジュール名	""	;;str
+#define 初期化パラメーター	""	;;str
+
+#ahtmes "newmod "+変数名+" , "+モジュール名+" , "+初期化パラメーター+

@@ -1,0 +1,25 @@
+	title "テキストファイル作成"
+	screen 0,320,240
+	cls 1
+	mes "指定範囲の数をテキストファイルに出力"
+	objmode 1
+	pos 0,40:input p_start
+	pos 80,40:mes "to"
+	pos 110,40:input p_end
+	pos 0,80:button "作成",*go
+	stop
+*go
+	buf="#NUM FILE"
+	notesel buf
+	i = p_end-p_start+1:if i<0 : end
+	repeat i
+	noteadd ""+p_start
+	p_start+
+	loop
+	notesave "num.txt"
+	;dialog "「num.txt」にセーブしました。"
+	exec "num.txt",16
+	end
+
+
+

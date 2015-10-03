@@ -1,0 +1,24 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/console.hsp"
+
+	sdim s,1024
+
+	cls
+	console
+	console_color $2B
+	putz "HSPからコンソールへ出力\n何か入力してENTERを押してください\n"
+	console_color $F
+	gets s
+	console_end
+	mes "入力文字="+s
+	button "終了",*x12
+	stop
+
+*x12
+	end

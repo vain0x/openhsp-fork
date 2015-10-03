@@ -1,0 +1,24 @@
+	#include "mod_menu.as"
+	#define CMD_OPEN 1
+	#define CMD_QUIT 2
+	oncmd gosub *OnCommand, WM_COMMAND        ; メッセージ割り込み
+	; サブメニュー作成
+	newmenu hfilemenu,1
+	addmenu hfilemenu, "開く(&O)", CMD_OPEN
+	addmenu hfilemenu, "終了(&Q)", CMD_QUIT
+	; トップメニュー作成
+	newmenu hmenu,0
+	addmenu hmenu, "ファイル(&F)", hfilemenu, 0x10
+	applymenu hmenu
+	stop
+
+	; メッセージの処理
+*OnCommand
+	cmd=wparam & 0xFFFF
+	if cmd=CMD_OPEN {
+		dialog "メニューを選択しました。"
+	}
+	if cmd=CMD_QUIT {
+		end
+	}
+        return

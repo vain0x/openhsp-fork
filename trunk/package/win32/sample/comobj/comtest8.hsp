@@ -1,0 +1,21 @@
+
+	;	正規表現(RegExp)を使った検索
+	;
+	teststr="012 3456 78 9"
+	testptn="\\d+"
+	mes "対象文字 \""+teststr+"\""
+	mes "パターン \""+testptn+"\""
+	newcom oReg,"VBScript.RegExp"
+	comres result
+	oReg("Pattern")=testptn
+	oReg("Global")=1
+	oReg->"Execute" teststr
+	oMatches=result
+	repeat oMatches("Count")
+		oMatch=oMatches("Item",cnt)
+		mes "Match("+cnt+")="+oMatch("Value")
+	loop
+	delcom oMatch
+	delcom oMatches
+	delcom oReg
+	delcom result

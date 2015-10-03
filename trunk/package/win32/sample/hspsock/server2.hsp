@@ -1,0 +1,56 @@
+
+#include "hspsock.as"
+
+	title "TCPサーバーテスト"
+
+	;
+	;	HSPによるTCP/IPサーバー・クライアント通信のスクリプトです。。
+	;	ソケットを作成して、クライアントに文字列を送信して終わります。
+	;	このスクリプトは、client.asのスクリプトと対にしてお使いください。
+	;	あらかじめ、このスクリプトを実行しておき、LAN上の別マシンから
+	;	client.asを実行することにより、通信を行ないます。
+	;	portにポート番号(変更しなくても可)を設定します。
+	;	接続に成功すると、クライアント側に、サーバーの時刻が文字列
+	;	として送信されてきます。
+	;
+*main
+	port=999
+	ipget
+	mes "IPアドレス:"+refstr
+	mes "ポート"+port+"で接続を待っています..."
+	sockmake 0,port
+	if stat : dialog "Socket error": goto *errbye
+
+	a=0
+	repeat
+	sockwait 0
+	title "CHK="+stat+"/"+a
+	if stat>1 : dialog "Socket error": goto *errbye
+	if stat=0 : break
+	a+
+	wait 10
+	loop
+
+	mes "接続しました。("+refstr+")"
+
+	wait 100
+
+	t1=0:t2=0:t3=0
+	t1=gettime(4)
+	t2=gettime(5)
+	t3=gettime(6)
+	mm="今の時間="+t1+":"+t2+":"+t3
+	;
+	sockput mm
+	if stat : dialog "Socket error": goto *errbye
+	mes "["+mm+"] を送信しました。"
+	;
+*bye
+	sockclose
+	goto *main				; サーバーを続ける
+
+*errbye
+	sockclose
+	mes "終了"
+	stop
+

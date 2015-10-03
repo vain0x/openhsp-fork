@@ -1,0 +1,27 @@
+; シェルリンクオブジェクトのクラスID
+#define CLSID_ShellLink   "{00021401-0000-0000-C000-000000000046}"
+; IShellLink インターフェースのインターフェースID
+#define IID_IShellLinkA   "{000214EE-0000-0000-C000-000000000046}"
+; IPersistFile インターフェースのインターフェース ID
+#define IID_IPersistFile  "{0000010b-0000-0000-C000-000000000046}"
+
+
+#usecom IShellLinkA IID_IShellLinkA CLSID_ShellLink
+#comfunc IShellLink_SetPath 20 str
+
+#usecom IPersistFile IID_IPersistFile
+#comfunc IPersistFile_Save 6 wstr,int
+
+newcom slink, CLSID_ShellLink   ; デフォルトでは IUnlnown を取得
+                                ; (第3パラメータで明示することも可)
+                                ; (automation object 以外では無意味?)
+
+IShellLink_SetPath slink, dirinfo(1)+"\\hsp3.exe"
+IPersistFile_Save  slink, dirinfo(0)+"\\shortcut.lnk", 1
+
+mes "ショートカットを作成しました。"
+
+delcom slink
+
+stop
+

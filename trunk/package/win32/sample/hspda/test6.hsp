@@ -1,0 +1,15 @@
+
+	#include "hspda.as"
+
+	;	xnote sample
+	;
+	sdim buf,32000
+	buf="abc\ndef\nghi\n"
+
+	xnotesel buf
+	xnoteadd "jkl"
+	mes "STAT="+stat
+	mes buf
+
+	stop
+

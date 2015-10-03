@@ -1,0 +1,119 @@
+
+;============================================================
+;                                                 2005/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; 仮想画面に d3module で描画を行い、それを実画面での
+; テクスチャとして使用するサンプルです。
+;
+; 複数のスクリーンへの描画を行う場合は、スクリーンを切り替える
+; ごとに d3setcam 命令でカメラ情報を更新してください。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+	TEX_SIZE = 256 ; 使用するテクスチャの大きさ
+
+
+	; テクスチャを格納する仮想スクリーン
+
+	buffer 2, TEX_SIZE, TEX_SIZE, 0
+
+
+	gsel 0
+
+	time_start = d3timer()
+
+
+*mainloop
+
+	; ループタイマー
+	time = d3timer() - time_start
+
+
+	; フレームレートを表示
+	title "fps = " + d3getfps()
+
+
+
+	;------------------------------------------------------------
+	; texture-screen
+
+	gsel 2
+
+	color : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.002 * time) * 2000, sin(0.002 * time) * 2000, cos(0.001 * time) * 1000
+
+
+	gmode 5, , , 128 ; 面を描画するときのコピーモードを設定
+
+	r = 500
+	x = -r,  r,  r, -r
+	y = -r, -r,  r,  r
+	z = -r, -r, -r, -r
+	s =  r,  r,  r,  r
+
+	; キューブ表示
+	color 127, 255, 255
+	d3square  x, y, z
+	d3square  x, y, s
+
+	color 96, 192, 192
+	d3square z, x, y
+	d3square s, x, y
+
+	color 63, 127, 127
+	d3square y, z, x
+	d3square y, s, x
+
+
+
+	;------------------------------------------------------------
+	; real-screen
+
+	gsel 0
+	redraw 0
+
+	color : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.001 * time) * 2000, sin(0.001 * time) * 2000, cos(0.0005 * time) * 1000
+
+
+	gmode 5, , , 192 ; 面を描画するときのコピーモードを設定
+
+	r = 500
+	x = -r,  r,  r, -r
+	y = -r, -r,  r,  r
+	z = -r, -r, -r, -r
+	s =  r,  r,  r,  r
+
+	; キューブ表示
+
+	d3texture  x, y, z,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  x, y, s,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+
+	d3texture  z, x, y,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  s, x, y,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+
+	d3texture  y, z, x,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+	d3texture  y, s, x,  2,  0, 0,  TEX_SIZE, TEX_SIZE
+
+
+	redraw
+
+	await
+
+
+	goto *mainloop
+

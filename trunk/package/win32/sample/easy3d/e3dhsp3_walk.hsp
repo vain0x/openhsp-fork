@@ -1,0 +1,317 @@
+
+;	e3dhsp.dll test script
+
+#include "e3dhsp3.as"
+
+#module
+#deffunc waitbyfps int p1, var fps
+	E3DWaitbyFPS@ p1, fps
+	await 0
+	return
+#global
+	
+	dim keybuf, 256	
+
+	;file のpath 用のバッファーの作成
+	pathlen = 2048
+	sdim mediadir, pathlen
+	mediadir = dir_cur + "\\Media"
+	sdim pathbuf, pathlen, 4
+	
+	mapsize = 120000.0
+	mapdiv = 50
+
+	mapheight = 5500.0
+
+	chgdegx = 0.0 : chkdegy = 0.0 : chkdegz = 0.0
+
+	screenw = 640 : screenh = 480
+	screen 0, screenw, screenh, 1
+	pointmax = 100
+
+	title "Easy3D for HSP3 sample"
+
+	;初期化
+	E3DEnableDbgFile
+	E3DInit 0, -1, 0, 16, 0, scid1
+
+	;カメラの初期化
+	camposx = 0.0 : camposy = 2500.0 : camposz = 0.0
+	E3DSetCameraPos camposx, camposy, camposz	
+	camdegxz = 180.0 : camdegy = 0.0
+	E3DSetCameraDeg camdegxz, camdegy
+
+	confflag = 0
+	endflag = 0
+
+
+	;projectionの変更をしたいときは、以下の２行を有効にしてください。
+	proj_near = 100.0 : proj_far = 50000.0 : proj_fov = 60.0
+	E3DSetProjection proj_near, proj_far, proj_fov
+
+
+	E3DCreateProgressBar
+	E3DSetProgressBar 0
+
+	
+	; 地面データのロード
+	pathbuf.0 = mediadir + "\\g_51.bmp"
+	pathbuf.1 = mediadir + "\\8_51.bmp"
+	pathbuf.2 = mediadir + "\\g_river_51.bmp"
+	pathbuf.3 = mediadir + "\\BG43.jpg"
+	E3DLoadGroundBMP pathbuf.0, pathbuf.1, pathbuf.2, pathbuf.3, mapsize, mapsize, mapdiv, mapdiv, mapheight, hsid0
+
+
+	posx0 = 0.0 : posy0 = 0.0 : posz0 = 0.0
+	degx0 = 0.0 : degy0 = 0.0 : degz0 = 0.0
+	E3DSetPos hsid0, posx0, posy0, posz0
+	E3DSetDir hsid0, degx0, degy0, degz0
+	frameno0 = 0
+
+	E3DSetProgressBar 30
+
+
+	; 壁データのロード
+
+	E3DSetMovableArea pathbuf.1, mapsize, mapsize, mapdiv, mapdiv, mapheight + 1000.0, hsid1
+	posx1 = 0.0 : posy1 = 0.0 : posz1 = 0.0
+	degx1 = 0.0 : degy1 = 0.0 : degz1 = 0.0
+	E3DSetPos hsid1, posx1, posy1, posz1
+	E3DSetDir hsid1, degx1, degy1, degz1
+	frameno1 = 0
+	
+
+	E3DSetProgressBar 50
+	
+	
+	pathbuf.0 = mediadir + "\\tako.sig"
+	pathbuf.1 = mediadir + "\\tako_run.qua"
+	E3DSigLoad pathbuf.0, hsid4
+	E3DAddMotion hsid4, pathbuf.1, mk4_idling, max4_idling				
+
+	E3DSetMotionKind hsid4, mk4_idling
+	posx4 = 53898.0 : posy4 = 3000.0 : posz4 = 44982.0	
+
+	degx4 = 0.0 : degy4 = 180.0 : degz4 = 0.0
+	E3DSetPos hsid4, posx4, posy4, posz4
+	E3DSetDir hsid4, degx4, degy4, degz4
+	frameno4 = 0
+	newmk4 = 0
+	curposx4 = posx4 : curposy4 = posy4 : curposz4 = posz4
+	E3DSetBeforePos hsid4
+
+
+	E3DSetProgressBar 90
+
+
+	;/////////////////	
+	
+	testfps = 0
+
+	lightdirx1 = 0.0
+	lightdiry1 = -1.0
+	lightdirz1 = 2.0
+	lightr1 = 255
+	lightg1 = 255
+	lightb1 = 255
+
+	E3DCreateLight lid1
+	E3DSetDirectionalLight lid1, lightdirx1, lightdiry1, lightdirz1, lightr1, lightg1, lightb1
+
+	E3DSetLightAmbient lid1, 77, 77, 77
+	E3DSetLightSpecular lid1, 0, 0, 0
+
+	chkfps1 = 0
+
+	E3DDestroyProgressBar
+
+	befposx = posx4 : befposy = posy4 : befposz = posz4
+	
+	ccw = 0
+	newdeg = 0.0
+	nx1 = 0.0 : ny1 = 0.0 : nz1 = 0.0
+	dot1 = 0.0 : dot2 = 0.0 : dot = 0.0
+
+	dim arfps, 50
+
+	E3DSetLinearFogParams 1, 0, 0, 255, 1000.0, proj_far
+
+*main
+	; keybuf変数は、メインループの外で、dim keybuf, 256 として、確保しておいてください。
+	E3DGetKeyboardState keybuf
+
+	if keybuf.VK_ESCAPE = 1 : goto *bye ; [ESC]で終了
+
+
+	gosub *MoveChara
+	gosub *MoveCamera
+
+
+	E3DSetNewPose hsid4, frameno4
+
+
+	E3DBeginScene scid1
+	
+
+	E3DChkInView scid1, hsid0
+	E3DChkInView scid1, hsid1
+	E3DChkInView scid1, hsid4
+
+	gosub *ChkConf ; !!! E3DChkInViewより後で呼んでください。
+
+
+		;不透明部分の描画をする
+	E3DRender scid1, hsid0, 0, frameno0, 0
+	E3DRender scid1, hsid4, 0, frameno4, 0
+
+		;半透明部分の描画をする
+	E3DRender scid1, hsid0, 1, frameno0, 0
+	E3DRender scid1, hsid4, 1, frameno4, 0
+
+	gosub *DrawText
+
+
+	E3DEndScene
+
+	E3DPresent scid1
+		
+	waitbyfps 60, chkfps1
+
+	arno = 0
+	repeat 49
+		befno = 48 - arno
+		aftno = 49 - arno
+		arfps.aftno = arfps.befno
+		arno++
+	loop	
+	arfps.0 = chkfps1
+
+
+	E3DGetPos hsid4, posx4, posy4, posz4
+	E3DSetBeforePos hsid4
+	befposx = posx4 : befposy = posy4 : befposz = posz4
+	
+	goto *main
+
+
+*bye
+	E3DBye
+	end
+
+*MoveChara
+		
+	; VK_　が頭につく、定数の詳細は、e3dhsp_vk.as をご覧ください。
+	; keybuf は、GetKeyboardState 命令で、セットされます。
+
+	if keybuf.VK_UP = 1 : E3DPosForward hsid4, 100.0 ;矢印上
+	if keybuf.VK_DOWN = 1 : E3DPosForward hsid4, -100.0 ;矢印下
+	if keybuf.VK_LEFT = 1 : E3DRotateY hsid4, -5.0 ;矢印左
+	if keybuf.VK_RIGHT = 1 : E3DRotateY hsid4, 5.0 ;矢印右
+
+	; a が　押されたときに、前進したいときは、下の様に記述します。
+	;if keybuf.'A' = 1 : E3DPosForward hsid4, 100.0
+
+	return
+*ChkConf
+	
+	; 壁(hsid1)とキャラクタ(hsid4)のあたり判定
+
+	resultwall = 0
+	E3DChkConfWall hsid4, hsid1, 10, resultwall, adjustx1, adjusty1, adjustz1, nx1, ny1, nz1
+	if ( resultwall ){
+
+		; 向きを、修正する。
+
+			; 面の法線と９０度、ー９０度の２つのベクトルを求める。
+		E3DVec3RotateY nx1, ny1, nz1, 90, kabex1, kabey1, kabez1
+		E3DVec3Normalize kabex1, kabey1, kabez1, nkabex1, nkabey1, nkabez1
+		
+		E3DVec3RotateY nx1, ny1, nz1, -90, kabex2, kabey2, kabez2
+		E3DVec3Normalize kabex2, kabey2, kabez2, nkabex2, nkabey2, nkabez2
+
+			; キャラクターの向いている向きを求める。
+		E3DGetPos hsid4, posx4, posy4, posz4
+		vecx = posx4 - befposx
+		vecy = 0.0
+		vecz = posz4 - befposz
+		E3DVec3Normalize vecx, 0.0, vecz, nvecx, nvecy, nvecz
+		
+			; ９０度、ー９０度の２つのベクトルのベクトルと、キャラクターの向きの内積を取り、
+			; 内積の大きな方を選んで、そちらに、向きを変える。
+		E3DDot nvecx, 0.0, nvecz, nkabex1, 0.0, nkabez1, dot1
+		E3DDot nvecx, 0.0, nvecz, nkabex2, 0.0, nkabez2, dot2
+
+		if ( dot1 >= dot2 ) {
+			dot = dot1
+			E3DVec2CCW nvecx, nvecz, nkabex1, nkabez1, ccw
+		}
+		else{
+			dot = dot2
+			E3DVec2CCW nvecx, nvecz, nkabex2, nkabez2, ccw
+		}
+
+		E3DAcos dot, newdeg
+		
+		if ccw > 0 : newdeg = newdeg * -1		
+		E3DRotateY hsid4, newdeg / 20.0		
+
+		; 位置を修正する
+		posx4 = adjustx1 : posy4 = adjusty1 : posz4 = adjustz1
+		E3DSetPos hsid4, posx4, posy4, posz4
+	}
+
+
+	result0 = 0
+
+	; 地面その１と、キャラクタのあたり判定	
+	E3DChkConfGround hsid4, hsid0, 1, 200, -100, result0, adjustx0, adjusty0, adjustz0, nx0, ny0, nz0
+	; 自分で、移動前後の座標を管理すれば、E3DChkConfGround2も使用できます。
+	;下のコメント化された命令を参照。
+	;E3DGetPos hsid4, posx4, posy4, posz4
+	;E3DChkConfGround2 befposx, befposy, befposz, posx4, posy4, posz4, hsid0, 1, 200, 0, result0, adjustx0, adjusty0, adjustz0, nx0, ny0, nz0
+	
+	if ( result0 != 0 ) : E3DSetPos hsid4, adjustx0, adjusty0, adjustz0
+
+	return
+
+*MoveCamera
+	E3DGetPos hsid4, saveposx4, saveposy4, saveposz4
+	E3DPosForward hsid4, -2500.0
+	E3DGetPos hsid4, backposx, backposy, backposz
+	E3DSetPos hsid4, saveposx4, saveposy4, saveposz4
+
+	;E3DSetCameraPos backposx, backposy + 1000, backposz
+	E3DSetCameraPos backposx, backposy + 2000.0, backposz
+	E3DSetCameraTarget saveposx4, saveposy4 + 800.0, saveposz4, 0.0, 1.0, 0.0
+
+	return
+
+
+*DrawText
+
+	textr = 255 : textg = 255 : textb = 255
+	textscale = 1
+
+	textposx = 10 : textposy = 60
+	strchk1 = "chkFPS1   " + chkfps1
+	E3DDrawText textposx, textposy, textscale, textr, textg, textb, strchk1
+
+
+	lcnt = 0
+	avfps = 0
+	repeat 50
+		avfps += arfps.lcnt
+		lcnt++
+	loop
+	avfps = avfps / 50
+	textposx = 10 : textposy = 80
+	strchk2 = "avfps   " + avfps
+	E3DDrawText textposx, textposy, textscale, textr, textg, textb, strchk2
+
+	E3DGetPos hsid4, chkposx, chkposy, chkposz
+	textposx = 10 : textposy = 140
+	strchk3 = "chara position   X : " + chkposx + "  Y : " + chkposy + "  Z : " + chkposz
+	E3DDrawText textposx, textposy, textscale, textr, textg, textb, strchk3
+
+	return
+

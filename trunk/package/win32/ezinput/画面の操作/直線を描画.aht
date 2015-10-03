@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "line"
+
+#define ラインの終点X座標	"0"	;;str
+#define ラインの終点Y座標	"0"	;;str
+#define ラインの始点X座標	"0"	;;str
+#define ラインの始点Y座標	"0"	;;str
+
+#ahtmes "line "+ラインの終点X座標+" , "+ラインの終点Y座標+" , "+ラインの始点X座標+" , "+ラインの始点Y座標+

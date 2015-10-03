@@ -1,0 +1,27 @@
+#include "hgimg3.as"
+
+	;	テクスチャを更新するサンプル
+	;	(HSPの画面バッファを使ってリアルタイムに更新します)
+	;
+	hgini
+	screen 1,256,256
+	settex 256,256,0,-1		; テクスチャ登録
+	mest = stat
+	rot=0.0
+	repeat
+	gsel 0
+	hgdraw				; 描画処理
+	gmode 0,256,256			; 元画像のサイズ指定
+	pos 320,240			; 中心座標
+	hgrotate mest,0,0,rot,256,256	; ２倍に拡大して表示
+	hgsync 16			; 時間待ち
+	stick k,127
+	if k&128 : break		; [ESC]で終了
+	rot+=0.01
+	gsel 1
+	color 255,255,255:boxf
+	color 0,0,0:pos 0,0
+	mes "HSPの画面です。("+rot+")"
+	settex 256,256,0,mest		; テクスチャ更新
+	loop
+	end

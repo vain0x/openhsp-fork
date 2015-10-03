@@ -1,0 +1,74 @@
+#include "hgimg3.as"
+
+	;	空と地面
+	;	空のオブジェクト(sky)は通常のクリップ範囲の外に表示されます。
+	;	独立した背景を3Dモデルで用意する場合のサンプルです。
+	;
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+	;
+	clscolor $80
+
+	cammode CAM_MODE_NORMAL
+	setdir HGOBJ_CAMERA, 0, -20, 0
+	setpos HGOBJ_CAMERA, 0, -70, 0
+	setangr HGOBJ_CAMERA, -2, 0, 0
+	setefx HGOBJ_CAMERA, 1.28539816, 0.5f, 420.0f	; fov,near,far
+
+	;	SKY:青空
+	;
+	addxfile m_sky,"skybox.x"
+	modelshade m_sky,0
+	regobj sky, m_sky
+	setscale sky,30,30,30
+	setpos sky,0,20,0
+	setefx sky,$500			; Zバッファを更新しない
+	objproj sky,1			; 通常のZクリップを無効にする
+
+	setdir HGOBJ_LIGHT,100,100,100
+	setang HGOBJ_LIGHT, -1.0, -1.0, 0.0
+
+	;	BG:地面
+	;
+	addxfile m_xmodel,"sb_bg1.x"
+	modelshade m_xmodel,0
+	regobj b_obj, m_xmodel
+	setpos b_obj,0,40,100
+	setscale b_obj, 2,2,2
+
+*main
+	stick key,$3ff
+
+	hgdraw
+
+	fprt "HGIMG3 Test",8,8
+
+	hgsync 15
+
+	if key&128 : goto *owari
+
+	if key&64 {
+		if key&1 : addang HGOBJ_LIGHT, -0.2, 0.0
+		if key&4 : addang HGOBJ_LIGHT, 0.2, 0.0
+		if key&2 : addang HGOBJ_LIGHT, 0.0, 0.2
+		if key&8 : addang HGOBJ_LIGHT, 0.0, -0.2
+		getang HGOBJ_LIGHT, x1,y1,z1
+		title "("+x1+","+y1+","+z1+")"
+	} else {
+		if key&2 : addang HGOBJ_CAMERA, -0.01, 0.0
+		if key&8 : addang HGOBJ_CAMERA, 0.01, 0.0
+		if key&4 : addang HGOBJ_CAMERA, 0.0, 0.01
+		if key&1 : addang HGOBJ_CAMERA, 0.0, -0.01
+	}
+
+	goto *main
+
+*owari
+	hgbye
+	end

@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "instr"
+
+#define 検索される文字列が格納されている文字列型変数名	""	;;str
+#define 検索を始めるインデックス	"0"	;;str
+#define 検索する文字列	""	;;str
+
+#ahtmes "instr( "+検索される文字列が格納されている文字列型変数名+" , "+検索を始めるインデックス+" , "+検索する文字列+" )"+

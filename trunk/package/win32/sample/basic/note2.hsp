@@ -1,0 +1,29 @@
+
+	;	メモリノートパッド命令テスト２
+	;	選んだファイルをメッセージボックスに表示。
+	;
+	sdim tmem,32000
+	tmem=""
+	fname=""
+	;
+	dirlist a,"*.*"
+	sel=0
+	objsize 160,24
+	listbox sel,150,a	; ID=0
+	button "SELECT",*ok	; ID=1
+	pos 180,0
+	mesbox tmem,450,200	; ID=2
+	stop
+*ok
+	notesel a
+	noteget fname,sel
+	exist fname
+	if strsize<=0 : goto *lderr
+
+	notesel tmem
+	noteload fname
+	objprm 2,tmem
+	stop
+*lderr
+	dialog "LOAD ERROR!"
+	stop

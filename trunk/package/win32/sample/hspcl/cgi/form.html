@@ -1,0 +1,17 @@
+<html>
+<h2>入力フォームの値を取得する</h2>
+
+<!--
+form.html はWWWルートに配置し、
+action= の指定先には submit した時に実行されるCGIプログラムのURLを記述します。
+-->
+
+<form method="post" action="http://localhost/cgi-bin/postval.exe">
+    <input type="hidden" name="soft" value="HSP">
+    <input type="hidden" name="ver" value="3.0">
+    <input type="hidden" name="auther" value="onitama">
+    <textarea name="msgtxt" cols=20 rows=5></textarea>
+    <input type="submit" value="おしてちょ">
+</form>
+
+</html>

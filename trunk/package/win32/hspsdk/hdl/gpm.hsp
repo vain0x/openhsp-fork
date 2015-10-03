@@ -1,0 +1,112 @@
+
+;============================================================
+;                                                 2007/xx/xx
+;	gpmodule 1.03c
+;
+;                    S.Programs http://sprocket.babyblue.jp/
+;============================================================
+
+#module
+
+; GDI+ Flat APIs
+#uselib "gdiplus"
+#func GdiplusStartup	"GdiplusStartup" int, int, int
+#func GdiplusShutdown	"GdiplusShutdown" int
+#func GdipCreateFromHDC		"GdipCreateFromHDC"	int, int
+#func GdipDeleteGraphics	"GdipDeleteGraphics"	int
+#func GdipSetSmoothingMode	"GdipSetSmoothingMode"	int, int
+#func GdipSetPixelOffsetMode	"GdipSetPixelOffsetMode"	int, int
+#func GdipSetClipRectI	"GdipSetClipRectI" int, int, int, int, int, int
+; Pen / Brush
+#func GdipCreatePen1	"GdipCreatePen1"	int, float, int, int
+#func GdipCreateSolidFill	"GdipCreateSolidFill"	int, int
+#func GdipDeletePen	"GdipDeletePen"		int
+#func GdipDeleteBrush	"GdipDeleteBrush"	int
+; Draw (int)
+#func GdipDrawLineI	"GdipDrawLineI"		int, int, int, int, int, int
+#func GdipDrawEllipseI	"GdipDrawEllipseI"	int, int, int, int, int, int
+#func GdipFillEllipseI	"GdipFillEllipseI"	int, int, int, int, int, int
+
+;-----------------------------------------------------------
+#deffunc gpexit  onexit
+	if gdiplusToken {
+		GdipDeletePen gpmPen		; ペンを削除
+		GdipDeleteBrush gpmBrush	; ブラシを削除
+		GdipDeleteGraphics gpmGraphics	; Graphics を削除
+		GdiplusShutdown gdiplusToken	; GDI+ 終了
+		gdiplusToken = 0
+	}
+	return
+
+;-----------------------------------------------------------
+#deffunc gpinit
+	gpexit
+	if varptr(GdiplusStartup) {
+		gdiplusToken = 0
+		gsi = 1, 0, 0, 0
+		GdiplusStartup varptr(gdiplusToken), varptr(gsi), 0	; GDI+ 開始
+		gpmGraphics = 0
+		GdipCreateFromHDC hdc, varptr(gpmGraphics)	; Graphics 作成 (現在の screen の hdc)
+		GdipSetSmoothingMode gpmGraphics, 2	; SmoothingModeHighQuality
+		GdipSetPixelOffsetMode gpmGraphics, 2	; HighQuality
+		gpmPen = 0
+		gpmBrush = 0
+	}
+	return
+
+;-----------------------------------------------------------
+#deffunc gpcolor_
+	if hdc_bk ! hdc {
+		hdc_bk = hdc
+		gpinit
+	}
+	if gdiplusToken {
+		if gpmPen {
+			GdipDeletePen gpmPen		; ペンを削除
+			GdipDeleteBrush gpmBrush	; ブラシを削除
+		}
+		ARGB = 0xff000000|(ginfo_r<<16)|(ginfo_g<<8)|ginfo_b ; ARGB (a=100%)
+		GdipCreatePen1 ARGB, 1, 2, varptr(gpmPen)	; ペンを作成 (width=1, unit=2=UnitPixel)
+		GdipCreateSolidFill ARGB, varptr(gpmBrush)	; ブラシを作成
+		GdipSetClipRectI gpmGraphics, 0, 0, ginfo_winx, ginfo_winy, 0 ; Clip Rect 設定
+	}
+	return
+
+; color 系命令
+#define global gpcolor(%1=0, %2=0, %3=0)	color %1, %2, %3 : gpcolor_
+#define global gphsvcolor(%1=0, %2=0, %3=0)	hsvcolor %1, %2, %3 : gpcolor_
+#define global gppalcolor(%1=0)			palcolor %1 : gpcolor_
+#define global gpsyscolor(%1=0)			syscolor %1 : gpcolor_
+
+;-----------------------------------------------------------
+#deffunc gpline_ int p1, int p2, int p3, int p4
+	if gdiplusToken {
+		GdipDrawLineI gpmGraphics, gpmPen,  p1, p2, p3, p4
+		pos p1, p2
+	} else {
+		line p1, p2, p3, p4
+	}
+	return
+
+; line (パラメータ省略用マクロ)
+#define global gpline(%1=0, %2=0, %3=ginfo_cx, %4=ginfo_cy)  gpline_ %1, %2, %3, %4
+
+;-----------------------------------------------------------
+#deffunc gpcircle_ int p1, int p2, int p3, int p4, int p5
+	if gdiplusToken {
+		if p5 {
+			GdipFillEllipseI gpmGraphics, gpmBrush,  p1, p2, p3-p1, p4-p2
+		} else {
+			GdipDrawEllipseI gpmGraphics, gpmPen,  p1, p2, p3-p1, p4-p2
+		}
+	} else {
+		circle p1, p2, p3, p4, p5
+	}
+	return
+
+; circle (パラメータ省略用マクロ)
+#define global gpcircle(%1=0, %2=0, %3=0, %4=0, %5=1)  gpcircle_ %1, %2, %3, %4, %5
+
+#global
+
+

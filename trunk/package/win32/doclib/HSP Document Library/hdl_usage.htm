@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>
+<html lang="ja"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="StyleSheet" type="text/css" href="hdl_main.css">
+<title>HSP Document Library の使い方</title>
+<style>
+/* hs documentation comment */
+.doco {color: #00c;}
+
+/* hs inline html */
+.hshtm {color: #770;}
+</style>
+</head><body>
+
+
+
+
+<h1>HSP Document Library の使い方</h1>
+
+
+
+
+
+
+<h2>HSP Document Library の概要</h2>
+
+<p>HSP Document Library (HDL) は、HSP のドキュメントをすべてまとめて
+ 検索・閲覧 するためのブラウザです。</p>
+
+<p>従来の HSP ドキュメントは、hs ヘルプファイル, txt/HTML ドキュメント, サンプルスクリプト
+ の 3 種類に分断されており、総合的なマニュアル検索やデータの相互参照ができませんでした。
+HDL では、これらのファイルすべてを網羅して検索することができます。
+</p>
+
+<div align='center'><img src="img_hdl.png"></div>
+
+<p>ハイライト</p>
+
+<ul>
+<li>プラグイン・モジュールごとにドキュメントをカテゴリ化できる仮想ドキュメントツリー
+<li>リファレンス、ドキュメント、サンプルをまとめて検索する クロスサーチ
+<li>hs ドキュメンテーションコメントつきの HSP ヘッダファイルのサポート
+</ul>
+
+
+
+
+
+
+<h2>操作一般</h2>
+
+<p>【メニュー】</p>
+
+<p>HDL の初期画面に戻るには、メニューの [ホーム] をクリックします。
+[ホーム] をクリックすると、初期画面へ戻ると同時に、ドライブ上のドキュメントが更新されていないかチェックが行われます。</p>
+
+<p>文字や画像のサイズを調整する場合は、メニューの [ユーザー補助] から表示設定を選択します。([拡大率] メニューは IE 7 以降がインストールされた環境でのみ動作します。)</p>
+
+<p>【キーワード検索】</p>
+
+<p>HDL のキーワード検索入力欄は、スペース区切りの AND 検索に対応しています。キーワードの前に - (マイナス) 記号を入れると、そのキーワードは NOT 検索されます。</p>
+
+<p>【内蔵 hs ファイルエディタ】</p>
+
+<p>HDL は、hs ファイルエディタを内蔵しています。リファレンスページ 最下部の、"このレコードを編集" をクリックすると、"Help Source Editor" が起動します。
+
+
+
+
+
+
+
+<div class="sankou">
+<h3>(補足) hs ファイルとは?</h3>
+<p>hs ファイルとは、HSP ヘルプマネージャ用のヘルプファイルです。拡張子は、通常の場合 .hs です。中身は一定の書式で記述されたテキストファイルとなっています。
+<p>hs ファイルの書式仕様は、<a href="HS_BIBLE.txt">HS_BIBLE.txt</a> で定義されています。
+</div>
+
+
+
+
+<div class="sankou">
+<h3>スタイルシートの適用</h3>
+<p>HDL の本文として表示される HTML は、外部 CSS ファイル hdlmain.css, hdlmenu.css を使用しています。表示をカスタマイズする場合は、このファイルを変更してください。
+</div>
+
+
+
+
+
+
+
+
+<h2>HSP Document Library が読み込むファイル</h2>
+
+<p>ライブラリのファイルは、次のディレクトリから検索されます。</p>
+
+<div class='para'><table border='1'><tr><th>ディレクトリ<th>検索されるファイル</tr>
+<tr><td>doclib\<td>*.hs *.txt *.htm *.html *.hsp</tr>
+<tr><td>docs\<td>*.txt *.htm *.html</tr>
+<tr><td>hsphelp\<td>*.hs</tr>
+<tr><td>sample\<td>*.hsp</tr>
+<tr><td><em class="doco">common\</em><td><em class="doco">*.as *.hsp (ドキュメント付けされたヘッダファイル)</em></tr>
+</table></div>
+
+<p><img src="img_filetree.png"></p>
+
+<p><b>HDL のライブラリに新たなドキュメントを追加する場合は、ファイルを doclib ディレクトリに配置することを推奨します。</b></p>
+
+<p>プラグインやモジュールごとに、doclib ディレクトリ下にカテゴリ ディレクトリを作成し、
+その中に関連ドキュメント (hs, hsp サンプル, txt, HTML 文書やそれで使われる画像、スタイルシートなど) をまとめると、
+ファイル数が多くなっても管理しやすくなります。
+</p>
+
+<p><em class="doco">ドキュメント付けされたヘッダファイルとは、ヘッダファイルと hs ファイルが合体したようなタイプのファイルです。
+このタイプのファイルは、別途ヘルプファイルを用意しなくても、common ディレクトリにヘッダファイルを追加するだけでリファレンスマニュアルが利用できるようになります。</em>
+
+
+
+
+
+
+<h2>HSP Document Library の仮想ドキュメントツリー</h2>
+
+<p>HDL では、読み込まれたファイルの集合を <b>ライブラリ</b> と呼びます。
+ライブラリは <em>リファレンス</em>, <em>ドキュメント</em>, <em>サンプル</em> という 3 つの <b>セクション</b> に分かれます。
+それぞれのセクションは、さらに <b>カテゴリ</b> に細分化されます。カテゴリの下に、コンテンツ本体である <b>ページ</b> があります。
+</p>
+
+<p><img src="img_doctree.png"> (仮想ドキュメントツリー 概念図)
+</p>
+
+<p><b>.hs</b> ヘルプファイルの内容は、<b>リファレンスセクション</b>に振り分けられます。
+リファレンスセクション内のカテゴリは、使用プラグインごとに分けられます。
+</p>
+
+<p><b>.txt</b> <b>.htm</b> <b>.html</b> ファイルは、<b>ドキュメントセクション</b>に振り分けられます。</p>
+
+<p><b>.hsp</b> ファイルは、<b>サンプルセクション</b>に振り分けられます。
+ドキュメントセクションとサンプルセクション内のカテゴリは、実際にファイルが置かれているディレクトリ名で分けられます。
+サブディレクトリに属していないファイルは、「標準カテゴリ」に区分されます。
+</p>
+
+<p><em class="doco">common ディレクトリにドキュメント付けされたヘッダファイル (.as .hsp) がある場合は、その内容はリファレンスセクションに区分されます。</em>
+
+
+
+
+
+
+
+<h2>HSP Document Library のドキュメント関連機能</h2>
+
+<p>ここからは、ドキュメントの作成者向けに、HDL がサポートするドキュメント処理関連の機能などについて説明します。</p>
+
+
+
+
+
+
+
+<h3>hs ファイルの書式</h3>
+
+<p>HDL は、リファレンスマニュアル用のヘルプファイルとして hs 形式のファイルをサポートしています。
+
+<p>hs ファイルの書式については、<a href="HS_BIBLE.txt">HS_BIBLE.txt</a> を参照してください。
+
+
+
+
+
+
+
+
+<h3>ドキュメント作成上の推奨事項</h3>
+
+<p>HDL は、基本的には処理されるドキュメントについて特別なルールを要求しませんが、
+ユーザーにとって読みやすいドキュメントが作成されるよう、ドキュメント作成上のゆるやかな推奨事項を取り決めています。
+
+<p>ドキュメント作成のための推奨ルールは、<a href="hdl_docrule.htm">HDL ドキュメントルール</a> にまとめられています。
+
+
+
+
+
+
+
+
+
+<h3>ドキュメントのサムネイル表示</h3>
+
+<p>HDL は、目的のドキュメントやサンプルスクリプトを一覧から見つけやすくするために、サムネイル画像の表示をサポートしています。
+
+<p>ドキュメントファイル (.hsp .htm .html .txt) のディレクトリ下に thumbs ディレクトリを作成し、対象のドキュメントファイル名 + 画像ファイルの拡張子 の画像ファイルを置くと、
+ドキュメントファイルのサムネイル画像として認識されます。サムネイル画像として利用可能なファイルの種類は、BMP, PNG, JPG, GIF です。
+画像のスタンダードサイズは 160 x 120 です。</p>
+
+<p><img src="img_thumbs.png"></p>
+
+
+
+
+
+
+
+
+<h3>ヘッダファイルと hs ドキュメンテーションコメント</h3>
+
+<p>HDL は、common ディレクトリ下のヘッダファイル (.as .hsp) を、<b>ドキュメント付けされたヘッダファイル</b>として読み込みます。
+
+<p>ドキュメント付けされたヘッダファイルとは、ヘッダファイルに hs 形式の<b>ドキュメンテーションコメント</b>を追加した形式のファイルで、
+ヘッダファイルとしての機能とリファレンスマニュアルとしての機能をあわせ持ったファイルをさします。
+
+<p>HSP スクリプト中にドキュメンテーションコメントを記入する場合、下記のような書式を使用します。
+このスクリプトは、HSP スクリプトとしても hs ヘルプファイルとしてもその仕様を満たし、どちらの形式としても正しく処理されます。
+
+<pre class="script">
+;============================================================
+; ドキュメンテーションコメントつきヘッダファイル
+;============================================================
+<span class="doco">/* ～ モジュール情報 (hs デフォルトレコード)
+%dll
+d3module
+
+%ver
+1.67
+
+%date
+2008/05/01
+
+%*/</span> ; <--- これ以降は hs ファイルとしてはコメントになる
+;------------------------------------------------------------
+
+#module
+
+;===========================================================
+<span class="doco">/* ～ ドキュメント部分
+%index
+d3setcam
+カメラ位置設定
+
+%prm
+x1, y1, z1, x2, y2, z2
+
+%inst
+カメラの座標 x1, y1, z1 と向き (ターゲット位置 x2, y2, z2) 設定します。
+
+%group
+3D 制御命令
+
+%*/</span>
+;------------------------------------------------------------
+; ～ 実装部分
+#deffunc d3setcam double p1, double p2, double p3, double p4, double p5, double p6
+	//
+	return
+//
+#global
+</pre>
+
+<p>ドキュメンテーションコメントは、HSP スクリプトの複数行コメント (/* ～ */) 内に、hs ヘルプファイルの書式仕様にしたがって記述します。
+この、hs 形式のフィールドタグを含む複数行コメントを、<b>ドキュメントブロック</b>と呼びます。
+
+<p>ドキュメントブロックの終了部分は、% 記号を使って、以降が hs 形式としてコメントとなるように処理します。
+hs 形式では、定義されていないフィールドタグがあると、以降の行はコメントとみなされます。
+この処理を忘れると、HSP スクリプト部分まで hs ドキュメントの一部として認識されてしまう可能性があります。
+
+<p>この部分の記述は、下記のいずれかの書き方を推奨します。
+
+<pre class="script">
+<span class="doco">%*/</span>
+</pre>
+
+<pre class="script">
+<span class="doco">%rem
+*/</span>
+</pre>
+
+<p>ドキュメントブロックの中では、ドキュメントとして複数行コメント (/* ～ */) を表現することはできません。
+
+<p>このルールに従って書かれたファイルは、拡張子を .hs に変更するだけで、
+ドキュメンテーションコメントをサポートしない hs ヘルプツールからも読み込むことが出来ます。
+
+
+
+
+
+
+
+<h3>hs ファイルのインライン HTML</h3>
+
+<p>HDL には、hs ファイルの %inst フィールド内で "html{" と書いた行から "}html" と書いた行までの間を、ダイレクトに
+ HTML として表示する「インライン HTML」という機能があります。
+
+<p>これは hs ファイルとしての仕様ではなく HDL の表示上の仕様で、従来の HSP HELP Browser II でサポートされていた機能と同等のものです。
+この機能により、hs ファイルで HTML の表現を一部利用することができます。
+
+<pre class="script">
+; hs ファイル書式例
+
+%index
+stickf
+キー入力情報取得
+
+%inst
+stickf 関数は、以下のような複数のキーの状態の OR 値を返します。
+<span class="hshtm">html{
+&lt;table border=1&gt;
+&lt;tr&gt;&lt;th&gt;値&lt;/th&gt;&lt;th&gt;キー&lt;/th&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;カーソルキー左(←)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;2&lt;/td&gt;&lt;td&gt;カーソルキー上(↑)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;4&lt;/td&gt;&lt;td&gt;カーソルキー右(→)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;8&lt;/td&gt;&lt;td&gt;カーソルキー下(↓)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;スペースキー&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;32&lt;/td&gt;&lt;td&gt;Enterキー&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;64&lt;/td&gt;&lt;td&gt;Ctrlキー&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;128&lt;/td&gt;&lt;td&gt;ESCキー&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+}html</span>
+</pre>
+
+<p>インライン HTML の区間について、中の HTML の書式は HDL によってチェックされません。
+誤った HTML が記述されているとページ全体のレイアウトが崩れたりする可能性もありますので、hs データの配布などを行う場合は十分にチェックを行ってください。
+また、情報の意味づけに関係しない、装飾的な目的での HTML の使用は避けるようにしてください。
+
+<p>インライン HTML ではアクティブスクリプト (javascript 等) の記述を行わないでください。
+スクリプトの実行に関するいくつかのキーワードは、使用を制限されています。インライン HTML で使用した要素のスタイルは、外部 CSS の影響を受ける場合があります。
+
+<p>HDL の出力ページのドキュメントタイプは、HTML 4.01 Transitional です。
+
+
+
+
+
+
+
+
+
+<div class="sankou">
+
+<h3>(参考) hs ヘルプ関連機能のサポート状況</h3>
+
+<p>hs ファイルの互換情報として、各代のヘルプマネージャの hs ヘルプ関連機能のサポート状況を示します。
+
+<div class='para'><table border="1">
+<tr><th><th colspan=4>プログラム (新 ←→ 旧)</tr>
+<tr><th width="25%">機能<th width="25%">HSP Document Library 1.3<th width="25%">HSP HELP Browser II 2.1<th width="25%">HSP HELP Browser 1.5</tr>
+<tr><th>旧仕様 hs ファイル<td align="center">○利用可能<td align="center">○利用可能<td align="center">○利用可能</tr>
+<tr><th>hs ファイル仕様 2.0<td align="center">○利用可能<td align="center">○利用可能<td align="center">×</tr>
+<tr><th>インライン HTML<td align="center">○利用可能<td align="center">○利用可能<td align="center">×</tr>
+<tr><th>ドキュメント付けされたヘッダファイル<td align="center">○利用可能<td align="center">×<td align="center">×</tr>
+</table></div>
+
+</div>
+
+
+
+
+
+
+
+
+<h2>アップデート情報</h2>
+
+<p>HDL の最新バージョンは、<a href="http://sprocket.babyblue.jp/">http://sprocket.babyblue.jp/</a> で公開されています。
+
+
+
+
+
+
+
+
+
+
+<div id='footer'>HSP Document Library<br>S.Programs</div>
+
+
+</body></html>

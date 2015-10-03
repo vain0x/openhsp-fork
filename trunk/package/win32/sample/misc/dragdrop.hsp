@@ -1,0 +1,45 @@
+; Windowへのドラッグ&ドロップsample
+; http://quasiquote.org/hspwiki/
+;       thanks ちょくと さん
+;		http://yokohama.cool.ne.jp/chokuto/urawaza/dragdrop.html 
+;
+
+#uselib "shell32.dll"
+#func DragAcceptFiles "DragAcceptFiles" int,int
+#func DragQueryFile   "DragQueryFileA"  int,int,int,int
+#func DragQueryPoint  "DragQueryPoint"  int,int
+#func DragFinish      "DragFinish"      int
+
+#define WM_DROPFILES    0x0233
+
+; WM_DROPFILES メッセージハンドラを設定
+oncmd gosub *OnDropFiles, WM_DROPFILES
+
+; ファイルをドラッグ＆ドロップできるように設定
+DragAcceptFiles hwnd, 1
+
+title "ウィンドウにファイルをドロップしてください"
+stop
+
+*OnDropFiles
+; --- ファイルがドロップされたとき ---
+
+; ドロップされたファイルの数を取得する
+hdrop = wParam                  ; ドロップファイル情報のハンドル
+DragQueryFile hdrop, -1, 0, 0
+ndrop = stat                    ; ファイルの数
+
+; 画面をクリア
+syscolor 5 : boxf
+syscolor 8 : pos 0,0
+
+; ファイル名を取得して表示
+sdim filename, 260
+repeat ndrop
+        DragQueryFile hdrop, cnt, varptr(filename), 260
+        mes filename
+loop
+
+; ドロップファイル情報をクリア (これをしないとメモリリークになる)
+DragFinish hdrop
+return

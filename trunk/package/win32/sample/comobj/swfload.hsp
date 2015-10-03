@@ -1,0 +1,19 @@
+#include "mod_img.as"
+
+;ActiveXによってflashコンポーネントを呼び出して表示します。
+;FLASHファイルは、基本的にIEコンポーネントなどで表示させることが可能ですが
+;(サンプルのcomtest2.hspなどで試してみてください)、直接Flashオブジェクトを利用して
+;swfファイルをウィンドウ内で再生することで、細かいコントロールを行なうことが可能です。
+
+	title "swfファイルを読み込んで再生します"
+	dialog "swf",16
+	if stat = 0 : end
+
+	fname = refstr
+	axobj obj,"ShockwaveFlash.ShockwaveFlash",640,480
+	obj->"LoadMovie" 0, fname
+	obj->"Play"
+
+	stop
+
+

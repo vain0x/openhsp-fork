@@ -1,0 +1,36 @@
+
+#include "hspext.as"
+
+	;
+	;	固定小数による数学関数テスト
+	;	(sin,cos,atan)
+	;
+
+	y=0:x=0:r=0
+	mx=320:my=200
+	ax=0:ay=0
+	emath 8
+
+	repeat
+	ax=mousex-mx:ay=mousey-my
+	ematan r,ax,ay
+	title "AX="+ax+",AY="+ay+",R="+r
+
+	emsin x,r
+	emcos y,r
+	emint x,x*50
+	emint y,y*50
+	x+=mx:y+=my
+
+	redraw 2
+	color 255,255,255
+	boxf 250,130,450,280
+	color 0,0,192
+	boxf x-3,y-3,x+3,y+3
+	pos mx,my:line x,y
+	redraw 1
+
+	await 2
+	loop
+	stop
+

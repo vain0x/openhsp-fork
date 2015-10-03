@@ -1,0 +1,769 @@
+;------------------------------------------------------
+;	HSP3 demo for ver3.1 ( sample script )
+;------------------------------------------------------
+
+#include "hspogg.as"
+#include "hsp3util.as"
+#include "mod_sprite.as"
+
+#packopt name "hsp3demo"
+
+; 実行ファイル作成時のみ定義してください
+#define RELEASE
+#define global USE_SOUND
+
+#module
+#deffunc demo_init
+
+	;	デモ初期化
+	;
+#ifdef USE_SOUND
+
+	dmmini
+	m_defvol=0
+	m_vol=0
+	m_fade=0
+
+	dmmload "theme.ogg",0
+	dmmloop 0,899783		; ループポイント設定
+	dmmload "se_tyuiin.wav",1
+	dmmload "oot06.ogg",2
+	dmmloop 2,671328		; ループポイント設定
+#endif
+	buffer 5
+	picload "bgpeas.bmp"
+	buffer 6
+	picload "logop.bmp"
+	buffer 7
+	picload "btn_hsptv.bmp"
+	buffer 8
+	picload "bgsmoke.bmp"
+	gsel 0
+
+	return
+
+#deffunc demo_term
+
+	;	デモ終了
+	;
+#ifdef USE_SOUND
+	dmmbye
+#endif
+	return
+
+
+#deffunc sndoff
+
+	;	音止め
+	;
+#ifdef USE_SOUND
+	m_fade=0
+	dmmstop
+#endif
+	return
+
+
+#deffunc snd int id
+
+	;	サウンドを再生
+	;
+#ifdef USE_SOUND
+
+	if id=1 : goto *nobgm	; 効果音の時
+	;
+	m_vol=m_defvol
+	m_fade=0
+	m_id=id
+	dmmvol id, m_vol
+*nobgm
+	dmmplay id
+#endif
+	return
+
+
+#deffunc sndexec
+
+	;	サウンドフレーム処理(フェード用)
+	;
+#ifdef USE_SOUND
+	if m_fade=0 : return
+	m_vol+=m_fade
+	if m_vol<-4000 : m_vol+=m_fade*2
+	if m_vol<=-8000 {
+		sndoff
+		return
+	}
+	if m_vol>=0 : m_vol=0 : m_fade=0
+	dmmvol m_id,m_vol
+#endif
+	return
+
+
+#deffunc sndfade int _p1
+
+	;	サウンドフェード指定
+	;
+#ifdef USE_SOUND
+	if _p1>0 : m_vol=-4000
+	m_fade=_p1
+	return
+#endif
+
+
+#deffunc exec2 str _p1, int _p2
+
+	;	外部ファイル実行
+	;
+	exist _p1
+	if strsize <= 0 : dialog "該当ファイルがないため実行できません。" : return
+	exec _p1,_p2
+	return
+
+
+#deffunc initwall
+
+	buffer 3,640,480
+	picload "gradbg.bmp",1
+	x=0:gmode 0,640,16
+	repeat 480/16
+		if cnt=0 : continue
+		y=cnt*16
+		pos x,y:gcopy 3
+	loop
+	gsel 0
+	return
+
+#deffunc copywall
+	gmode 0,640,480:pos 0,0:gcopy 3
+	return
+
+#deffunc fadewall int _p1
+
+	wt=_p1:if wt=0 : wt=16
+	repeat 32
+	redraw 0
+	copywall
+	color 0,0,0:gfade (31-cnt)*8
+	redraw 1
+	await wt
+	loop
+	return
+
+#deffunc mkwall str a
+
+	;	BGの壁紙作成
+	;
+	initwall
+
+	gsel 3
+	font msgothic,32,1+16
+	x=20:y=64
+	pos x+2,y+2:color 0,0,0:mes a
+	pos x,y:color 192,192,255:mes a
+	x+=20:y+=60
+
+	gsel 0:cls 4
+	fadewall 15
+
+	pos x,y
+	font msgothic,20,1+16:objsize 64,24,22
+	return
+
+#deffunc byewall
+
+	repeat 32
+		color 0,0,0:gfade 8+cnt
+		await 15
+	loop
+	return
+
+#deffunc wipe_slide int _p1, int _p2
+
+	;	ワイプ(カーテン)
+	;	wipe_slide 転送元id, 待ち時間
+	;
+	wt=_p2:if wt=0 : wt=48
+	mx=-32:repeat 60
+		redraw 0
+		repeat 32
+		a=cnt*20:x=cnt+mx:if x>20 : x=-1
+		if x>0 : pos a,0 : gmode 0,x,480 : gcopy _p1,a,0
+		loop
+		redraw 1
+	await wt
+	mx+:loop
+	return
+
+#global
+
+;------------------------------------------------------
+
+*boot
+	;	デモ開始
+	;
+	title "HSP3.1 Demonstration"
+
+#ifdef RELEASE
+	chdir dir_exe+"\\sample\\demo\\"
+#endif
+
+	x=(ginfo_dispx-640)/2:y=(ginfo_dispy-480)/2
+	screen 0,640,480,0,x,y
+	cls 4:color 255,255,255
+	pos 520,450:mes "Loading..."
+
+	demo_init
+	onexit *owari
+
+	;goto *demomain6
+
+	snd 0
+
+*mainmenu
+	;	メインメニュー
+	;
+	gsel 6
+	logosx=ginfo_winx
+	logosy=ginfo_winy
+	gsel 0
+	cls
+
+	sx=640:sy=200:blur=128
+	rate=0.0:fa=0.05:fb=0.001
+	;
+	;gmode 0,640,1
+	;repeat 480-200
+	;pos 0,200+cnt:gcopy 3,0,0
+	;loop
+
+	color 170,245,40:boxf
+
+	y=(480-sy)/2
+	repeat y
+	color 170,245,40+cnt
+	i=cnt*2+sy
+	boxf 0,i, sx,i+2
+	loop
+
+	pos 32,400:gcopy 7,0,0,200,26
+	objsize 200,28:pos 32,426
+	button "HSPTVブラウザを起動",*see_hsptv
+
+	;	オブジェクト配置
+	;
+	;objmode 1+16,1
+	font "ＭＳ ゴシック",16,1+16
+	x=114:y=240:color 192,192,255
+	pos x+1,y+1:mes "ＨＳＰの世界へようこそ。メニューのボタンを押してください。"
+	color 0,0,160
+	pos x,y:mes "ＨＳＰの世界へようこそ。メニューのボタンを押してください。"
+	font "ＭＳ ゴシック",16,1
+	x=294:y=280:pos x,y
+	objsize 80,24,30
+	button "readme",*see_readme
+	button "demo",*demomain
+	button "manual",*see_man
+	button "sample",*see_sample
+	button "editor",*see_edit
+	button "quit",*owari
+	x=390:y=282:pos x,y
+	mes "はじめにお読みください"
+	mes "HSPデモンストレーション"
+	mes "HSP総合マニュアルを開く"
+	mes "サンプルスクリプトを見る"
+	mes "スクリプトを編集する"
+	mes "終了"
+
+*main1
+	;	メインメニュー画面待ち
+	;
+	redraw 0
+	;
+	gmode 0,sx,1
+	repeat sy
+	pos 0,cnt:ff=cos(fa*cnt+rate)
+	gcopy 5,blur+(sin(rate+ff)*blur),cnt
+	loop
+	pos 268,48:gmode 6,logosx,logosy,256:gcopy 6
+	;
+	redraw 1,0,0,640,200
+	wait 10
+	;
+	rate+=0.1
+	fa+=fb
+	if fa>0.1 : fb=-0.001 : fa=0.1
+	if fa<0.05 : fb=0.001 : fa=0.05
+	goto *main1
+
+*see_readme
+	;sndoff
+	mkwall "・はじめに"
+
+	redraw 0
+	text 0:color 0,0,128:textmode 2:color 255,255,255
+	emes {"
+このデモプログラムは、Hot Soup Processor Ver.3の
+機能と使い方の紹介をするためのものです。
+メインメニューから見たい項目を選んでボタンを押して
+ください。
+このプログラムはすべてHSPで書かれています。
+初めてプログラミングをする方は、「begin」ボタン
+を押して「初心者のためのHSP入門」をご覧ください。
+"}
+	;
+	font msgothic,16,1
+	pos 290,360:objsize 64,24,28
+	button "menu",*mainmenu
+	button "begin",*see_begin
+	button "home",*see_home
+	pos 360,362
+	mes "メインメニューに戻る"
+	mes "初心者のためのHSP入門を見る"
+	mes "HSPTV! ホームページへ"
+	redraw 1
+	stop
+
+*see_home
+	snd 1
+	exec "http://hsp.tv/",16
+	stop
+*see_begin
+	snd 1
+	exec2 dir_exe+"\\docs\\beginner\\start.htm",16
+	stop
+
+*see_sample
+	snd 1
+	exec2 dir_exe+"\\sampview.exe"
+	wait 100
+	goto *owari
+*see_edit
+	snd 1
+	exec2 dir_exe+"\\hsed3.exe"
+	wait 100
+	goto *owari
+*see_man
+	snd 1
+	exec2 dir_exe+"\\index.htm",16
+	goto *mainmenu
+*see_hsptv
+	snd 1
+	exec2 dir_exe+"\\hsptv.exe"
+	wait 100
+	goto *owari
+*owari
+	demo_term
+	end
+
+*demomain
+	;	HSPデモ(フライングロゴ)
+	;
+	;sndoff
+	sndfade -20
+	;
+	buffer 4
+	picload "onibtn.gif"
+	sx=ginfo_winx:sy=ginfo_winy
+	buffer 3
+	picload "hsplogo8.bmp"
+	gsel 0
+	cls 4
+	snd 1
+	max=40
+
+	init_sprite 80,50,max
+	opt_sprite 3,2
+	move_sprite1_init
+
+	mx=sx:my=sy:x=-sx:y=240:z=0
+
+	repeat
+	redraw 0
+	color 0,0,0:boxf
+
+	move_sprite1
+	draw_sprite
+
+	pos x,y:gmode 0,sx,sy
+	if z>=260 {
+		i=(z-260)*8
+		if i>=256 : z++ : goto *skiplogo
+		gmode 3,sx,sy,256-i
+	}
+	grotate 4,0,0,0.01*(320-x),mx,my
+	if x>=320 {
+		z++
+		if z>250 {
+			mx+=2:my+=1
+		}
+		x=320
+	} else {
+		x+=8
+	}
+
+*skiplogo
+	redraw 1
+	sndexec
+	await 15
+	if z>340 : break
+
+	loop
+
+*demomain2
+	;	HSPデモ(テキスト表示)
+	;
+	cls 4
+	snd 2
+	mkwall "・HSPとは?"
+	text 10:color 0,0,128:textmode 2:color 255,255,255
+	emes "ＨＳＰは、Windows上で手軽に使えるインタプリタ言語です。
+	emes "テキストによるスクリプトを書くだけで、誰にでも簡単に
+	emes "ウインドゥズ上で動作する、2D・3D画像を使ったゲームや"
+	emes "スクリーンセーバー、ツールや実用ソフトなどの
+	emes "アプリケーションを構築することができます。"
+
+	gosub *waitclick
+	byewall
+
+	mkwall "・HSPの特長"
+	text 10:color 0,0,128:textmode 2:color 255,255,255
+
+	emes "・簡単に覚えられる強力な命令セット"
+	emes "・付属エディタですぐに使い始めることができる" 
+	emes "・作ったプログラムは自由に再配布が可能"
+	emes "・拡張プラグイン・モジュールによる機能拡張"
+	emes "・１０年以上に渡る多くのユーザー資産と使用実績"
+	emes "・オープンな仕様の中間言語インタプリタを搭載" 
+
+	gosub *waitclick
+	byewall
+
+*demomain3
+	;	HSPデモ(配置オブジェクト表示)
+	;
+	cls 4:color 0,0,64:boxf
+	objmode 1,1
+	font msgothic,20,3
+	x=16:y=20:color 192,255,128
+	pos x,y:mes "・HSP3 配置オブジェクト"
+	font msgothic,14,1
+	x=40:y=50:color 0,192,0:pos x,y
+	mes "HSPでは、ボタンや入力ボックスなどのオブジェクトを"
+	mes "自由に配置して使うことができます。下のサンプルはその一例です。"
+	mes "他にも、多くのコントロール、ActiveXを配置することができます。"
+	mes "「テスト終了」で次へ進みます。"
+	sysfont:color 0,192,192
+	pos 40,130:mes "・けいさん"
+	pos 40,200:mes "・グラフ"
+	pos 40,270:mes "・メッセージ"
+	;
+	objsize 48,24:color 192,192,192
+	cal1=123:cal2=456
+	caltype=0:calmark="+\n-\n*\n/"
+	pos 60,160:input cal1
+	pos 160,160:input cal2
+	objsize 40,24
+	pos 114,159:combox caltype,150,calmark
+	;
+	objsize 64,24
+	grph=10:x=280
+	pos 60,230:input grph
+	pos 138,230:button "GO",*idgrph
+	pos 138+64,230:button "RND",*idrnd
+	;
+	pos 60,300:ids="ここにメッセージを入れてください。"
+	mesbox ids,320,100,1
+	button "GO",*idmes
+	;
+	objsize 120,24
+	pos 480,400:button "テスト終了",*idover
+	z=300
+*idmain
+	color 0,0,64:boxf 210,162,276,180
+	color 192,192,192
+	cal1b=cal1:cal2b=cal2:caltb=caltype
+	if caltb=0 : ans=cal1+cal2
+	if caltb=1 : ans=cal1-cal2
+	if caltb=2 : ans=cal1*cal2
+	if caltb=3 : if cal2!0 : ans=cal1/cal2 : else : ans=0
+	pos 210,162:mes "= "+ans
+*idloop
+	if cal1!cal1b : goto *idmain
+	if cal2!cal2b : goto *idmain
+	if caltb!caltype : goto *idmain
+	;
+	if z<=0 : goto *idover
+	z--
+	wait 10:goto *idloop
+
+*idrnd
+	a=(rnd(20)+1)*5:objprm 3,a
+	goto *idgrph
+*idgrph
+	if x>580 : x=580:pos 280,100:gcopy 0,300,100,320,150
+	a=250-grph:if a>250 : a=250
+	if a<100 : a=100
+	color 255,0,0:boxf x,a,x+18,250
+	x+=20
+	goto *idloop
+*idmes
+	dialog ids
+	goto *idloop
+*idover
+
+*demomain4
+	;	HSPデモ(ノベル表示)
+	;
+	cls 4
+	buffer 3
+	picload "sky_bg.jpg"
+	buffer 4
+	picload "jp6girl.bmp"
+	sx=ginfo_winx:sy=ginfo_winy
+
+	gsel 6
+	mx=ginfo_winx:my=ginfo_winy
+	gsel 0:cls 4
+
+	wipe_slide 3
+
+	x=30:color 0,0,0
+	repeat 32
+		gmode 4,sx,sy,4*cnt
+		pos x,0:gcopy 4
+		await 16
+	loop
+	gmode 2,sx,sy:pos x,0:gcopy 4
+
+	font msgothic,26,1+16
+	text 20:color 0,0,0:textmode 1:color 255,255,255
+	pos 280,80
+	emes "ビジュアルノベルや、"
+	emes "プレゼンテーションに"
+	emes "利用できる高度な機能を"
+	emes "提供しています。"
+	mes ""
+	emes "・画像を重ねた複雑な演出"
+	mes ""
+	emes "・半透明ブレンドの表現"
+	mes ""
+	emes "・音声と動きの同期"
+
+	gsel 3
+	color 0,0,0:gmode 3,640,480,160
+	grect 320,240,0
+	gsel 0
+
+	wait 700
+
+	y=1:z=0
+	repeat 16
+		redraw 0
+		gmode 0,640,480:pos 0,0:gcopy 3
+		i=y>>1
+		gmode 0,640,y:pos 0,240-i:gcopy 8,z,100-i
+		gmode 2,sx,sy:pos x,0:gcopy 4
+		redraw 1
+		await 16
+		x+=40:y+=4:z++
+	loop
+
+	repeat 50-16
+		i=y>>1
+		gmode 0,640,y:pos 0,240-i:gcopy 8,z,100-i
+		await 16
+		y+=4:z++
+	loop
+
+	color 0,0,0
+	repeat 16
+		gmode 0,640,y:pos 0,140:gcopy 8,z,0
+		gmode 3,640,140,32
+		grect 320,70,0
+		grect 320,480-70,0
+		await 16
+		z++
+	loop
+
+	repeat 16
+		redraw 0
+		gmode 0,640,y:pos 0,140:gcopy 8,z,0
+		gmode 6,mx,my,cnt*16:pos 258,180:gcopy 6
+		redraw 1
+		await 16
+		z++
+	loop
+
+	repeat
+		redraw 0
+		gmode 0,640,y:pos 0,140:gcopy 8,z,0
+		gmode 6,mx,my,256:pos 258,180:gcopy 6
+		redraw 1
+		await 16
+		z++
+		if z>=256 : break
+	loop
+
+	gsel 3:cls 4:gsel 0
+	wipe_slide 3
+
+*demomain5
+	;	HSPデモ(サンプル画面表示)
+	;
+	buffer 4
+	picload "hsp3scr.jpg"
+	initwall
+
+	gsel 3
+	font msgothic,32,1+16
+	a="・HSP3.1の主要機能"
+	x=240:y=32
+	pos x+2,y+2:color 0,0,0:mes a
+	pos x,y:color 192,192,255:mes a
+	font msgothic,20,1+16
+	pos x+32,y+60
+	text 0:color 0,0,128:textmode 2:color 255,255,255
+	gsel 0
+
+	fadewall
+
+	max=8
+	init_sprite 160,124,max
+	opt_sprite 4,0
+	move_sprite2_init
+
+	tex={"
+●高機能なタブエディタ
+●検索機能付きヘルプブラウザ
+●HSPLetによるWEB上での動作
+●高機能な3D表示とゲーム機能
+●各種画像フォーマット入出力
+●WEBカメラ、画像認識等の利用
+●http,ftp,rss,xml等のサポート
+●Windows COM、ActiveXの利用
+●動画、音声ストリーミング"}
+
+	z=0
+	repeat
+	redraw 0
+	copywall
+
+	if cnt=(z*250) {
+		notesel tex
+		if z<notemax {
+			gsel 3
+			noteget a,z
+			emes a
+			mes ""
+			gsel 0
+		}
+		z++
+	}
+
+	move_sprite2
+	draw_sprite
+	redraw 1
+	await 15
+	if z>10 : break
+
+	loop
+	byewall
+
+*demomain6
+	;	HSPデモ(テキスト表示2)
+	;
+	cls 4
+	mkwall "・HSPができること"
+	text 10:color 0,0,128:textmode 2:color 255,255,255
+
+	emes "ビジュアルノベルから本格的な3Dシューティングまで"
+	emes "様々なジャンルのゲーム作成ができるほか、" 
+	emes "デスクトップアクセサリ、スクリーンセーバー、"
+	emes "画面レイアウトの試作、画像データの変換などの"
+	emes "即席ツール、プログラムランチャーなど応用範囲は
+	emes "アイデア次第で無限に広がります。"
+
+	gosub *waitclick
+	byewall
+
+	mkwall "・インフォメーション"
+	text 10:color 0,0,128:textmode 2:color 255,255,255
+
+	emes "HSPはホームページ上でサポートを行なっています。"
+	emes "http://hsp.tv/
+	mes ""
+	emes "ＨＳＰについての最新情報、サンプルスクリプト、"
+	emes "FAQ、などのコーナーがあります。ＨＳＰについての"
+	emes "ご意見、BUGの情報、要望などいつでもお待ちしています。"
+
+	gosub *waitclick
+	byewall
+
+
+*demomain7
+	;	HSPデモ(エピローグ)
+	;
+	buffer 3
+	picload "onibtn.gif"
+	logosx=ginfo_winx
+	logosy=ginfo_winy
+	gsel 0:cls 4
+	font "Arial",16,16
+
+	repeat 32
+		redraw 0
+		color 0,0,0:boxf
+		gosub *edmes2
+		pos 260,290:gmode 0,logosx,logosy:gcopy 3
+		color 0,0,0:gfade (31-cnt)*8
+		redraw 1
+		await 16
+	loop
+
+	wait 100
+	sndfade -10
+	repeat 5000/16
+		sndexec
+		await 16
+	loop
+
+	repeat 48
+		color 234,234,230:gfade 8+cnt
+		sndexec
+		await 16
+	loop
+
+	snd 0
+	goto *mainmenu
+
+*waitclick
+	;	クリック待ち
+	;
+	i=128:ip=16
+	sysfont 17
+	repeat 200
+	stick key:if key : break
+	color i,i,i
+	i+=ip:if (i=128)or(i=240) : ip=-ip
+	pos 480,440:mes "ボタンをクリックしてください。"
+	wait 10
+	loop
+	snd 1
+	return
+
+*edmes2
+	x=200:y=130
+	pos x+2,y+2:color 0,0,192:gosub *edmes
+	pos x,y:color 255,255,255:gosub *edmes
+	return
+
+*edmes
+	mes "HSP DEMO script"
+	mes "copyright 2007 onion software"
+	mes "   Music by CHOBIN,onitama"
+	mes "   Music Arranged by ArStudio"
+	mes "   Logo designed by sencha and"
+	mes "                    YumeYumeYuuka"
+	mes "   CG picture by Y-jinn"
+	return
+

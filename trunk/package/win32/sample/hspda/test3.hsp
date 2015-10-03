@@ -1,0 +1,29 @@
+
+	#include "hspda.as"
+
+	;	配列変数のソート
+	;
+	randomize
+	kaz=10
+	sdim n,32,kaz
+
+	repeat kaz
+	n.cnt="***"+rnd(20)
+	loop
+
+
+	pos 0,0
+	repeat kaz
+	mes "N["+cnt+"]="+n.cnt
+	loop
+
+	sortstr n,0
+
+	pos 320,0
+	repeat kaz
+	sortget a,cnt
+	mes "sort N["+cnt+"]="+n.cnt+"("+a+")"
+	loop
+
+	stop
+

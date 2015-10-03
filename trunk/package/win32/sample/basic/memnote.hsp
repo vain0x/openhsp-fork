@@ -1,0 +1,17 @@
+;
+;	メモリノートパッド命令テスト
+;
+a="abc\ndef\nhij"
+notesel a
+noteload "memnote.hsp"
+mes "行数="+notemax
+mes "文字数="+notesize
+
+repeat notemax
+noteget b,cnt
+mes "#"+cnt+":"+b
+loop
+
+noteunsel
+
+stop

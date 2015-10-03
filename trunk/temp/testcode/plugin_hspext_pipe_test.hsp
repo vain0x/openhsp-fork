@@ -1,0 +1,27 @@
+#include "hspext.as"
+
+	sdim ln,4096
+	sdim buf,32000
+
+	cmdline = dir_cur + "\\plugin_hspext_pipe_test.exe " + 1
+
+	pipeexec buf,cmdline,1
+	if stat : dialog "実行できませんでした" : end
+
+	mes "実行中..."
+
+	pipeput 'A'
+	pipeput 13
+	pipeput 10
+	
+	repeat
+	pipeget ln          ; パイプの取得/更新
+	if stat=0 : break   ; 実行終了ならループを抜ける
+	wait 10
+;	mes ln : poke ln, 0, 0
+	loop
+
+	mes "実行完了..."
+	mes buf
+
+	stop

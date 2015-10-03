@@ -1,0 +1,51 @@
+;
+;	組み込みキーワードを新規命令で置き換える例
+;	mes命令をサブルーチンによる表示に置き換えます。
+;	(サブルーチンからは本来のmes命令を呼び出しています。)
+;
+#undef mes
+
+#module
+#deffunc mes str _p1
+_x=ginfo_cx
+_y=ginfo_cy
+color 0,0,0
+pos ginfo_cx+1,_y+1
+mes@hsp _p1
+color 0,192,255
+pos ginfo_cx,_y
+mes@hsp _p1
+pos _x
+return
+#global
+
+#define ctype hour(%1) %1/3600
+#define ctype min(%1) %1\3600/60
+#define ctype sec(%1) %1\60
+
+	color 240,200,255
+	boxf
+
+	mes "mes命令を影文字にしてみました。"
+
+	;	ctypeマクロテスト
+	time=9865
+	a1=hour(time):a2=min(time):a3=sec(time)
+	mes ""+time+"秒="+a1+":"+a2+":"+a3
+
+	mes "----"
+
+	;	forマクロテスト
+	for i,0,5
+	mes "count down="+i
+	next
+
+	mes "----"
+
+	;	while～wend,do～untilマクロのテスト
+	b=0:while b<2
+	a=5:do:mes "A="+a:a=a-1:until a=0:mes "OK"
+	b+:wend:mes "end"
+
+	stop
+

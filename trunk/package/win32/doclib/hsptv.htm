@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSPTV">
+	<meta name="description" content="HSPTVに関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSPTV</title>
+</head>
+<body>
+	<div id="CONTAINER">
+		<!-- ヘッダー -->
+		<p id="COPY">HSP : Hot Soup Processor ver3.2 / onion software 1997-2009(c)</p>
+		<img src="hsp3ttl.jpg" alt="タイトル" width="640" height="200">
+		<h1>HSPTV</h1>
+
+		<!-- 目次 -->
+		<ol>
+			<li><a href="#STARTING">HSPTVの起動</a></li>
+			<li><a href="#SET_OPTION">オプション設定</a></li>
+			<li><a href="#BROWSER_MENU">ブラウザメニュー</a></li>
+			<li><a href="#PRG_DETAIL">プログラム詳細</a></li>
+			<li><a href="#SECURITY">セキュリティについて</a></li>
+			<li><a href="#ON_HSPTV">HSPTV上で動作するプログラムの開発について</a></li>
+			<li><a href="#POLICY">コンテンツ・ポリシー</a></li>
+			<li><a href="#RESET">設定のリセット</a></li>
+			<li><a href="#LICENCE">ライセンス</a></li>
+		</ol>
+
+		<!-- 本文 -->
+		<h2 id="STARTING">HSPTVの起動</h2>
+		<p>
+			「HSPTV」のショートカットアイコンから起動するか、 
+			HSP3がインストールされているフォルダの「hsptv.exe」を起動させることで
+			HSPTVブラウザを使用することができます。
+		</p>
+		<img src="img/browser_start.jpg" alt="タイトル" height="119" width="600">
+
+		<h2 id="SET_OPTION">オプション設定</h2>
+		<img src="img/browser_config_s.jpg" alt="設定画面" height="234" width="301" style="float:right;">
+		<p>
+			最初の起動時に、ユーザー名などの設定を行なう画面が表示されます。
+			ユーザー名を登録し、必要であればPROXYなどのインターネット接続設定を行なってください。
+			「HSPTVを始める」ボタンを押すと、HSPTVサーバーに接続して自動的に最新のコンテンツを取得します。
+			後からでも、「オプション」のチャンネルを選択することで、ユーザー情報などのオプション項目を
+			設定する画面が表示されます。それぞれの項目は、以下のような意味を持っています。
+		</p>
+		<dl>
+			<dt><img src="img/browser_n1.gif" alt="1." height="42" width="46">ユーザー名(英文字のみ20字まで)</dt>
+			<dd><p>HSPTVコンテンツ内で使用するユーザー名を設定します。
+			ランキング等で登録されるユーザーのハンドル名を設定するもので、
+			認証や個人を識別するために利用されるものではありません。</p></dd>
+			
+			<dt><img src="img/browser_n2.gif" alt="2." height="42" width="46">トリップキー(英文字のみ20字まで) </dt>
+			<dd><p>特定ユーザーだけに必要な情報にアクセスする場合に設定します。
+			この項目は、将来のバージョンで使用されるもので、現在は意味を持ちません。</p></dd>
+
+			<dt><img src="img/browser_n3.gif" alt="3." height="42" width="46">データ保存ディレクトリ</dt>
+			<dd><p>コンテンツをダウンロードするためのディレクトリを設定します。「c:\hsptv\」のように設定すると、設定されたディレクトリ以下にコンテンツのデータが保存されていきます。空欄の場合は、hsptv.exeと同じフォルダにある「hsptv」フォルダが使用されます。通常、この項目は設定しなくても問題ありません。</p></dd>
+			<dt><img src="img/browser_n4.gif" alt="4." height="42" width="46">オフラインモード</dt>
+			<dd><p>チェックを入れた場合は、オフラインモードとなります。オフラインモード時は、インターネットの接続を行ないません。キャッシュとして保存されているコンテンツのみ実行することができます。</p></dd>
+			<dt><img src="img/browser_n5.gif" alt="5." height="42" width="46">PROXYサーバー</dt>
+			<dd><p>会社や学校などファイアーウォール内部にあるコンピューターが、
+			インターネット接続に使用するためのPROXYサーバーアドレスを設定します(例:「192.168.1.1」)。
+			HSPTVは、WEBブラウザと同じhttpポート(80)を使用するので、
+			同じhttpプロキシサーバーを設定することで、アクセスが可能になります。
+			（プロキシサーバーの設定がわからない人は、ネットワーク管理者に問い合わせてみてください。）</p></dd>
+
+			<dt><img src="img/browser_n6.gif" alt="6." height="42" width="46">PROXYポート</dt>
+			<dd><p>PROXYサーバーに接続する際のポート番号を設定します（例:「8080」）。
+			PROXYサーバーと同様に、httpプロキシサーバーとして利用するポート番号を設定します。</p></dd>
+		</dl>
+
+		<h2 id="BROWSER_MENU">ブラウザメニュー</h2>
+		<img src="img/browser_menu_s.jpg" alt="メニュー画面" height="234" width="301" style="float:right;">
+		<p>
+			メインメニューでは、実行可能なプログラムが画面右側に表示されます。
+			画面左側には、表示されるコンテンツの種類(チャンネル)を選択するアイコンが表示されます。
+			プログラム名をクリックすることで、内容の詳細が表示されます。
+			「PLAY」ボタンを押すか、プログラム名の右側にある「&gt;」ボタンを押すと、
+			自動的にコンテンツをダウンロードして実行を開始します。
+		</p>
+
+		<dl>
+			<dt><img src="img/browser_n1.gif" alt="1." height="42" width="46">
+			「TVを消す」ボタン</dt>
+			<dd><p>「HSPTVブラウザ」を終了します。</p></dd>
+			<dt><img src="img/browser_n2.gif" alt="2." height="42" width="46">「×」ボタン</dt>
+			<dd><p>「HSPTVブラウザ」を終了します。 </p></dd>
+			<dt><img src="img/browser_n3.gif" alt="3." height="42" width="46">「HOME」ボタン(家のマーク）</dt>
+			<dd><p>「HSPTVブラウザ」枠にある「HOME」ボタン(家のマーク)は、
+			プログラムの実行を中断するためのものです。いつでも、
+			「HSPTVブラウザ」内で動作しているプログラムを強制的に抜けてメニューに戻ることができます。</p></dd>
+			<dt><img src="img/browser_n4.gif" alt="4." height="42" width="46">プログラム名</dt>
+			<dd><p>チェックを入れた場合は、オフラインモードとなります。オフラインモード時は、
+			インターネットの接続を行ないません。キャッシュとして保存されているコンテンツのみ
+			実行することができます。</p></dd>
+			<dt><img src="img/browser_n5.gif" alt="5." height="42" width="46">「&gt;」ボタン</dt>
+			<dd><p>自動的にコンテンツをダウンロードして実行を開始します。
+        		オフラインモード時は、インターネットの接続を行いません。
+				キャッシュとして保存されているコンテンツのみ実行することができます。 </p></dd>
+		</dl>
+
+		<h2 id="PRG_DETAIL">プログラム詳細</h2>
+		<p><img src="img/browser_program_s.jpg" alt="プログラム詳細画面" height="234" width="301" style="float:right;">
+			プログラムの詳細が表示されている時は、内容に応じてボタンが表示されます。</p>
+		<dl>
+			<dt><img src="img/browser_n1.gif" alt="1." height="42" width="46">「クリーン」ボタン</dt>
+			<dd><p>表示されているプログラムのキャッシュ情報をハードディスク上から消去します。
+			「HSPTVブラウザ」では、一度起動したプログラムのデータは、ハードディスク上にキャッシュデータとして
+			保存され、時間からの起動を早くします。多くのプログラムを起動してハードディスク容量が足りなくなった
+			場合や、キャッシュが不要な時は、「クリーン」ボタンを押すことで、キャッシュデータを消去すること
+			で効率よくハードディスクを利用できます。</p></dd>
+			<dt><img src="img/browser_n2.gif" alt="2." height="42" width="46">「詳細ページ」ボタン</dt>
+			<dd><p>表示されているプログラムについて関連するページをWEBブラウザで開きます (インターネット接続環境が必要です)。
+			 プログラムについて補足事項や、ランキングなど提供者が推奨するホームページがある場合に
+			 ボタンが表示されます。</p></dd>
+			<dt><img src="img/browser_n3.gif" alt="3." height="42" width="46">「PLAY」ボタン</dt>
+			<dd><p>表示されているプログラムを実行します。プログラムによって、HSPTVのウィンドウ内で
+			動作するものと外部ウィンドウで動作するものに分かれています。
+			どちらも「PLAY」ボタンを押すだけで、自動的に最新版のダウンロードが行なわれ実行が開始されます。</p></dd>
+			<dt><img src="img/browser_n4.gif" alt="4." height="42" width="46">「戻る」ボタン</dt>
+			<dd><p>プログラムの一覧に戻ります。</p></dd>
+		</dl>
+
+		<h2 id="SECURITY">セキュリティについて</h2>
+		<p>
+			「HSPTVブラウザ」は、手軽にプログラムのダウンロードと実行を行うことができるため、
+			いくつかのセキュリティ対策を行なっています。
+		</p>
+		<p>
+			原則としてHSPTVブラウザ上で動作するプログラムは、コンテンツダウンロードフォルダ（オプション項目で
+			設定可能）以外のファイル書き込み、参照を行ないません（どうしても行なう必要がある場合には、警告ダイアログが表示されます）。
+			また、「HSPTVブラウザ」上で設定されたオプション項目以外のユーザー情報を収集すること、ネットワーク上に送信することは致しません。
+		</p>
+		<p>
+			オプション項目のユーザー名は、ランキング等で登録されるユーザーのハンドル名を設定するもので、
+			認証や個人を識別するために利用されるものではありません。
+		</p>
+		<p>
+			「HSPTVブラウザ」で提供されるプログラムコンテンツについては、慎重に審査され、
+			悪意のある動作を行なわないよう努めていますが、すべての安全性を保障するものではありません。
+			あくまでも、ユーザーの責任においてコンテンツの実行を行なって頂くようお願い致します。 
+		</p>
+
+		<h2 id="ON_HSPTV">HSPTV上で動作するプログラムの開発について</h2>
+		<p>
+			「HSPTVブラウザ」で動作するプログラムを作成するにあたって、必要な機能をまとめた
+			モジュールファイル「hsptv.as」が提供されています。
+			スクリプトの先頭に「#include "hsptv.as"」を追加することにより、「HSPTVブラウザ」上での動作を
+			テストすることができます。
+			詳しくは、HSPTVブラウザ対応プログラムのマニュアル「<a href="hsptv_api.txt">hsptv_api.txt</a>」を参照してください。
+		</p>
+		<p>
+			HSPTVブラウザ対応プログラムは、HSPプログラムコンテストなどで不定期に募集し、登録されます。
+			詳しい情報は、HSPTVサイトで提供しています。
+		</p>
+
+		<h2 id="POLICY">コンテンツ・ポリシー</h2>
+		<p>
+			ポータルサイト「HSPTV」が提供する「HSPTVプログラムコンテンツ」は、
+			以下のようなポリシーで提供されます。
+		</p>
+		<ul>
+			<li>すべての推奨する環境で正しく閲覧できること</li>
+			<li>すべての年齢で安心して閲覧できる内容であること</li>
+			<li>オプション項目で設定された情報を除いて、ユーザーからの情報取得は行ないません </li>
+			<li>ユーザーに関する情報を許可なく第三者に提供、及び公開しません</li>
+			<li>ユーザーのコンテンツ利用によって生じたあらゆる損害に関して一切の責任を負いません </li>
+		</ul>
+
+		<h2 id="RESET">設定のリセット</h2>
+		<img src="img/reset_s.jpg" alt="設定のリセット" width="302" height="235" style="float:right;">
+		<p>
+			何らかの理由で正常に起動ができなくなった場合には、「hsptv」フォルダ内にある
+			設定ファイル「hsptv.cfg」を、「backup.cfg」と同じ内容に戻すことで初期状態に戻すことが可能です。
+			「backup.cfg」をコピーして頂いても構いませんし、テキストエディタ等で内容を書き換えてもOKです。
+		</p>
+
+		<h2 id="LICENCE">ライセンス</h2>
+		<p>
+			「HSPTVブラウザ」上で動作するプログラムの著作権は、それぞれの制作者に帰属します。
+			「HSPTVブラウザ」そのもののプログラム、及び仕組みの提供はonion softwareが著作権を持っています。
+		</p>
+		<p>
+			「HSPTVブラウザ」が利用しているサーバーデータ及び配信プロトコルを無断で転用、解析、改造することは
+			禁止させて頂きます。onion software及び、「HSPTVブラウザ」が配信するプログラム制作者の権利を
+			侵害する行為は行なわないで下さい。
+		</p>
+		<p>
+			「HSPTVブラウザ」は、「HSP3.1」に同梱される形で配布されています。再配布の規定は、「HSP3.1」と同様です。
+			無償で行なわれる限りは、自由に行なって頂いて構いません。 
+		</p>
+		<p>
+			メニューや個別に動作するコンテンツの不具合については、随時ネットワークを通して更新が行なわれます。
+			もし、問題や不具合の報告がありましたら、「HSPTVサイト」までお知らせ下さい。
+		</p>
+		<dl>
+           	<dt>HSPTVサイト</dt>
+			<dd><p><a href="http://hsp.tv/">http://hsp.tv/</a></p></dd>
+		</dl>
+
+		<!-- フッター -->
+		<ul id="FOOTER">
+			<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+			<li><a href="../index.htm">ドキュメントの一覧に戻る</a></li>
+			<li><a href="http://hsp.tv/">Go to HSPTV page</a></li>
+		</ul>
+		<a href="http://www.onionsoft.net/hsp/">
+			<img src="img/onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+		</a>
+	</div><!-- container -->
+</body>
+</html>

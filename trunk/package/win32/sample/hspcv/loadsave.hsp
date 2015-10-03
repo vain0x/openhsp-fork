@@ -1,0 +1,38 @@
+#include "hspcv.as"
+	;
+	;	画像ファイルをロード & JPEG形式でセーブをするスクリプト
+	;
+	screen 0,320,100
+	cls 1
+	quality=95
+	objsize 320,24
+	button "画像ファイルロード",*fload
+	button "JPEG画像セーブ",*fsave
+	button "終了",*owari
+	objsize 80,24
+	input quality
+	pos 88,76:mes "JPEG画像品質(0-100)"
+	stop
+*fload
+	dialog "bmp;*.dib;*.sr;*.ras;*.jpeg;*.jpg;*.jpe;*.pbm;*.ppm;*.pgm;*.tiff;*.tif;*.png;*.exr;*.jp2",16,"画像ファイル"
+	if stat=0 : goto *failed
+	;
+	fname=refstr
+	cvload fname,0
+	screen 2,640,480
+	title fname
+	cvgetimg 0,1
+	stop
+*fsave
+	dialog "jpg",17,"JPG画像ファイル"
+	if stat=0 : goto *failed
+	fname=getpath(refstr,1)+".jpg"
+	gsel 2
+	cvsave fname,0,quality
+	dialog "JPEGファイルを保存しました"
+	stop
+*failed
+	dialog "キャンセルしました"
+	stop
+*owari
+	end

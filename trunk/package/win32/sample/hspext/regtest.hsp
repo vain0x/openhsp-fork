@@ -1,0 +1,19 @@
+#include "hspext.as"
+
+	;
+	;	レジストリ操作命令テスト
+	;	HSPスクリプトエディタの設定を読み込む
+	;
+
+	regkey 0,"Software\\OnionSoftware\\hsed",0
+	mes "STAT="+stat
+	a=0
+	getreg a,"winx"
+	mes "winx="+a+" / STAT="+stat
+	getreg a,"winy"
+	mes "winy="+a+" / STAT="+stat
+	b=""
+	getreg b,"helpdir",1
+	mes "helpdir="+b+" / STAT="+stat
+	stop
+

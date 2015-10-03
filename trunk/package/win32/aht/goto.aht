@@ -1,0 +1,13 @@
+#aht name "ジャンプ"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 2
+#aht exp "指定したラベル名がつけられているパーツから実行を続けます。"
+
+#const obj_id	0	;;parts,prm="hsp3.std.system.label",help="ジャンプ先"
+#define __reflabel	;;pprop,prm="__label",help="ラベル名",read,pure
+#define 種別 goto	;;combox,prm="goto\ngosub",opt="ジャンプ\nサブルーチン呼び出し"
+
+	種別 *__reflabel
+

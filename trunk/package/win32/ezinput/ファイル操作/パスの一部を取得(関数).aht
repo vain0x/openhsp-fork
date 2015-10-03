@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "getpath"
+
+#define 取り出す元の文字列	""	;;str
+#define 情報のタイプ指定	"0"	;;str
+
+#ahtmes "getpath( "+取り出す元の文字列+" , "+情報のタイプ指定+" )"+

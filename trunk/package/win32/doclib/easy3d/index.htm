@@ -1,0 +1,1286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META name="GENERATOR" content="IBM WebSphere Studio Homepage Builder Version 11.0.0.0 for Windows">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE>HSPでDirectXのゲームを作るためのプラグイン</TITLE>
+</HEAD>
+<BODY>
+<P align="left"><B><FONT size="+2">Easy3D For HSP3 ver5.0.4.0 (HSP3.2同梱バージョン)</FONT></B><BR>
+<BR>
+<a href="http://www5d.biglobe.ne.jp/~ochikko/e3dhsp.htm">
+<IMG src="banner/e3dbnr.png" width="168" height="56" border="0"></a><BR>
+<BR>
+<FONT color="#ff0000"><BR>
+</FONT><BR>
+Easy3D（e3dhsp3.dll）は、DirectXで３Ｄゲームを作るためのプラグインです。
+<BR>
+<B><U>DirectX9.0c がインストールされていないと、動きません。</U></B><BR>
+
+<P><IMG src="jpegfiles/e3d_fightmoa_2.jpg" width="379" height="298" border="0"></P>
+<P><IMG src="jpegfiles/e3d_fightmoa_0.jpg" width="378" height="298" border="0"><BR>
+（図はサンプルのe3dhsp3_fight_MOA.hspのスクリーンショット<BR>
+簡単な格闘ゲームなら投げ技なども入れて３００行程度で作成可能。）<BR>
+</P>
+<P><BR>
+おちゃっこＬＡＢでは、
+Easy3Dで使用する３Ｄ形状データ、モーションデータを編集するためのツールRokDeBone2も公開していますので、あわせてご使用ください。
+<BR>
+RokDeBone2のバージョンだけが新しい場合、
+Easy3Dでの形状やモーションファイルの読み込みで失敗することがあります。
+そんなときは、Easy3Dのバージョンも最新のものをダウンロードして使用するようにしてください。
+なぜかといいますと、
+RokDeBone2がバージョンアップした際には、ファイルのフォーマットが新しくなることがあります。
+新しいファイルは古いプログラムで読み込もうとするとエラーになります。
+ですので、そういう症状が出た場合は、Easy3Dも最新版をダウンロードしなおして使用してください。
+古いファイルは、新しいプログラムでも問題なく読み込めるようにしていくつもりです。
+<BR>
+<BR>
+<BR>
+おちゃっこ
+<BR>
+<a href="http://www5d.biglobe.ne.jp/~ochikko/">http://www5d.biglobe.ne.jp/~ochikko/</a>
+<BR>
+<BR>
+<BR>
+<BR>
+スクリプトを組む上で、必要な、関数の説明は、こちらのページです。<BR>
+<A href="e3dhsp3_func.htm"><FONT size="+1">Easy3D For HSPの関数の説明</FONT></A><BR>
+<BR>
+<BR>
+<BR>
+<FONT size="+3" color="#ff0000">Easy3D For HSPについてのTIPSや最新情報は、<BR>
+<A href="http://www5d.biglobe.ne.jp/~ochikko/">おちゃっこＬＡＢのEasy3D For HSP3公式ページ</A>へどうぞ。<BR>
+</FONT>（サンプルや関連ツールも公開されています。）<BR>
+<BR>
+<A href="rdb2_MA.htm"><FONT size="+2">Tips　：　モーションアクセラレータについて</FONT></A><BR>
+<BR>
+<A href="rdb2_ver2001.htm"><FONT size="+2">Tips　：　ver2.0.0.1での変更点について<BR>
+</FONT></A><BR>
+<A href="e3dhsp3_ver3001.htm"><FONT size="+2">Tips　：　ver3.0.0.1での変更点について</FONT></A><BR>
+<BR>
+<A href="rdb2_ver4001.htm"><FONT size="+2">Tips　：　ver4.0.0.1での変更点について</FONT></A><BR>
+<BR>
+<A href="rdb2_ver5001.htm"><FONT size="+2">Tips　：　ver5.0.0.1での変更点について</FONT></A><BR>
+<BR>
+<FONT size="+2"><A href="e3d_version.htm">Tips　：　Sig, Qua, Moaファイルの読み込みがエラーになるとき</A></FONT></P>
+<P><FONT size="+2"><A href="FromHSP31.htm">Tips　：　HSP３．１同梱版からのバージョンアップについて</A></FONT></P>
+<P><BR>
+<BR>
+</P>
+<H4>著作権・ライセンス</H4>
+本プログラムの著作権は、製作者である"おちゃっこ"にあります。 
+<BR>
+<BR>
+本プログラムを使用したことによって生じたいかなる損害についても、
+著作権保有者はその保障義務を一切負わないものとします。 
+<BR>
+Easy3Dや、RokDeBone2を使用して作ったデータや作品は、 自由に配布できることにします。 ただし、サンプルなどで使用しているデータには、それぞれ作者さんの著作権があるので注意してください。
+<BR>
+<BR>
+Easy3Dを使った自分で作った作品などを配布する場合は、 必須ではありませんがreadme.txtの隅っこにでもおちゃっこＬＡＢの名前を書いておいてもらえると宣伝になるのでうれしいです。
+（書かなくてもかまいません。） <BR>
+<BR>
+あと、これは著作権とは関係ありませんが、何か途中経過でもいいのでおもしろいものが出来たら掲示板などで報告してもらえると、こちらもやる気が出てうれしいです。 <BR>
+<BR>
+<P>/////////////////////////////////////////////////////////<BR>
+// 更新ログ<BR>
+<BR>
+ver1.0.0.1<BR>
+　　ＨＳＰ３．１β３に対応しました。<BR>
+<BR>
+ver1.0.0.1（2006/06/09）<BR>
+　　　　サンプルのe3dhsp3_SwapChain.asが、マウス入力により表示がちらつくというご指摘があったので、修正しました。<BR>
+　　　　サンプルの拡張子をhspに変えました。<BR>
+　　　　e3dhsp3.dllは、同じままです。<BR>
+　　　　同じバージョン番号での、マイナーバージョンアップとします。<BR>
+<BR>
+ver1.0.0.2(2006/07/09)<BR>
+　　　　フォグ（頂点フォグ）が使えるようになりました。<BR>
+　　　　　　E3DSetLinearFogParams関数の追加。<BR>
+<BR>
+ver1.0.0.3(2006/07/10)<BR>
+　　　　スプライトやフォント描画時には、フォグが影響しないように、修正しました。<BR>
+　　　　同じファイル(sig, gnd, mqo, im2)を、複数のプログラムで、同時に読もうとしたときに、エラーになるのを修正しました。<BR>
+<BR>
+ver1.0.0.4(2006/07/10 その２)<BR>
+　　　　dual coreプロセッサで、うまく同期できないことがあるのを修正しました。<BR>
+<BR>
+ver1.0.0.5(2006/07/10　その３)<BR>
+　　　　E3DRenderの８番目の引数に、transskipを追加。<BR>
+　　　　　　transskipに１をセットすると、頂点変換処理がスキップされます。<BR>
+　　　　　　<B>不透明、半透明と、２回、E3DRenderを呼び出す場合は、２回目の呼び出し時に、transskipに１を指定してください。</B><BR>
+　　　　　　このフラグを使用することで、e3dhsp3_fight.hspの描画速度は、<FONT color="#ff0000">１．７倍速</FONT>になりました。<BR>
+<BR>
+ver1.0.0.6(2006/07/16)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DGetBBoxで、partnoに-1を指定すると、エラーになるバグを修正しました。<BR>
+　　　　マニュアルのE3DGetScreenPos2の引数が、間違っていたのを修正しました。<BR>
+　　　　　　１番目の引数は、scidです。<BR>
+<BR>
+ver1.0.0.7(2006/07/26)<BR>
+　　　　あたり判定関数の追加<BR>
+　　　　　　E3DChkConflict3<BR>
+　　　　　　E3DChkConfBySphere3<BR>
+　　　　　　　　判定パーツ番号に、配列を指定できるようにし、複数パーツ同士の当たり判定を、一回の呼び出しで、出来るようにしました。<BR>
+<BR>
+<BR>
+ver2.0.0.1(2006/08/04)<BR>
+　　　　DirectX9.0cへ対応（ただし、ハードウェア頂点処理は、まだ、封印した状態）<BR>
+<BR>
+　　　　RokDeBone2　ver2.0.0.1のデータに対応。<BR>
+<BR>
+　　　　トゥーン表示に対応<BR>
+　　　　　　E3DSetShaderTypeに、COL_TOON1を指定すると、トゥーン表示できます。<BR>
+　　　　　　COL_TOON1でのE3DSetShaderType命令は、割と重い処理なので、初期化時に、１回だけ実行してください。<BR>
+　　　　　　詳しくは、サンプル、e3dhsp3_toon1.hspをご覧ください。<BR>
+<BR>
+　　　　E3DInitを呼び出さない状態で、E3DByeを呼んでも、エラーにならないように修正。<BR>
+<BR>
+<BR>
+ver2.0.0.2(2006/08/07)<BR>
+　　RokDeBone2で、「色ト」ボタンを押した状態で、保存したsigファイルに対応。<BR>
+　　E3DSetMovableAreaThread関数を追加。<BR>
+　　E3DSetShaderType で、COL_TOON1を指定して、複数回呼び出すと、メモリリークするバグを修正。<BR>
+<BR>
+<BR>
+ver2.0.0.3(2006/08/11)<BR>
+　　ver2.0.0.3のRokDeBone2のsigファイルに対応。<BR>
+<BR>
+<BR>
+ver2.0.0.4(2006/08/15)<BR>
+　　E3DRenderSpriteに、引数を追加。<BR>
+　　　　traz引数を追加。<BR>
+　　　　奥行き情報を、指定できるようになりました。<BR>
+<BR>
+<BR>
+ver2.0.0.5(2006/08/21)<BR>
+　　半透明のブレンディングモード（アッドモードその２）を、追加。<BR>
+　　　　E3DSetBlendingMode で、モードに２を指定すると、頂点アルファを考慮したアッドモードになります。<BR>
+<BR>
+　　E3DCreateSpriteFromBMSCRを追加<BR>
+　　　　HSPの描画画面（E3Dでの描画を除く）と同じ内容のスプライトを作成します。<BR>
+　　　　非表示の画面に対しても、使用できます。<BR>
+<BR>
+ver2.0.0.6(2006/08/23)<BR>
+　　　　デバッグ<BR>
+　　　　　　同名ファイルから、複数のスプライトを作成し、そのうちのひとつを、E3DDestroySpriteで破棄すると、<BR>
+　　　　　　残りのスプライトの描画時に、エラーになるバグ、を修正しました。<BR>
+<BR>
+<BR>
+ver2.0.0.7(2006/09/21)<BR>
+　　　　E3DGetBoneNoByNameを、エンドジョイントに対しても、呼び出せるようにしました。<BR>
+　　　　<BR>
+　　　　マニュアルの微調整<BR>
+　　　　　　ver2.0.0.1で、エンドジョイントにも、姿勢情報が格納されるようになったので、<BR>
+　　　　　　エンドジョイントに関する記述を修正。<BR>
+<BR>
+　　　　Visual Studio 2005でビルド。<BR>
+<BR>
+<BR>
+ver2.0.0.8(2006/09/22)<BR>
+　　　　モデルデータ中で、絶対パスで指定されているテクスチャが、見つからなかった場合は、<BR>
+　　　　モデルデータと同じディレクトリを探して、読み込むようにしました。<BR>
+<BR>
+<BR>
+ver2.0.0.9(2006/09/25)<BR>
+<BR>
+　　　　E3DCreateBGに引数を追加。<BR>
+　　　　　　７番目の引数に、フォグの計算に使う、カメラからの距離を指定します。<BR>
+<BR>
+　　　　　　この引数に、E3DSetLinearFogParamsで指定するendより小さい値を指定すれば、<BR>
+　　　　　　背景は、フォグの色に染まりながらも、うっすらと見えるように出来ます。<BR>
+<BR>
+<BR>
+ver2.0.1.0(2006/10/08)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　ドライブのルートで、exeを実行すると、E3DInitでエラーになることがあるバグを、修正しました。<BR>
+<BR>
+<BR>
+ver2.0.1.1(2006/10/17)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　<SPAN dataFld=column3 id=span1 dataSrc=#aoData>E3DCreateSpriteFromBMSCR　で作成したスプライトが、E3DDestroySpriteで削除できないバグを修正しました。</SPAN><BR>
+<BR>
+<BR>
+ver2.0.1.2(2007/01/26)<BR>
+　　　　モーションアクセラレータの設定機能の追加。<BR>
+　　　　詳しくは、<A href="../../ochikko_lab/rdb2_MA.htm">モーションアクセラレータについて</A>をご覧ください。<BR>
+<BR>
+　　　　E3DLoadMOAFile<BR>
+　　　　E3DSetNewPoseByMOA<BR>
+　　　　E3DGetMotionFrameNo<BR>
+　　　　E3DGetKeyboardCnt<BR>
+　　　　E3DResetKeyboardCnt<BR>
+　　　　の追加。<BR>
+<BR>
+<BR>
+ver2.0.1.3(2007/01/29)<BR>
+　　　　デバッグ<BR>
+　　　　　　<B>モーションアクセラレータ使用時に、補間終了後、同じポーズが３つ続くバグを修正。</B><BR>
+　　　　　　新ボーンを追加後に、それを無効にして、旧モーションを読むと、モーションがよれるバグを修正。<BR>
+　　　　　　PingPongモーション処理を修正。<BR>
+　　　　　　<BR>
+　　　　超簡易暗号化関数追加<BR>
+　　　　　　E3DEncodeBeta<BR>
+　　　　　　E3DDecodeBeta<BR>
+<BR>
+<BR>
+ver2.0.1.4(2007/02/01)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DCreateSpriteFromBMSCRを複数回呼び出した場合、<BR>
+　　　　　　複数回E3DestroySpriteを呼んでも、一回分しかメモリが開放されないバグを修正。<BR>
+<BR>
+　　　　　　E3DestroyBillboardが、必要なビルボードのテクスチャまで、破棄してしまうバグを修正。<BR>
+<BR>
+<BR>
+ver2.0.1.5(2007/02/03)<BR>
+　　　　デバッグ<BR>
+　　　　　　MOA（モーションアクセラレータファイル）読み込み時のバグを修正。<BR>
+　　　　　　　　ファイルの終端検出処理のバグ。<BR>
+　　　　　　　　ファイルの読み込みが終わっていないのに、終わっていると判断し、読み残しをしてしまうバグでした。<BR>
+<BR>
+<BR>
+ver2.0.1.6(2007/02/09)<BR>
+　　　　デバッグ<BR>
+　　　　　　モーションアクセラレータのバグ修正<BR>
+　　　　　　　　「指定フレームより前で分岐」に、数値を指定したとき、<BR>
+　　　　　　　　実際には、指定フレームより後で分岐していたバグ。<BR>
+<BR>
+<BR>
+ver2.0.1.7(2007/03/13)<BR>
+　　　　デバッグ<BR>
+　　　　　　メタセコイアで設定した頂点色が反映されないことがあるバグを修正しました。<BR>
+<BR>
+<BR>
+ver3.0.0.1(2007/04/16)<BR>
+　　　　ver3.0.0.1リリース。<BR>
+　　　　<B><FONT color="#800080">頂点シェーダ２．０、ピクセルシェーダ１．１対応版</FONT></B>となりました。<BR>
+　　　　描画速度２から４倍！！<BR>
+<BR>
+　　　　変更点は、<A href="../../ochikko_lab/e3dhsp3_ver3001.htm">ver3.0.0.1での変更点</A>をご覧ください。<BR>
+<BR>
+<BR>
+ver3.0.0.2(2007/04/17)<BR>
+　　　 一回もE3DSetMotionKindを呼び出さない場合でもエラーにならないようにしました。<BR>
+　　　　　　１個目のqua読み込み時に、自動的に、E3DSetMotionKindします。<BR>
+<BR>
+<BR>
+ver3.0.0.3(2007/04/19)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DInitの７番目の引数に０を指定したときの振る舞いを修正。<BR>
+　　　　　　E3DSetUV, E3DGetUV, E3DSetUVTile, E3DSetBillboardUVが機能していなかったのを修正。<BR>
+<BR>
+<BR>
+ver3.0.0.4(2007/04/20)<BR>
+　　　　デバッグ<BR>
+　　　　　　トゥーン設定のモデルと、トゥーン以外の設定のモデルを混在させた場合に、<BR>
+　　　　　　トゥーン以外のモデルが表示されないことがあるバグを修正。<BR>
+<BR>
+ver3.0.0.5(2007/04/22)<BR>
+　　　　デバッグ<BR>
+　　　　　　スムージング関係での法線の計算が間違っていたバグを修正。<BR>
+　　　　　　　　色にむらが出来たり、角がシャープに表示されなかったりするバグが直りました。<BR>
+<BR>
+<BR>
+ver3.0.0.6(2007/04/24)<BR>
+　　　　スムージング処理の修正<BR>
+　　　　　　スムージング処理を、標準的な方法に変えました。<BR>
+　　　　　　メタセコイアで設定したスムージング角度に忠実に表示します。<BR>
+<BR>
+　　　　　　新しいスムージング処理は、mqoまたは、ver3.0.0.3以降のRokDeBone2で保存したsigを読み込んだ場合のみ有効になります。<BR>
+<BR>
+<BR>
+ver3.0.0.7(2007/04/25)<BR>
+<BR>
+　　　　頂点シェーダー１．１でも、ハードウェアで動くようにしました。<BR>
+<BR>
+　　　　頂点シェーダー２．０が使える環境では２．０で、１．１しか使えない環境では１．１で、<BR>
+　　　　頂点シェーダーが無い環境では、ソフトウェアで実行します。<BR>
+<BR>
+　　　　ただし、制限が付きます。<BR>
+　　　　　　ライト<BR>
+　　　　　　　　頂点シェーダー２．０では、平行光源とポイントライトで合計３個までライトを有効に出来ますが、<BR>
+　　　　　　　　頂点シェーダー１．１では、平行光源を１個しか有効に出来ません。<BR>
+<BR>
+　　　　　　ボーン数<BR>
+　　　　　　　　頂点シェーダー２．０では、１つのパーツに影響するボーンの総数が４４個を超えると、オーバーヘッドが生じますが、<BR>
+　　　　　　　　頂点シェーダ１．１では、１４個を超えるとオーバーヘッドが生じます。<BR>
+<BR>
+<BR>
+ver3.0.0.8(2007/04/27)<BR>
+<BR>
+　　　　moaファイル読み込み時のモーション遷移（E3DSetNewPoseByMOA）を修正。<BR>
+　　　　　　補間モーション中にモーション遷移が起こった場合の処理を修正。<BR>
+　　　　　　より、なめらかになりました。<BR>
+<BR>
+<BR>
+ver3.0.0.9(2007/05/01)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DAddMPが、MPI_SCALEDIVを考慮していなかったのを修正。<BR>
+　　　　　　E3DSetMPInfoで、スケールを指定しなかったときの処理にバグがあったのを修正。<BR>
+　　　　　　マニュアルの誤字をいくつか修正。<BR>
+<BR>
+<BR>
+ver3.0.1.0(2007/05/04)<BR>
+　　　　トゥーン表示(COL_TOON1)に輪郭線を加えました。<BR>
+　　　　　　マテリアルごとに、輪郭線のオンオフ、色、太さを設定できます。<BR>
+　　　　　　押し出し反転法で、２パスで描画します。<BR>
+<BR>
+　　　　<B>RokDeBone2 ver3.0.0.8で設定した輪郭データの入ったsigファイルを表示することにより、輪郭線機能が有効になります。</B><BR>
+<BR>
+<BR>
+ver3.0.1.1(2007/05/05)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DDestroySpriteのバグを修正。<BR>
+　　　　　　　　同じファイル名でE3DCreateSpriteを複数回呼び出し、１回だけE3DDestroySpriteを呼び出したときに、<BR>
+　　　　　　　　同名の全てのスプライトが削除されてしまうバグ。<BR>
+<BR>
+　　　　トゥーン輪郭線操作関数の追加<BR>
+　　　　　　E3DEnableToonEdge　　輪郭線のオンオフをします。<BR>
+　　　　　　E3DSetToonEdge0Color　　輪郭線の色をセットします。<BR>
+　　　　　　E3DSetToonEdge0Width　　輪郭線の幅をセットします。<BR>
+　　　　　　E3DGetToonEdge0Color　　輪郭線の色を取得します。<BR>
+　　　　　　E3DGetToonEdge0Width　　輪郭線の幅を取得します。<BR>
+<BR>
+<BR>
+ver3.0.1.2(2007/05/06)<BR>
+　　　　デバッグ<BR>
+　　　　　　テクスチャを貼ったパーツを半透明に出来なくなっていたバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.1.3(2007/05/07)<BR>
+　　　　デバッグ<BR>
+　　　　　　im2ファイルの読み込みが、画面に反映されないバグを修正。<BR>
+　　　　　　E3DSetScaleのcenterflagが０と１のとき、正しく座標変換されないバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.1.4(2007/05/08)<BR>
+　　　　E3DSetRenderStateのD3DRS_LIGHTINGの設定が描画に反映されるようにしました。<BR>
+　　　　　　「色P」設定の　sig, ビルボードの場合は、頂点のdiffuse色のみをライティング効果なしで適用します。<BR>
+　　　　　　「色ト」設定の場合は、暗いところの色を適用します。<BR>
+<BR>
+<BR>
+ver3.0.1.5(2007/05/10)<BR>
+　　　　パーティクルのサポートを追加しました。<BR>
+　　　　　　E3DCreateParticle maxnum, texname, width, height, blendmode, particleid<BR>
+　　　　　　E3DDestroyParticle particleid<BR>
+　　　　　　E3DSetParticlePos particleid, posx, posy, posz<BR>
+　　　　　　E3DSetParticleGravity particleid, gravity;<BR>
+　　　　　　E3DSetParticleLife particleid, life<BR>
+　　　　　　E3DSetParticleEmitNum particleid, emitnum<BR>
+　　　　　　E3DSetParticleVel0 particleid, minvelx, minvely, minvelz, maxveclx,
+maxvely, maxvelz<BR>
+　　　　　　E3DSetParticleRotation particleid, rotation<BR>
+　　　　　　E3DSetParticleDiffuse particleid, r, g, b<BR>
+　　　　　　E3DRenderParticle particleid, fps, scid<BR>
+<BR>
+　　　　　　サンプル　e3dhsp3_particle.hsp　を追加。<BR>
+<BR>
+<BR>
+ver3.0.1.6(2007/05/11)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　パーティクルの最小速度と最大速度の差が大きいときに、うまく分散して放出されないバグを修正。<BR>
+　　　　　　　　差が３００００くらいまで大丈夫です。<BR>
+<BR>
+　　　　パーティクル関数の追加<BR>
+　　　　　　E3DSetParticleAlpha<BR>
+　　　　　　E3DSetParticleUVTile の追加。<BR>
+　　　　　　パーティクルが放出されてからの経過時間範囲ごとに、透明度とUVを設定できます。<BR>
+<BR>
+　　　　サンプル　e3dhsp3_particle2.hsp　を追加。<BR>
+<BR>
+<BR>
+ver3.0.1.7(2007/05/14)<BR>
+<BR>
+　　　　E3DSetAlpha, E3DSetAlpha2, E3DSetParticleAlphaの高速化。<BR>
+　　　　　　ビデオメモリへのアクセスがほとんどなくなりました。<BR>
+　　　　　　負荷は気にしなくていい程度になりました。<BR>
+　　　　<BR>
+　　　　E3DSetParticleUVTileの高速化。<BR>
+　　　　　　tilenoの変更が生じない場合は、処理をスキップするようにしました。<BR>
+<BR>
+　　　　地面に対するE3DSetPosの高速化。<BR>
+　　　　　　当たり判定の座標系を変更することにより、データ更新が最小限で済むようになりました。<BR>
+　　　　　　負荷は気にしないでいい程度になりました。<BR>
+<BR>
+　　　　地面の当たり判定の修正<BR>
+　　　　　　内部での判定時の座標系を変更しました。<BR>
+<BR>
+<BR>
+ver3.0.1.8(2007/05/16)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　ビルボードに対するE3DSetScale呼び出しで、centerflagを１にしたときの動作が間違っていたのを修正。<BR>
+<BR>
+　　　　E3DRenderParticleのfps引数にマイナスの値を指定した場合は、<BR>
+　　　　パーティクルを静止したまま描画するように修正。<BR>
+<BR>
+　　　　E3DInitParticleを追加。<BR>
+　　　　　　パーティクルの発生状態を初期状態に戻します。<BR>
+<BR>
+　　　　マニュアルの誤記修正<BR>
+　　　　　　当たり判定の引数説明で、adjustx, adjusty, adjustzとあるべきとろころが、３つともadjustxになっていた部分を修正。<BR>
+　　　　　　E3DChkConflictはver3.0.0.1から視野外でも機能するのに、機能しないと書いてあったのを修正。<BR>
+<BR>
+<BR>
+ver3.0.1.9(2007/05/29)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　トゥーン設定したモデルデータを表示すると、E3DCreateBGで作成した背景が真っ白になるバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.2.0(2007/06/24)<BR>
+<BR>
+　　　　モーションアクセラレータのバージョンアップ<BR>
+　　　　　　共通分岐機能の追加。<BR>
+　　　　　　補間なしで分岐するオプションを追加。<BR>
+　　　　　　イベント番号０でアイドリングに戻すオプションを追加。<BR>
+　　　　　　ファイルフォーマットをver2.0にバージョンアップ。<BR>
+　　　　　　詳しくは、<A href="../../ochikko_lab/rdb2_MA.htm">モーションアクセラレータのページ</A>をご覧ください。<BR>
+<BR>
+　　　　関数の追加<BR>
+　　　　　　E3DPickFace2 (E3DPickFaceに判定パーツを指定できるようにしました)<BR>
+　　　　　　E3DChkConfWall3 (E3DChkConfWallに判定パーツを指定できるようにしました。)<BR>
+　　　　　　E3DGetMotionIDByName (モーション名からモーションIDを取得できます)<BR>
+　　　　　　E3DGetMotionNum (読み込んでいるモーションの数を取得します。)<BR>
+　　　　　　E3DDot2 (正規化をしない内積計算です)<BR>
+<BR>
+<BR>
+ver3.0.2.1(2007/07/02)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DLookAtQが現在向いている向きの正反対の向きを、向きたい向きとして指定されると、機能しないバグを修正。<BR>
+<BR>
+　　　　あたり判定が、E3DSetScaleの結果を考慮するようにしました。<BR>
+　　　　　　E3DSetScaleの後のE3DChkInViewでスケールがあたり判定データに反映されます。<BR>
+<BR>
+　　　　<FONT color="#00ff00">！！注意！！<BR>
+　　　　　　Easy3Dのプラグインを使用すると、HSP3.1の実数計算の精度が３２ビットに落ちます。<BR>
+　　　　　　（direct3Dの初期化時に、FPUの精度が単精度に設定されるため）</FONT><BR>
+<BR>
+<BR>
+ver3.0.2.2(2007/07/03)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　ボーンのないsig読み込み時のあたり判定がE3DSetScaleを考慮していなかったバグを修正。<BR>
+　　　　　　centerflagに０を指定したE3DSetScaleが、E3DSetPosと併用すると不安定になるバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.2.3(2007/07/10)<BR>
+<BR>
+　　　　パーティクルとモデルデータのあたり判定関数の追加<BR>
+　　　　　　E3DChkConfParticle<BR>
+<BR>
+ver3.0.2.4(2007/07/24)<BR>　　　　デバッグ<BR>
+　　　　　　トゥーンの輪郭線の１つを非表示設定にすると、表示設定の輪郭線の座標が乱れるバグを修正しました。<BR>
+<BR>
+　　　　BMP出力、AVI出力をスワップチェインに対応させました。<BR>
+　　　　　　E3DWriteDisplay2BMP<BR>
+　　　　　　E3DCreateAVIFile<BR>
+　　　　　　E3DWriteData2AVIFile<BR>
+　　　　　　E3DCompleteAIVFile<BR>
+　　　　　　にscid引数を追加。<BR>
+　　　　　　scid引数を省略した場合は、E3DInitで取得されるscidに対して処理を行います。<BR>
+<BR>
+<BR>
+ver3.0.2.5(2007/07/25)<BR>
+<BR>
+　　　　E3DSaveGNDFileのサポートを終了しました。<BR>
+<BR>
+　　　　地面の高速読み込みは、新しい関数<BR>
+　　　　　　E3DLoadSigFileAsGround<BR>
+　　　　　　E3DLoadSigFileAsGroundFromBuf<BR>
+　　　　をお使いください（ver3.0.2.5で追加しました）。<BR>
+<BR>
+　　　　アニメーションする地面のサポートは、もう少し先の話になります。<BR>
+<BR>
+　　　　E3DLoadSigFileAsGroundは、E3DLoadMQOFileAsGroundより何倍も高速ですので、<BR>
+　　　　ゲーム中では、RokDeBone2でmqoをsigに変換したものをE3DLoadSigFileAsGroundで読み込むことを推奨します。<BR>
+<BR>
+<BR>
+ver3.0.2.6(2007/07/26)<BR>
+<BR>
+　　　　マトリックス計算の高速化をしました。<BR>
+　　　　　　E3DFillUpMotion, E3DAddMotionが３０％高速化しました。<BR>
+　　　　　　高速化というか、今までが遅すぎたみたい（汗）<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DFillUpMotionでstartframeとendframeを同じに設定した場合、モーション全体を補間計算してしまっていたバグを修正しました。<BR>
+<BR>
+ver3.0.2.7(2007/08/07)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DSetSoundVolumeが、リバーブの残響音に対して効いていなかったのを修正。<BR>
+<BR>
+　　　　ステレオサウンドで、リバーブ有りと無しを選択できるようにしました。<BR>
+　　　　　　E3DInitに引数を追加しました。<BR>
+　　　　　　デフォルトでリバーブ有りの設定です。<BR>
+<BR>
+　　　　E3DGetCenterPosの追加<BR>
+　　　　　　パーツの中心のグローバル座標を取得できます。<BR>
+　　　　　　中心座標はE3DChkInViewで計算されます。<BR>
+<BR>
+ver3.0.2.8(2007/08/14)<BR>
+<BR>
+　　　　プロジェクション行列を修正しました。<BR>
+<BR>
+　　　　dbg.txtがメモ帳で読みやすいように、改行を\r\nにしました。<BR>
+<BR>
+　　　　モーションアクセラレータの説明を修正しました。<BR>
+　　　　　　1つのモーションには、１こだけイベント番号を指定すること（２の乗数の値を使うこと）を推奨するように修正しました。<BR>
+<BR>
+ver3.0.2.9(2007/08/22)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　mqoを地面として読み込み、E3DSaveSigFileで保存したときに、不正なsigファイルが出来るバグを修正。<BR>
+　　　　　　　　地面としてではなく、RokDeBone2でmqo読み込みしRokDeBone2でsig保存したものは、過去のものも正常です。<BR>
+　　　　　　　　引き続きE3DLoadSigFileAsGroundで地面として使用出来ます。<BR>
+<BR>
+　　　　　　　　E3DLoadMqoFileAsGroundや<SPAN dataFld="column3" id="span1" dataSrc="#aoData">E3DImportMQOFileAsGround</SPAN>で読み込みE3DSaveSigFileしたものは不正データで<BR>
+　　　　　　　　救済できません。破棄して、ver3.0.2.9以降のEasy3Dで保存しなおしてください。<BR>
+<BR>
+　　　　　　E3DLoadSigFileAsGroundが一部のデータタイプに対応できていなかったのを修正。<BR>
+<BR>
+<BR>
+ver3.0.3.0(2007/08/29)<BR>
+<BR>
+　　　　モーションアクセラレータのイベント番号の増量に対応。<BR>
+　　　　　　３０個まで<BR>
+<BR>
+　　　　モーションアクセラレータのイベント番号に使用する大きな２の乗数を覚えるのが大変なので、<BR>
+　　　　e3dhsp3.asに、POW2Xという配列を定義しました。<BR>
+　　　　例えば、２の１５乗の値は、POW2X( 15 )　でアクセス出来ます。<BR>
+<BR>
+　　　　E3DSaveMQOFileで両面オブジェクトも出力できるようになりました。<BR>
+<BR>
+　　　　E3DGetFaceNum追加<BR>
+　　　　　　表示オブジェクトの面の数を取得<BR>
+<BR>
+　　　　E3DGetFaceNormal追加<BR>
+　　　　　　面の法線を取得<BR>
+<BR>　　　　E3DGetReferenceTime追加<BR>
+　　　　　　ステレオサウンドの再生時間を取得<BR>
+　　　　　　E3DGetMidiMusicTimeは、MIDIの時間しか取得できませんでしたが、この関数はwavの時間も取得できます。<BR>
+　　　　　　３Dサウンドには使えません。<BR>
+　　　　　　E3DGetMidiMusicTimeが四分音符あたり７６８の値なのに対し、この関数の時間は１秒あたり約10,000,000の値です。<BR>
+<BR>
+<BR>
+ver3.0.3.1(2007/08/30)<BR>
+<BR>
+　　　　E3DCreateParticleにtransparentflag引数を追加<BR>
+　　　　　　pngファイルなどのアルファ情報の入った画像ファイルが、パーティクルに使えるようになりました。<BR>
+<BR>
+　　　　マニュアルの修正<BR>
+　　　　　　E3DGetReferenceTimeの説明文で、「読み込み直後のリファレンスタイムを取得しておいて」という部分は間違いで、<BR>
+　　　　　　正しくは、「再生直後のリファレンスタイムを取得しておいて」でした。<BR>
+<BR>
+<BR>
+ver3.0.3.2(2007/09/03)<BR>
+<BR>
+　　　　E3DChkConfGround, E3DPickFace, E3DPickVertがE3DSetScaleの結果を反映するようにしました。<BR>
+<BR>
+<BR>
+ver3.0.3.3(2007/09/06)<BR>
+　　<BR>　　　　デバッグ<BR>
+　　　　　　E3DLoadSoundで３Dサウンドを指定し、bufnumに２以上の値を指定した場合でも、<BR>
+　　　　　　パラメータによっては、重ねて音が再生されないことがあるバグを修正しました。<BR>
+<BR>
+　　　　　　ただし、ループ設定の３Dサウンドは、同じ音を重ねて再生できなくなりました。<BR>
+<BR>
+<BR>
+ver3.0.3.4(2007/09/17)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　モーションアクセラレータ再生で、補間モーション終了後の１フレーム分、フレーム番号だけ進み、ポーズが更新されないバグを修正。<BR>
+<BR>　　　　　　E3DSetDiffuse, E3DSetAmbient, E3DSetSpecular, E3DSetEmissive, E3DSetSpecularPower<BR>
+　　　　　　のsetflagが機能していなかったバグを修正。<BR>
+<BR>
+　　　　　　E3DCreateTextureで作ったテクスチャを貼ったモデルをE3DSaveMQOFileすると、<BR>
+　　　　　　テクスチャ名がフルパスになった上に、拡張子の後ろに_TEXIDという文字が入る不具合を修正。<BR>
+<BR>
+　　　　　　E3DByeの後にE3DInitを呼び出した場合、フォグとプロジェクションのパラメータが初期化されていないバグを修正。<BR>
+<BR>
+　　　<BR>
+　　　　E3DChkInViewを呼び出した直後のstatシステム変数で、モデルーデータが視野内にあるかどうかを取得できるようにしました。<BR>
+　　　　　　statが０のときは、１つも視野内にパーツがなく、statが１のときは、少なくとも１つは視野内にパーツがあることを示します。<BR>
+<BR>
+　　　　E3DGetBonePosのposkindの種類を増やしました。<BR>
+　　　　　　poskindに２を指定すると、ローカル座標（ボーン変形あり）の座標が取得できます。<BR>
+<BR>
+<BR>
+ver3.0.3.4マイナーバージョンアップ(2007/09/18)<BR>
+　　　　<BR>
+　　　　マニュアルを微調整して、こっそり同じバージョンでアップしなおしました。<BR>
+　　　　　　E3DCreateTexture, E3DRasterScrollTexture, E3DChkInView, E3DSetSpecularPower,
+E3DGetBBoxの説明を修正。<BR>
+<BR>
+<BR>
+ver3.0.3.4マイナーバージョンアップ(2007/10/15)<BR>
+<BR>
+　　　　瀬戸晴生さん<A href="http://ctime.cool.ne.jp/haruo/">http://ctime.cool.ne.jp/haruo/</A>が作ってくださった新しいヘルププログラム「Easy3DFunctions.exe」を<BR>
+　　　　「マニュアル」フォルダに入れました。<BR>
+　　　　（旧ヘルププログラムは削除しました。）<BR>
+<BR>
+<BR>
+ver3.0.3.4マイナーバージョンアップ(2007/11/04)<BR>
+<BR>
+　　　　瀬戸晴生さん<A href="http://ctime.cool.ne.jp/haruo/">http://ctime.cool.ne.jp/haruo/</A>が作ってくださった新しいヘルププログラム「Easy3DFunctions.exe」が<BR>
+　　　　バージョンアップしました。<BR>
+　　　　「マニュアル」フォルダに入っています。<BR>
+<BR>
+<BR>
+ver3.0.3.5(2007/11/09)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　ボーンの入ったsigを読み込み、モーションを読み込まない状態でE3DGetFaceNormalを呼ぶとエラー終了するバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.3.6(2008/01/07)<BR>
+<BR>
+　　　　関数表を修正。<BR>
+<BR>
+　　　　E3DCreateEmptyMotion命令を追加。<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DLookAtQが、ある条件下で不正な値をクォータニオンに書き込むことがあるバグを修正。<BR>
+<BR>
+　　　　　　アンチエイリアスを有効にした状態で、E3DCreateSwapChainを呼び出すとエラー終了するバグを修正。<BR>
+<BR>
+<BR>
+ver3.0.3.7(2008/01/12)<BR>
+<BR>
+　　　　E3DSetTextureMinMagFilter命令を追加。<BR>
+　　　　　　テクスチャーを拡大縮小表示する際のフィルターを指定できます。<BR>
+　　　　　　３Dモデル、背景、スプライト、ビルボードに指定できます。<BR>
+　　　　　　例えば、テクスチャがぼやけるのが嫌な場合は、D3DTEXF_POINTフィルターを指定します。<BR>
+<BR>
+ver4.0.0.1(2008/04/02)<BR>　　　　RokDeBone2 ver4.0.0.1のデータに対応。<BR>
+<BR>
+　　　　マテリアル関係の命令を追加<BR>
+　　　　　　 E3DGetMaterialNoByName<BR>
+　　　　　　 E3DGetMaterialAlpha<BR>
+　　　　　　 E3DGetMaterialDiffuse<BR>
+　　　　　　 E3DGetMaterialSpecular<BR>
+　　　　　　 E3DGetMaterialAmbient<BR>
+　　　　　　 E3DGetMaterialEmissive<BR>
+　　　　　　 E3DGetMaterialPower<BR>
+　　　　　　 E3DGetMaterialBlendingMode<BR>
+<BR>
+　　　　　　 E3DSetMaterialAlpha<BR>
+　　　　　　 E3DSetMaterialDiffuse<BR>
+　　　　　　 E3DSetMaterialSpecular<BR>
+　　　　　　 E3DSetMaterialAmbient<BR>
+　　　　　　 E3DSetMaterialEmissive<BR>
+　　　　　　 E3DSetMaterialPower<BR>
+　　　　　　 E3DSetMaterialBlendingMode<BR>
+<BR>
+　　　　　　 E3DGetTextureFromMaterial<BR>
+　　　　　　 E3DSetTextureToMaterial<BR>
+<BR>
+　　　　マテリアル方式の導入につき、古い命令を修正<BR>
+　　　　　　E3DSetAlpha, E3DSetAlpha2, E3DSetBlendingMode, E3DGetTextureFromDispObj,
+E3DSetTextureToDispObjの修正。<BR>
+　　　　　　これらの命令は、パーツの先頭の面が参照しているマテリアルに対して操作を行うように修正しました。<BR>
+　　　　　<BR>
+　　　　ビルボードはマテリアル方式ではありません。<BR>
+　　　　　　ビルボードに対する操作はいままでの古い命令を使ってください。<BR>
+<BR>
+　　　　E3DCreateParticleに引数追加<BR>
+　　　　　　８番目の引数に１を指定すると、Zバッファの内容にかかわらず、常に描画されるようになります。<BR>
+<BR>
+　　　　E3DDestroyAllMotionが機能していなかったのを修正。<BR>
+　<BR>
+　　　　パーティクルがfpsに-1を指定したときにもカメラの向きを向くように修正。<BR>
+<BR>　　　　E3DGetMaxMultiSampleNumがエラーになることがあるバグを修正。<BR>
+<BR>
+　　　　e3dhsp3_fight.hspサンプルがact1の後に動きが固まるバグを修正。（サンプルの修正）<BR>
+<BR>
+<BR>
+ver4.0.0.2(2008/04/03)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DSetTextureToMaterialで透過モードの異なるテクスチャを貼ると表示されなくなることがあるバグを修正。<BR>
+<BR>
+　　　　　　１つのパーツの中で複数のテクスチャの貼り方（UV指定とZ軸投影など）を組み合わせたモデルの<BR>
+　　　　　　表示がおかしくなることがあるバグを修正。<BR>
+<BR>
+<BR>
+ver4.0.0.3(2008/04/04)<BR>　　　　不透明オブジェクト描画時にもアルファテストをするように変更しました。<BR>
+　　　　　　中間のアルファは出せませんが、色抜きに使用できます。<BR>
+　　　　　　pngなどのファイルで色を抜きたいところをアルファ０にすれば、半透明設定をしないでもその部分が透過されます。<BR>
+<BR>
+<BR>
+ver4.0.0.4(2008/04/07)<BR>
+　　　　少し最適化しました。<BR>
+　　　　　　(自分の環境では）ver4.0.0.1以降、１０％近く描画が遅くなっていましたが、<BR>
+　　　　　　今回の修正でver3.0.3.7とほぼ同じ速さで描画できるようになりました。<BR>
+<BR>
+<BR>
+ver4.0.0.5(2008/04/07 その２)<BR>
+　　　　デバッグ<BR>
+　　　　　　ラインを描画した後にテキストを描画するとテキストが矩形に塗りつぶされてしまうバグを修正。<BR>
+<BR>
+<BR>
+ver4.0.0.6(2008/04/15)<BR>
+　　　　マルチレイヤーモーションを実装しました。<BR>
+　　　　　　ボーンごとに異なるモーションを自由なタイミングで再生できます。<BR>
+　　　　　　<BR>
+　　　　　　moa非対応版<BR>
+　　　　　　　　E3DSetMotionKindML<BR>
+　　　　　　　　E3DSetMotionFrameNoML<BR>
+　　　　　　　　E3DSetNextMotionFrameNoML<BR>
+　　　　　　moa対応版<BR>
+　　　　　　　　E3DSetMOAEventNoML<BR>
+　　　　　　共通<BR>
+　　　　　　　　E3DSetNewPoseML<BR>　　　　　　　　E3DGetMotionFrameNoML<BR>
+　　　　　　　　E3DGetNextMotionFrameNoML<BR>
+<BR>
+　　　　　　マルチレイヤーモーションのサンプルを追加しました。<BR>
+　　　　　　　　e3dhsp3_MultiLayerMotion.hsp<BR>
+　　　　　　　　e3dhsp3_MultiLayerMotion_MOA.hsp<BR>
+<BR>
+　　　　マテリアル番号取得命令追加<BR>
+　　　　　　E3DGetMaterialNo<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　ビルボードをアッドモードで描画したのち、スプライトを描画すると、<BR>
+　　　　　　その後のsigモデルの半透明部分がアッドモードで描画されてしまうバグを修正。<BR>
+　　　　　　　　修正しましたが、スプライトの描画は一番最後にしないと、直したバージョンでも不具合が出ますので注意してください。<BR>
+　　<BR>
+<BR>
+ver4.0.0.7(2008/04/16)<BR>
+　　　　デバッグ<BR>
+　　　　　　ver4.0.0.1以降のRokDeBone2でmikoto形式から作ったsigファイルを読み込もうとするとエラーになるバグを修正。<BR>
+<BR>
+ver4.0.0.8(2008/05/06)<BR>
+<BR>
+　　　　バンプマップに対応しました。<BR>
+　　　　　　設定方法はRokDeBone2の説明をお読みください。<BR>
+<BR>
+　　　　E3DGetCurrentBonePos、E3DGetCurrentBoneQの追加。<BR>
+　　　　　　マルチレイヤーモーションを使用する場合は、E3DSetNewPoseMLを呼ぶまで、各ボーンの位置と姿勢は確定しません。<BR>
+　　　　　　そのため、E3DGetBonePos, E3DGetBoneQは使えなくなります。<BR>
+　　　　　　マルチレイヤーモーションを使用する場合は、このE3DGetCurrentBonePos, E3DGetCurrentBoneQをお使いください。<BR>
+<BR>
+　　　　E3DRenderParticleに引数を追加<BR>
+　　　　　　onlyupdate引数を追加しました。<BR>
+　　　　　　これに１を指定すると、パーティクルの状態アップデートだけを行い、描画を行いません。<BR>
+　　　　　　この引数を省略した場合は、従来通り描画も行われます。<BR>
+<BR>
+<BR>
+ver4.0.0.9(2008/05/07)<BR>
+<BR>
+　　　　バンプマップのテクスチャのアドレッシングモードを変更。<BR>
+<BR>
+ver4.0.1.0(2008/05/08)<BR>　　　　バンプマップの表示方法を変更しました。<BR>
+　　　　　　デコボコ表示とテクスチャ表示を２パスでアルファブレンドする方法にしました。<BR>
+　　　　　　ver4.0.0.9のバンプで黒いポリゴンが表示されていた方は直っていると思います。<BR>
+<BR>
+<BR>
+ver4.0.1.1(2008/05/09)<BR>　　　　バンプマップ処理の変更。<BR>
+　　　　　　また１パスに戻しました。<BR>
+　　　　　　頂点シェーダーにミスが見つかったので直しました。<BR>
+<BR>
+<BR>
+ver4.0.1.2(2008/05/10)<BR>　　　　デバッグ<BR>
+　　　　　　バンプマップの表示が乱れるバグを修正しました。<BR>
+<BR>
+<BR>
+ver4.0.1.3(2008/05/10 その２)<BR>　　　　デバッグ<BR>
+　　　　　　バンプのdiffuseの影の付き方が逆になっていたバグを修正しました。<BR>
+<BR>
+<BR>
+ver4.0.1.4(2008/05/13)<BR>
+　　　　命令の追加。<BR>
+　　　　　　E3DChkBumpMapEnable flag<BR>
+　　　　　　　　ハードウェアがバンプマップ表示可能かを調べます。<BR>
+　　　　　　E3DEnableBumpMap flag<BR>
+　　　　　　　　バンプマップを表示するかどうかを設定します。<BR>
+　　　　　　E3DConvHeight2NormalMap hmapname, nmapname, hparam<BR>
+　　　　　　　　白黒の高さ画像データを法線マップデータに変換します。<BR>
+　　　　　　E3DSetBumpMapToMaterial hsid, matno, texid<BR>
+　　　　　　　　E3DCreateTextureで作成したテクスチャをバンプマップに設定します。<BR>
+<BR>
+<BR>
+ver4.0.1.5(2008/05/21)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　マルチレイヤーモーションの各命令で、listの先頭要素しか有効になっていなかったバグを修正しました。<BR>
+<BR>
+　　　　マルチレイヤーモーションの補間計算の無駄を省いて少し高速化しました。<BR>
+<BR>
+<BR>
+ver4.0.1.6(2008/05/22)<BR>
+<BR>
+　　　　モーション読み込み命令に、移動成分の倍率引数を追加。<BR>
+　　　　　　E3DAddMotion<BR>
+　　　　　　E3DAddMotionFromBuf<BR>
+　　　　　　E3DLoadMOAFile<BR>
+　　　　　　に引数を追加。<BR>
+<BR>
+<BR>
+ver4.0.1.7(2008/05/25)<BR>
+　　　　ver4.0.1.7のRokDeBone2のファイルに対応しました。<BR>
+<BR>
+<BR>
+ver4.0.1.8(2008/05/26)<BR>　　　　デバッグ<BR>
+　　　　　　オブジェクトの最後のポリゴンにだけ別の材質が設定されている場合に読み込みエラーになるバグを修正。<BR>
+<BR>
+　　　　地面データとしてmikoto形式データを読み込めるようにしました。<BR>
+　　　　　　E3DLoadMQOFileAsGroundにbonetype引数を追加。<BR>
+　　　　　　（ボーン変形した地面とのあたり判定命令は、まだサポートしていません。）<BR>
+<BR>
+<BR>
+ver4.0.1.9(2008/06/02)<BR>
+　　　　RokDeBone2 ver4.0.1.9の新しいquaファイルに対応。<BR>
+<BR>
+<BR>
+(2008/06/12)<BR>
+　　　　マニュアルに<FONT size="+2"><A href="../../ochikko_lab/e3dhsp3_MLM.htm">Tips　：　マルチレイヤーモーションとは？</A></FONT>を追加しました。<BR>
+<BR>
+<BR>
+ver4.0.2.0(2008/06/17)<BR>
+　　　　デバッグ<BR>
+　　　　　　モデルデータによっては、アルファテストがうまく行われないことがあるバグを修正。<BR>
+<BR>
+<BR>
+ver4.0.2.1(2008/06/27)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DGetSamePosVertのsamenumに値が代入されていなかったバグを修正しました。<BR>
+<BR>
+<BR>
+ver4.0.2.2(2008/07/12)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DSetMOAEventNoMLを複数回呼び出すと、呼び出すたびにフレーム番号が１ずつずれるバグを修正しました。<BR>
+<BR>
+<BR>
+ver4.0.2.3(2008/07/20)<BR>
+　　　　キーフレームによるテクスチャアニメ再生機能を追加しました。<BR>
+　　　　　　RokDeBone2 ver4.0.2.6のquaファイルに対応。<BR>
+<BR>
+<BR>
+ver4.0.2.4(2008/07/23)<BR>
+　　　　MOAの情報取得と設定用の命令を追加。<BR>
+　　　　　　E3DGetMOATrunkInfo<BR>
+　　　　　　E3DGetMOABranchInfo<BR>
+　　　　　　E3DSetMOABranchFrame1<BR>
+　　　　　　E3DSetMOABranchFrame2<BR>
+<BR>
+　　　　　　モーション変化する際の分岐元フレーム番号と分岐先フレーム番号をHSP側から動的に設定できるようになりました。<BR>
+<BR>
+<BR>
+ver5.0.0.1(2008/08/31)<BR>　　　　<A href="../../ochikko_lab/rdb2_ver5001.htm">ver5.0.0.1での変更点</A>をご覧ください。<BR>
+<BR>
+　　　　RokDeBone2　ver5.0.0.1　の各ファイルに対応。<BR>
+<BR>
+　　　　命令の追加<BR>
+　　　　　　ディスプレイスイッチの設定<BR>
+　　　　　　　　E3DSetDispSwitch2<BR>
+　　　　　　オイラー角の取得<BR>
+　　　　　　　　E3DQtoEuler<BR>
+　　　　　　色P時にも輪郭表示を可能にしました。<BR>
+　　　　　　　　E3DEnablePhongEdge<BR>
+　　　　　　　　E3DSetPhongEdge0Params<BR>
+<BR>
+<BR>
+ver5.0.0.2(2008/09/10)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　VistaでEasy3Dを使ったソフトを実行中に他のソフトをアクティブにすると、Easy3Dのソフトが応答なしになるバグを修正。<BR>
+　　　　　　　　E3DWaitByFPSを修正しました。<BR>
+<BR>
+<BR>
+ver5.0.0.3(2008/09/14)<BR>
+<BR>
+　　　　E3DSetPhongEdge0Paramsの拡張<BR>
+　　　　　　色P時の輪郭線を半透明で表示できるようになりました。<BR>
+　　　　　　半透明モードは４種類から選びます。<BR>
+<BR>
+<BR>
+ver5.0.0.4(2008/09/15)<BR>
+<BR>　　　　デバッグ<BR>
+　　　　　　E3DDestroyHandlerSetを呼ぶと、必要な（使用中の）テクスチャまでが削除されてしまうことがあるバグを修正。<BR>
+　　　　　　　　テクスチャの破棄処理がver4以降のマテリアル構造に対応していなかったのが原因でした。<BR>
+<BR>
+　　　　E3DGetVertPosの拡張<BR>
+　　　　　　頂点のグローバル座標が取得できるようになりました。<BR>
+<BR>
+<BR>
+ver5.0.0.5(2008/09/15 その２)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DDestroyHandlerSetを呼ぶと必要なバンプマップテクスチャが削除されてしまうことがあるバグを修正。<BR>
+<BR>
+<BR>
+ver5.0.0.6(2008/09/18)<BR>
+<BR>
+　　　　E3DGetDispSwitch2を追加。<BR>
+　　　　　　新しいディスプレイスイッチに対応。<BR>
+　　　　　　古いE3DGetDispSwitchは機能しません。<BR>
+<BR>
+<BR>
+ver5.0.0.7(2008/09/23)<BR>
+<BR>
+　　　　スレッド系命令の整備<BR>
+　　　　　　テクスチャのディレクトリ<BR>
+　　　　　　　　今まではスレッド命令で参照するテクスチャはすべて１か所にないと読み込めませんでしたが<BR>
+　　　　　　　　これからはsig, mqoごとに異なるディレクトリにデータが入っていてもテクスチャが読み込めるようになりました。<BR>
+<BR>
+　　　　　　呼び出し回数制限緩和<BR>
+　　　　　　　　今までは総呼び出し回数が４０９８回という制限がありましたが<BR>
+　　　　　　　　これからはE3DFreeThreadという命令を実行が終わったスレッドに対して呼び出すことで<BR>
+　　　　　　　　実質的に何回でも呼び出せるようになります。<BR>
+　　　　　　　　ただし一度にアクティブにできるスレッド命令の数は４０９８個のままです。<BR>
+　　　　　　　　E3DFreeThread命令でデータ領域の使い回しが可能になり、またスレッドリソースの解放を行えるようになりました。<BR>
+<BR>
+　　　　　　新命令追加<BR>
+　　　　　　　　E3DFreeThread<BR>
+　　　　　　　　E3DLoadSigFileAsGroundThread<BR>
+　　　　　　　　E3DLoadSigFileAsGroundFromBufThread<BR>
+<BR>
+<BR>
+ver5.0.0.8(2008/10/02)<BR>
+<BR>　　　　最適化しました<BR>
+　　　　　　シェーダーの定数周りの処理を最適化しました。<BR>
+　　　　　　少し高速化出来ました。<BR>
+<BR>
+　　　　バンプマップに点光源を適用できるようにしました。<BR>
+　　　　　　E3DSetLightIdOfBumpMap でバンプマップを照光するライトを１つだけ選択できるようにしました。<BR>
+　　　　　　（シェーダー２．０があるマシンでは、色P時（バンプ以外）には３つまでライトを適用できます。）<BR>
+　　　<BR>
+　　　　スプライトのUVを設定できるようにしました。<BR>
+　　　　　　１枚の画像でもUVを変えることでさまざまな模様を表示できるようになります。<BR>
+　　　　　　E3DSetSpriteUV命令で設定します。<BR>
+　　　　　<BR>
+　　　　スプライトUVのサンプルを追加しました。<BR>
+　　　　　　e3dhsp3_SpriteUV.hspを新規作成しました。<BR>
+<BR>
+<BR>
+(2008/10/03)<BR>
+<BR>
+　　　　e3dhsp3_SpriteUV.hspの修正。<BR>
+　　　　　　スプライト描画時のscalex, scaleyを実数にしました。<BR>
+<BR>
+<BR>
+ver5.0.0.9(2008/10/18)<BR>
+<BR>
+　　　　テクスチャへのレンダリングに対応しました。<BR>
+　　　　　　テクスチャへのレンダリングはE3DCreateRenderTargetTextureで作成したテクスチャでのみ可能です。<BR>
+　　　　　　E3DCreateRenderTargetTextureが成功するとスワップチェインIDとテクスチャIDが取得できます。<BR>
+　　　　　　スワップチェインIDで描画を行い、テクスチャIDでマテリアルへの貼り付けを行います。<BR>
+　　　　　　（内部データの種類的には厳密にはスワップチェインではないのですが、<BR>
+　　　　　　　Easy3Dの既存の機能を流用するためにスワップチェインの一種として分類しました。）<BR>
+<BR>
+　　　　　　車のバックミラーや疑似的なTV画面などに使えると思います。<BR>
+　　　　　　<BR>
+　　　　　　命令の追加<BR>
+　　　　　　　　E3DCreateRenderTargetTexture<BR>
+　　　　　　　　E3DDestroyRenderTargetTexture<BR>
+<BR>
+　　　　　　鏡面として応用したサンプル　e3dhsp3_RenderTargetTexture.hsp　を作りました。<BR>
+<BR>
+<BR>
+ver5.0.1.0(2008/10/28)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　MOAの補間がディスプレイスイッチアニメを考慮していなかったのを修正しました。<BR>
+　　　　　　　　補間モーションの最初のフレームに、変化前のモーションのスイッチの状態がセットされるようにしました。<BR>
+<BR>
+<BR>
+ver5.0.1.1(2008/10/31)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　補間モーション再生中にまた新たな補間モーションに変化する場合に、<BR>
+　　　　　　ディスプレイスイッチの情報がうまく引き継げないバグを修正しました。<BR>
+<BR>
+<BR>
+ver5.0.1.2(2008/10/31 その２)<BR>
+<BR>
+　　　　E3DSetDSFillUpMode命令の追加。<BR>
+　　　　　　補間時に補間前のモーションのスイッチ状態を表示するか<BR>
+　　　　　　もしくは補間後のモーションのスイッチ状態を表示するかを選びます。<BR>
+<BR>
+　　　　キーフレームが１つもないスイッチアニメの補間時にモーションがおかしくなる不具合を修正。<BR>
+<BR>
+<BR>
+ver5.0.1.3(2008/11/01)<BR>
+<BR>
+　　　　MOAのモーションの補間時にテクスチャアニメも考慮するようにしました。<BR>
+<BR>
+　　　　E3DSetTexFillUpMode命令の追加。<BR>
+　　　　　　補間時に補間前のモーションのテクスチャを表示するか<BR>
+　　　　　　もしくは補間後のモーションのテクスチャを表示するかを選びます。<BR>
+<BR>
+<BR>
+ver5.0.1.4(2008/11/02)<BR>
+<BR>
+　　　　E3DCameraDirRight, E3DCameraDirLeftの修正。<BR>
+　　　　　　左右にカメラを振っていると突然全く動かなくなることがあるのを修正。<BR>
+　　　　　　たぶん直ったと思いますが、まだ不具合が出るようでしたら連絡ください。<BR>
+<BR>
+<BR>
+ver5.0.1.5(2008/11/05)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DSetLightIdOfBumpMapが正常に動作していなかったのを修正。<BR>
+<BR>
+<BR>
+ver5.0.1.6(2008/11/16)<BR>
+<BR>
+　　　　影表示機能の追加。<BR>
+　　　　　　深度バッファ法で影の描画が出来るようになりました。<BR>
+　　　　　　新命令<BR>
+　　　　　　　　E3DSetShadowMapCamera<BR>
+　　　　　　　　E3DSetShadowMapProjOrtho<BR>
+　　　　　　　　E3DRenderWithShadow<BR>
+　　　　　　　　E3DSetShadowBias<BR>
+　　　　　　　　E3DCheckRTFormat<BR>
+　　　　　　　　E3DChkShadowEnable<BR>
+　　　　　　　　E3DEnableShadow<BR>
+<BR>
+　　　　　　影表示のサンプルの追加<BR>
+　　　　　　　　e3dhsp3_shadow.hsp<BR>
+<BR>
+　　　　E3DCreateRenderTargetTextureに引数追加。<BR>
+　　　　　　フォーマットを指定できるようにしました。<BR>
+<BR>
+　　　　マニュアルに<A href="../../ochikko_lab/e3dhsp_shadow.htm">影付きレンダリングの仕方</A>を追加。<BR>
+<BR>
+<BR>
+ver5.0.1.7(2008/11/19)<BR>
+<BR>
+　　　　ビデオカードによってはビルボードの影が四角くなってしまうのを修正。<BR>
+　　　　　　e3dhsp3_shadow.hspのD3DFMT_R32FをD3DFMT_A16B16G16R16Fに変更しました。<BR>
+　　　　　　<A href="../../ochikko_lab/e3dhsp_shadow.htm">影付きレンダリングの仕方</A>に追記しました。<BR>
+<BR>
+　　　　影の暗さを設定できるようにしました。<BR>
+　　　　　　E3DSetShadowDarkness<BR>
+<BR>
+　　　　E3DRenderWithShadowにskipflag引数を追加しました。<BR>
+　　　　　　画面バッファのクリアと背景の描画をスキップできます。<BR>
+<BR>
+　　　　hsidをまとめて描画できる命令を追加しました（影なし）<BR>
+　　　　　　E3DRenderBatch<BR>
+　　　　　　２０体のキャラクターでテストしたところ１０％程度高速化しました。<BR>
+<BR>
+　　　　頂点座標をまとめてセットできる命令を追加しました。<BR>
+　　　　　　E3DSetVertPosBatch<BR>
+<BR>
+<BR>
+ver5.0.1.9(2008/11/22)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　シャドウマップ描画時の視野内判定のプロジェクション行列が間違っていたのを修正しました。<BR>
+　　　　　　シャドウマップの視野内に入っているのに影が落ちない不具合が直りました。<BR>
+<BR>
+<BR>
+ver5.0.2.0(2008/11/24)<BR>
+<BR>
+　　　影の表示にLiSPSMを導入しました。<BR>
+　　　　　影用のカメラの位置やプロジェクションをユーザーさんが設定しなくても自動的に適切なシャドウマップが作成されます。<BR>
+　　　　　地面以外の視野内オブジェクトが必ずシャドウマップに含まれるように自動的に設定されます。（パーツ数合計１０００個まで）<BR>
+<BR>
+　　　　　影のサンプルを新しくしました（e3dhsp3_shadow2.hsp）<BR>
+<BR>
+　　　　　新命令追加<BR>
+　　　　　　　E3DSetShadowMapLightDir<BR>
+<BR>
+　　　　　以下の命令は無効になりました（何もしないでリターンします）<BR>
+　　　　　　　E3DSetShadowMapCamera<BR>
+　　　　　　　E3DSetShadowMapProjOrtho<BR>
+<BR>
+　　　　　<A href="../../ochikko_lab/e3dhsp_shadow.htm">影付きレンダリングの仕方</A>を書き直しました。<BR>
+<BR>
+<BR>
+ver5.0.2.1(2008/11/28)<BR>
+<BR>
+　　　　hsidの個数に制限を設けました。<BR>
+　　　　　　同時にアクティブにできるhsidの個数は１０００個までです。<BR>
+　　　　　　内部オブジェクトの検索が速くなりました。<BR>
+　　　　　　　　１０００個のsigを表示したときのFPS　変更前２４FPS--&gt;変更後３９FPS<BR>
+　　　　　　　　１００個くらいだとあまり効果がありません。<BR>
+<BR>
+　　　　E3DRenderBatchModeの追加。<BR>
+　　　　　　不透明のみ描画するか半透明のみ描画するか両方描画するかをhsidごとに指定できます。<BR>
+　　　　　　１０００個のsigで計測時、１０％ほど高速化。<BR>
+<BR>
+　　　　E3DGlobalToLocal, E3DLocalToGlobalの追加。<BR>
+　　　　　　グローバル座標系とキャラクターのローカル座標系の座標値を変換する命令です。<BR>
+　　　　　　動く乗物に乗ったり降りたりするときに便利です。<BR>
+<BR>
+<BR>
+ver5.0.2.2(2008/11/29)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　Lineが表示されないバグを修正。<BR>
+<BR>
+　　　　E3DSetVertPosBatchAOrderを追加。<BR>
+　　　　　　２次元配列の順番を変えたバージョンです。<BR>
+　　　　　　<BR>
+　　　　E3DSetShadowMapModeを追加。<BR>
+　　　　　　モード１を指定するとver5.0.2.0以前の手動によるシャドウマップの作成が出来ます。<BR>
+　　　　　　モード０はLiSPSMの自動設定です。<BR>
+<BR>
+　　　　３Dサウンドのサンプルから周波数設定部分を取り除きました。<BR>
+　　　　　　リバーブ有効時はエラーになるため。<BR>
+<BR>
+<BR>
+ver5.0.2.3(2008/11/30)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　カメラ命令の呼び方によってはバンプモデルがキー入力やマウス移動に合わせてちらつくバグを修正。<BR>
+<BR>
+<BR>
+ver5.0.2.4(2008/12/01)<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　一度でも描画を行うと、その後のデータロードが待機状態になり終了しなくなるバグを修正。<BR>
+　　　　　　　　同期オブジェクト（クリティカルセクション）の解放し忘れが原因でした。<BR>
+　　　　　　　　ver5.0.2.1からのバグです。<BR>
+<BR>
+<BR>
+ver5.0.2.5(2008/12/02)<BR>
+<BR>
+　　　　命令の追加<BR>
+　　　　　　E3DLoadTextureFromBuf<BR>
+　　　　　　　　作成済みのテクスチャにバッファから画像を読み込む。<BR>
+<BR>
+　　　　　　E3DLoadSpriteFromBMSCR<BR>
+　　　　　　　　作成済みのスプライトにHSPバッファから画像を読み込む。<BR>
+　　　　　　<BR>
+　　　　　　両方とも既存のテクスチャやスプライトに対する処理なので<BR>
+　　　　　　頻繁に内容を更新したいときに作成と破棄の必要がなく<BR>
+　　　　　　メモリ周りの心配も軽減されます。<BR>
+<BR>
+<BR>
+ver5.0.2.6(2008/12/10)<BR>
+<BR>
+　　　　トゥーンでも影表示できるように拡張しました。<BR>
+　　　　　　COL_TOON1, COL_TOON0の両方に対応しました。<BR>
+　<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DDestroyHandlerSetでテクスチャが破棄されなくなっていたバグを修正。<BR>
+　　　　　　　　ver5.0.2.1からのバグでした。<BR>
+<BR>
+<BR>
+ver5.0.2.7(2008/12/17)<BR>
+<BR>
+　　　　E3DSetShadowMapInterFlagを追加。<BR>
+　　　　　　パーツをシャドウマップに含めるかどうかを制御するフラグを設定出来ます。<BR>
+<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DLoadSpriteFromBMSCRでtransparentが２のときの透過色指定が有効になっていなかったのを修正。<BR>
+<BR>
+　　　　マニュアル追記<BR>
+　　　　　　E3DLoadTextureFromBufはテクスチャ作成命令で指定したのと同じtransparentを指定しないとエラーになること、<BR>
+　　　　　　E3DLoadSpriteFromBMSCRはE3DCreateSpriteFromBMSCRで指定したのと同じtransparentを指定しないとエラーになること<BR>
+　　　　　　を追記しました。<BR>
+<BR>
+<BR>
+ver5.0.2.8(2008/12/29)<BR>
+<BR>
+　　　　RokDeBone2 ver5.0.2.9の新しいsigファイルに対応。<BR>
+<BR>
+<BR>
+ver5.0.2.9(2009/01/07)<BR>
+<BR>
+　　　　RokDeBone2 ver5.0.3.0のアルファテストに対応したsigファイルに対応。<BR>
+<BR>
+　　　　E3DSetMaterialAlphaTest追加。<BR>
+　　　　　　マテリアルごとに不透明描画時と半透明描画時のアルファテストを設定できます。<BR>
+<BR>
+　　　　E3DGetScreenPos, E3DGetScreenPos3, E3DGetBBoxがビルボードで機能していなかったのを修正。<BR>
+<BR>
+　　　　E3DTransformBillboardを追加。E3DRenderBillboardにtransskip引数を追加。<BR>
+　　　　　　 デフォルト状態のE3DRenderBillboardでは描画準備の計算と描画の処理がいっぺんに行われていました。<BR>
+　　　　　　そのためあたり判定は描画の後にしなくてはならず、実際の描画と判定が１フレームずれるという問題がありました。<BR>
+      <BR>
+　　　　　　この問題を解決するためにE3DTransformBillboardを追加しました。<BR>
+　　　　　　この命令は視野内判定と位置計算とソートを行います。<BR>
+　　　　　　この命令を呼び出したあとビルボードの位置などに変更がない場合は、E3DRenderBillboardのtransskip引数に１を設定します。<BR>
+　　　　　　そうすることで２度同じ描画準備の計算を行うことを防ぎます。<BR>
+<BR>
+　　　　　　つまり、E3DTransformBilboard ---&gt; あたり判定 ---&gt; E3DRenderBillboard
+(transskip = 1)　のようにして使います。<BR>
+<BR>
+<BR>
+ver5.0.3.0(2009/01/11)<BR>
+<BR>
+　　　　hsidに対する回転、移動の命令をパーティクルにも使用できるようにしました。<BR>
+　　　　　　hsidの代わりにパーティクルIDを命令に渡します。<BR>
+　　　　　　例えばE3DSetPos ptlid, posx, posy, poszとするとパーティクル全体が（posx, posy, posz）だけ移動します。<BR>
+<BR>
+<BR>
+ver5.0.3.1(2009/01/23)<BR>
+<BR>
+　　　　E3DRenderBatch使用時にライン表示がカメラなどのパラメータを反映していなかったバグを修正。<BR>
+<BR>
+<BR>
+ver5.0.3.2(2009/01/29)<BR>
+　　　<BR>
+　　　E3DSaveMQOFileでテクスチャ名からパスを取り除く処理をやめました。<BR>
+　　　　　sig, mqoに記述されているのと同じ文字列を出力します。<BR>
+<BR>
+<BR>
+ver5.0.3.3(2009/03/03)<BR>
+　　　　デバッグ<BR>
+　　　　　　E3DIKTranslateの内部の座標系が一部間違っており、繰り返し呼び出すと正しく動作しないバグを修正。<BR>
+<BR>
+<BR>
+ver5.0.3.3(2009/03/15)<BR>　　　　サンプルの追加。<BR>
+　　　　e3dhsp3_fight_MOA.hspを追加しました。<BR>
+　　　　　　MOAを使った格ゲーサンプルです。<BR>
+　　　　　　モデルデータはISAOさんのpooちゃん。<BR>
+　　　　dllはそのまま。バージョン番号もver5.0.3.3のまま。<BR>
+<BR>
+ver5.0.3.4(2009/03/20)<BR>　　　　E3DCalcMLMotion命令の追加。<BR>
+　　　　　　マルチレイヤーモーション用の命令。<BR>
+　　　　　　ローカルの姿勢から親子関係を反映した姿勢を計算します。<BR>
+　　　　　　この命令はE3DSetNewPoseML内部からも呼ばれています。<BR>
+　　　　　　E3DSetNewPoseMLより後でE3DSetBoneQした場合などに、この命令を呼んでください。<BR>
+<BR>
+ver5.0.3.5(2009/03/28)<BR>　　　　RokDeBone2 ver5.0.3.3のsigファイルに対応。<BR>
+<BR>
+<BR>
+ver5.0.3.6(2009/03/29)<BR>　　　　デバッグ<BR>
+　　　　　　E3DRenderBatchModeのhsidarrayにパーティクルのIDを指定した際<BR>
+　　　　　　パーティクルより後の半透明オブジェクトが不透明で描画されてしまうバグを修正。<BR>
+<BR>
+　　　　　　関数表のE3DRenderBatchModeの項に追記。<BR>
+<BR>
+<BR>
+ver5.0.3.7(2009/04/01)<BR>　　　　影響度の設定関数を追加。<BR>
+　　　　　　E3DCreateSkinMat　影響度の設定を表示データに反映させる。<BR>
+　　　　　　E3DSetSymInfElem　軸対称の影響度を頂点にセットする。<BR>
+　　　　　　E3DUpdateSymInfElem　軸対称設定の頂点の影響度を最新に更新する。<BR>
+<BR>
+　　　　E3DSetInfElem, E3DDeleteInfElem, E3DNormalizeInfElemのマニュアルに追記。<BR>
+　　　　　　E3DCreateSkinMatを呼ばないと表示に反映されないことを追記。<BR>
+<BR>
+<BR>
+ver5.0.3.8(2009/04/12)<BR>　　　　デバイスロスト時の処理を修正しました。<BR>
+　<BR>
+　　　　E3DSaveQuaFileとE3DSaveQua2Buf命令に引数を追加。<BR>
+　　　　　　quatype引数で、番号基準のフォーマットか名前基準のフォーマットかを指定するようになりました。<BR>
+<BR>
+　　　　RokDeBone2 ver5.0.3.4のquaファイルに対応。<BR>
+<BR>
+<BR>
+ver5.0.3.8(2009/04/13 その２)<BR>　　　　マニュアルに<A href="../../ochikko_lab/e3d_version.htm">Sig, Qua, Moaファイルの読み込みがエラーになるとき</A>を追加しました。<BR>
+　　　　プログラムはそのまま。<BR>
+<BR>ver5.0.3.9(2009/04/16)<BR>　　　　デバイスロストの処理を修正。<BR>
+　　　　　　ビルボード、スプライト、フォント、D3DPOOL_DEFAULTのテクスチャなどの処理を修正しました。<BR>
+　　　　　　これでXP,VistaともCtrl + Alt + Delしても落ちたり固まらなくなりました。<BR>
+<BR>
+<BR>
+ver5.0.4.0(2009/04/20)<BR>　　　　デバイスロストが起こるとBG（背景）のUV座標が初期化されてしまう不具合を修正しました。<BR>
+　　　　E3DSetJointInitialPosを追加。<BR>
+<BR>
+<BR>
+</P>
+</BODY>
+</HTML>

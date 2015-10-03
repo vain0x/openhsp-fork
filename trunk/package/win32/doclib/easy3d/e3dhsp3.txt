@@ -1,0 +1,64 @@
+Easy3D For HSP3 ver5.0.4.0 (HSP3.2同梱バージョン)
+
+インストール方法
+　e3dhsp3.dllを、hsp32フォルダにコピーしてください。
+  e3dhsp3.asをhsp32フォルダの中のcommonフォルダの中にコピーしてください。
+  exeを作成して使用する場合は、exeと同じフォルダにも、e3dhsp3.dllを置いてください。
+
+
+Easy3D（e3dhsp3.dll）は、DirectXで３Ｄゲームを作るためのプラグインです。
+サンプルを動かしてみておもしろそうだと思った方は
+ぜひおちゃっこＬＡＢ（http://www5d.biglobe.ne.jp/~ochikko/）で
+最新版をダウンロードしてみてください。
+
+おちゃっこＬＡＢでは、
+Easy3Dで使用する３Ｄ形状データ、モーションデータを編集するためのツールRokDeBone2も公開していますので
+あわせてご使用ください。
+
+RokDeBone2のバージョンだけが新しい場合、
+Easy3Dでの形状やモーションファイルの読み込みで失敗することがあります。
+そんなときは、Easy3Dのバージョンも最新のものをダウンロードして使用するようにしてください。
+なぜかといいますと、
+RokDeBone2がバージョンアップした際には、ファイルのフォーマットが新しくなることがあります。
+新しいファイルは古いプログラムで読み込もうとするとエラーになります。
+ですので、そういう症状が出た場合は、Easy3Dも最新版をダウンロードしなおして使用してください。
+古いファイルは、新しいプログラムでも問題なく読み込めるようにしていくつもりです。
+
+おちゃっこ
+http://www5d.biglobe.ne.jp/~ochikko/
+
+////// サンプル モデルデータ //////////////////
+MOAで使用しているモデルデータとモーションデータはぼおんさんの作です。
+http://www2.odn.ne.jp/hanakabu/
+
+はだか猫の著作権は、ほしさんにあります。
+http://ww5.et.tiki.ne.jp/~hoshi_k/cypher/
+
+タコとタコの走行の地面データはShinobuさんの作です。
+MAZE666
+
+e3dhsp3_ground.hspで使用されている、モロ星人のデータはnaosukeAniさんの作を加工したものです。
+モロは版権ものです。
+http://w2223.nsk.ne.jp/~locke/index.htm
+
+e3dhsp3_shadow.hspで使用しているlowtree2.pngの著作権はぶちさばさんにあります。
+http://www.neo-arcadia.info/
+
+e3dhsp3_fight_MOAで使用しているpooちゃんはISAOさんの作です。
+http://witchcraft-jp.sakura.ne.jp/
+
+///////  HELPについて ////////
+ヘルププログラム「Easy3DFunctions.exe」は、
+瀬戸晴生さん
+http://ctime.cool.ne.jp/haruo/
+が作成してくださいました。
+
+Easy3DFunctions.exeと、e3dhsp3_func.htmが同じフォルダにある状態で、
+Easy3DFunctions.exeをダブルクリックすると、ヘルププログラムが起動します。
+
+
+///////  HSファイルについて　///////
+ヘルプファイルはYutoさんのEasy3DHelp2Hs を使って作成したものです。
+Yuto's WebPage
+http://www.geocities.jp/yutopp/index.html
+

@@ -1,0 +1,60 @@
+
+;
+;	各種配置オブジェクトのテスト
+;	(ウィンドウを動かすと位置を検出します)
+;
+;
+
+;onexit *m6
+;onerror *m4
+;onkey *m5
+;onclick *m5
+
+#define  WM_MOVE    0x0003
+oncmd gosub *m7,WM_MOVE
+
+a=123
+buf=""
+input a,320,24
+sdim buf,256
+listbox z,100,"apple\npie\ntoast"
+mesbox buf,320,100
+button "DELETE",*m1
+button "STATUS",*m2
+button "MESBOX",*m8
+;button "UPDATE",*m3
+
+stop
+
+*m1
+	clrobj 0,0
+	stop
+
+*m2
+	mes "input("+a+") listbox("+z+")"
+	stop
+
+*m3
+	objprm 0,1
+	stop
+
+*m8
+	dialog buf
+	stop
+
+*m4
+	mes "Error="+err
+	stop
+
+*m5
+	mes "KEY="+iparam+"/"+wparam+"/"+lparam
+	stop
+
+*m7
+	title "WINDOW="+(lparam&0xffff)+","+(lparam>>16)
+	return
+
+*m6
+	dialog "終了します。"
+	end
+

@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "redraw"
+
+#define •`‰æƒ‚[ƒh‚Ìİ’è	"1"	;;str
+#define Ä•`‰æ‚·‚é¶ãXÀ•W	"0"	;;str
+#define Ä•`‰æ‚·‚é¶ãYÀ•W	"0"	;;str
+#define Ä•`‰æ‚·‚é‘å‚«‚³X	"0"	;;str
+#define Ä•`‰æ‚·‚é‘å‚«‚³Y	"0"	;;str
+
+#ahtmes "redraw "+•`‰æƒ‚[ƒh‚Ìİ’è+" , "+Ä•`‰æ‚·‚é¶ãXÀ•W+" , "+Ä•`‰æ‚·‚é¶ãYÀ•W+" , "+Ä•`‰æ‚·‚é‘å‚«‚³X+" , "+Ä•`‰æ‚·‚é‘å‚«‚³Y+
