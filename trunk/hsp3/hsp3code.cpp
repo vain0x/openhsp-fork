@@ -17,6 +17,7 @@
 #include "hsp3debug.h"
 #include "hsp3config.h"
 #include "hsp3int.h"
+#include "struct.h"
 
 #define strp(dsptr) &hspctx->mem_mds[dsptr]
 
@@ -511,6 +512,14 @@ static void code_checkarray_obj2( PVal *pval )
 }
 
 
+static char *get_modvar_members_buffer( MPModVarData *var, STRUCTPRM *prm )
+{
+	if (( var->magic != MODVAR_MAGICCODE )||( var->subid != prm->subid )) throw HSPERR_INVALID_STRUCT_SOURCE;
+	STRUCT *obj = var->obj;
+	if ( obj == NULL ) throw HSPERR_INVALID_STRUCT_SOURCE;
+	return (char *)GET_STRUCT_MEMBERS_BUFFER(obj);
+}
+
 
 int code_get( void )
 {
@@ -522,8 +531,6 @@ int code_get( void )
 	PVal *argpv;
 	HspVarProc *varproc;
 	HSP3TYPEINFO *info;
-	MPModVarData *var;
-	FlexValue *fv;
 	char *out;
 	STRUCTPRM *prm;
 	char *ptr;
@@ -595,16 +602,20 @@ int code_get( void )
 			code_next();
 			break;
 		case TYPE_STRUCT:
+			out = ((char *)hspctx->prmstack );
+			if ( val == STRUCTCODE_THISMOD ) {						// thismod
+				code_next();
+				if ( type == TYPE_MARK ) if ( val == '(' ) throw HSPERR_INVALID_ARRAY;
+				MPModVarData *var = (MPModVarData *)out;
+				if ( var->magic != MODVAR_MAGICCODE ) throw HSPERR_INVALID_STRUCT_SOURCE;
+				StackPush( TYPE_STRUCT, (char *)&var->obj, sizeof(STRUCT*) );
+				break;
+			}
 			prm = &hspctx->mem_minfo[val];
 			code_next();
-			out = ((char *)hspctx->prmstack );
 			if ( out == NULL ) throw HSPERR_INVALID_PARAMETER;
 			if ( prm->subid != STRUCTPRM_SUBID_STACK ) {
-				var = (MPModVarData *)out;
-				if (( var->magic != MODVAR_MAGICCODE )||( var->subid != prm->subid )||(var->pval->flag != TYPE_STRUCT )) throw HSPERR_INVALID_STRUCT_SOURCE;
-				fv = (FlexValue *)HspVarCorePtrAPTR( var->pval, var->aptr );
-				if ( fv->type == FLEXVAL_TYPE_NONE ) throw HSPERR_INVALID_STRUCT_SOURCE;
-				out = (char *)fv->ptr;
+				out = get_modvar_members_buffer( (MPModVarData *)out, prm );
 			}
 			out += prm->offset;
 			tflag = prm->mptype;
@@ -844,7 +855,6 @@ static inline APTR code_getva_struct( PVal **pval )
 	//		置き換えパラメーターを変数の代わりに取得
 	//
 	MPModVarData *var;
-	FlexValue *fv;
 	STRUCTPRM *prm;
 	APTR aptr;
 	char *out;
@@ -856,20 +866,13 @@ static inline APTR code_getva_struct( PVal **pval )
 	if ( out == NULL ) throw HSPERR_INVALID_PARAMETER;
 
 	if ( i == STRUCTCODE_THISMOD ) {						// thismod
-		var = (MPModVarData *)out;
-		if ( var->magic != MODVAR_MAGICCODE ) throw HSPERR_INVALID_STRUCT_SOURCE;
-		*pval = var->pval;
-		exflg&=EXFLG_1;
-		return var->aptr;
+		throw HSPERR_VARIABLE_REQUIRED;
 	}
 
 	prm = &hspctx->mem_minfo[i];
 	if ( prm->subid != STRUCTPRM_SUBID_STACK ) {
 		var = (MPModVarData *)out;
-		if (( var->magic != MODVAR_MAGICCODE )||( var->subid != prm->subid )||(var->pval->flag != TYPE_STRUCT )) throw HSPERR_INVALID_STRUCT_SOURCE;
-		fv = (FlexValue *)HspVarCorePtrAPTR( var->pval, var->aptr );
-		if ( fv->type == FLEXVAL_TYPE_NONE ) throw HSPERR_INVALID_STRUCT_SOURCE;
-		out = (char *)fv->ptr;
+		out = get_modvar_members_buffer( var, prm );
 	}
 	out += prm->offset;
 	aptr = code_getv_proxy( pval, (MPVarData *)out, prm->mptype );
@@ -943,6 +946,20 @@ unsigned short *code_getlb2( void )
 	code_next();
 	exflg&=~EXFLG_2;
 	return s;
+}
+
+
+static STRUCT *code_get_struct_obj( void )
+{
+	//		struct 型パラメーターを取得
+	//
+	int chk;
+	chk = code_get();
+	if ( chk<=PARAM_END ) { throw HSPERR_NO_DEFAULT; }
+	if ( mpval->flag != HSPVAR_FLAG_STRUCT ) {
+		throw HSPERR_TYPE_MISMATCH;
+	}
+	return *(STRUCT **)(mpval->pt);
 }
 
 
@@ -1061,14 +1078,38 @@ static void customstack_delete( STRUCTDAT *st, char *stackptr )
 }
 
 
-static void cmdfunc_return( void )
+static void cmdfunc_return0( int is_ctype_function )
 {
 	//		return execute
 	//
 	STMDATA *stm;
 	HSPROUTINE *r;
+	
+	int exist_retval = hspctx->retval_level == hspctx->sublev;
 
 	if ( StackGetLevel == 0 ) throw HSPERR_RETURN_WITHOUT_GOSUB;
+
+	if ( exist_retval ) {
+		char *ptr = (char *)HspVarCorePtr( mpval );
+		switch( mpval->flag ) {
+		case HSPVAR_FLAG_INT:
+			hspctx->stat = *(int *)ptr;
+			break;
+		case HSPVAR_FLAG_STR:
+			sbStrCopy( &hspctx->refstr, (char *)ptr );
+			break;
+		case HSPVAR_FLAG_DOUBLE:
+			hspctx->refdval = *(double *)ptr;
+			break;
+		case HSPVAR_FLAG_STRUCT:
+			if ( is_ctype_function ) break;
+			// FALL THROUGH
+		default:
+			throw HSPERR_TYPE_MISMATCH;
+		}
+	} else if ( is_ctype_function ) {
+		throw HSPERR_NORETVAL;
+	}
 
 	stm = StackPeek;
 	r = (HSPROUTINE *)STM_GETPTR(stm);
@@ -1084,6 +1125,11 @@ static void cmdfunc_return( void )
 	code_next();
 
 	StackPop();
+}
+
+static void cmdfunc_return( void )
+{
+	cmdfunc_return0( 0 );
 }
 
 
@@ -1121,7 +1167,7 @@ static int cmdfunc_gosub( unsigned short *subr )
 }
 
 
-static int code_callfunc( int cmd )
+static int code_callfunc0( int cmd, int is_ctype_function )
 {
 	//	ユーザー拡張命令を呼び出す
 	//
@@ -1132,8 +1178,9 @@ static int code_callfunc( int cmd )
 
 	st = &hspctx->mem_finfo[cmd];
 
-	size = sizeof(HSPROUTINE) + st->size;
+	size = sizeof(HSPROUTINE) + st->size + sizeof(int);
 	r = (HSPROUTINE *)StackPushSize( TYPE_EX_CUSTOMFUNC, size );
+	r->param = st;
 	p = (char *)(r+1);
 	code_expandstruct( p, st, CODE_EXPANDSTRUCT_OPT_NONE );			// スタックの内容を初期化
 
@@ -1142,7 +1189,6 @@ static int code_callfunc( int cmd )
 
 	r->mcsret = mcsbak;							// 戻り場所
 	r->stacklev = hspctx->sublev++;				// ネストを進める
-	r->param = st;
 
 	mcs = (unsigned short *)( hspctx->mem_mcs + (hspctx->mem_ot[ st->otindex ]) );
 	code_next();
@@ -1156,7 +1202,7 @@ static int code_callfunc( int cmd )
 #endif
 		if ( GetTypeInfoPtr( type )->cmdfunc( val ) ) {	// タイプごとの関数振り分け
 			if ( hspctx->runmode == RUNMODE_RETURN ) {
-				cmdfunc_return();
+				cmdfunc_return0( is_ctype_function );
 				break;
 			} else {
 				hspctx->msgfunc( hspctx );
@@ -1165,6 +1211,18 @@ static int code_callfunc( int cmd )
 	}
 
 	return RUNMODE_RUN;
+}
+
+
+static int code_callfunc( int cmd )
+{
+	return code_callfunc0( cmd, 0 );
+}
+
+
+static int code_callfunc_ctype_function( int cmd )
+{
+	return code_callfunc0( cmd, 1 );
 }
 
 
@@ -1178,31 +1236,20 @@ APTR code_newstruct( PVal *pval )
 {
 	int i,max;
 	APTR ofs;
-	FlexValue *fv;
+	STRUCT **st;
 	ofs = 0;
 	if ( pval->flag != TYPE_STRUCT ) return 0;
-	fv = (FlexValue *)pval->pt;
+	st = (STRUCT **)pval->pt;
 	max = pval->len[1];
 	for( i=0;i<max;i++ ) {
-		if ( fv[i].type == FLEXVAL_TYPE_NONE ) return i;
+		if ( st[i] == NULL ) return i;
+	}
+	if ( pval->len[2] ) {
+		// 多次元配列
+		throw HSPERR_ARRAY_OVERFLOW;
 	}
 	HspVarCoreReDim( pval, 1, max+1 );				// 配列を拡張する
 	return max;
-}
-
-
-FlexValue *code_setvs( PVal *pval, APTR aptr, void *ptr, int size, int subid )
-{
-	//		TYPE_STRUCTの変数を設定する
-	//		(返値:構造体を収めるための情報ポインタ)
-	//
-	FlexValue fv;
-	fv.customid = subid;
-	fv.clonetype = 0;
-	fv.size = size;
-	fv.ptr = ptr;
-	code_setva( pval, aptr, TYPE_STRUCT, &fv );
-	return (FlexValue *)HspVarCorePtrAPTR( pval, aptr );
 }
 
 
@@ -1214,8 +1261,11 @@ void code_expandstruct( char *p, STRUCTDAT *st, int option )
 	char *out;
 	STRUCTPRM *prm;
 	prm = &hspctx->mem_minfo[ st->prmindex ];
+	// 引数セットアップ中の GC のために何番目の引数までセットアップしたかを格納しておく
+	int *argcnt = (int *)(p + st->size);
 
 	for(i=0;i<st->prmmax;i++) {							// パラメーターを取得
+		*argcnt = i;
 		out = p + prm->offset;
 		//Alertf( "(%d)type%d index%d offset%d", st->subid, prm->mptype, st->prmindex+i,prm->offset );
 		switch( prm->mptype ) {
@@ -1225,14 +1275,12 @@ void code_expandstruct( char *p, STRUCTDAT *st, int option )
 		case MPTYPE_MODULEVAR:
 			{
 			MPModVarData *var;
-			PVal *refpv;
-			APTR refap;
+			STRUCT *obj;
 			var = (MPModVarData *)out;
-			refap = code_getva( &refpv );
+			obj = code_get_struct_obj();
 			var->magic = MODVAR_MAGICCODE;
 			var->subid = prm->subid;
-			var->pval = refpv;
-			var->aptr = refap;
+			var->obj = obj;
 			break;
 			}
 		case MPTYPE_IMODULEVAR:
@@ -1288,73 +1336,22 @@ void code_expandstruct( char *p, STRUCTDAT *st, int option )
 			}
 		case MPTYPE_STRUCTTAG:
 			break;
+		case MPTYPE_STRUCT:
+			*(STRUCT **)out = code_get_struct_obj();
+			break;
 		default:
 			throw HSPERR_INVALID_STRUCT_SOURCE;
 		}
 		prm++;
 	}
+	*argcnt = st->prmmax;
 }
 
 
-void code_delstruct( PVal *in_pval, APTR in_aptr )
+void code_delete_struct_members_buffer( STRUCTDAT *dat, void *members_buffer )
 {
-	//		モジュール変数を破棄する
-	//
-	int i;
-	char *p;
-	char *out;
-	STRUCTPRM *prm;
-	STRUCTDAT *st;
-	PVal *pval;
-	FlexValue *fv;
-
-	fv = (FlexValue *)HspVarCorePtrAPTR( in_pval, in_aptr );
-
-	if ( fv->type != FLEXVAL_TYPE_ALLOC ) return;
-
-	prm = &hspctx->mem_minfo[ fv->customid ];
-	st = &hspctx->mem_finfo[ prm->subid ];
-	p = (char *)fv->ptr;
-
-	if ( fv->clonetype == 0 ) {
-
-		//Alertf( "del:%d",st->otindex );
-		if ( st->otindex ) {								// デストラクタを起動
-			modvar_init.magic = MODVAR_MAGICCODE;
-			modvar_init.subid = prm->subid;
-			modvar_init.pval = in_pval;
-			modvar_init.aptr = in_aptr;
-			code_callfunc( st->otindex );
-		}
-
-		for(i=0;i<st->prmmax;i++) {							// パラメーターを取得
-			out = p + prm->offset;
-			switch( prm->mptype ) {
-			case MPTYPE_LOCALVAR:
-				pval = (PVal *)out;
-				HspVarCoreDispose( pval );
-				break;
-			}
-			prm++;
-		}
-	}
-		
-	//Alertf("STRUCT:BYE");
-	sbFree( fv->ptr );
-	fv->type = FLEXVAL_TYPE_NONE;
-}
-
-
-void code_delstruct_all( PVal *pval )
-{
-	//		モジュール変数全体を破棄する
-	//
-	int i;
-	if ( pval->mode == HSPVAR_MODE_MALLOC ) {
-		for(i=0;i<pval->len[1];i++) {
-			code_delstruct( pval, i );
-		}
-	}
+	customstack_delete( dat, (char *)members_buffer );
+	sbFree( members_buffer );
 }
 
 
@@ -1451,37 +1448,22 @@ static void *reffunc_custom( int *type_res, int arg )
 	//
 	STRUCTDAT *st;
 	void *ptr;
-	int old_funcres;
 
 	//		返値のタイプを設定する
 	//
 	st = &hspctx->mem_finfo[arg];
 	if ( st->index != STRUCTDAT_INDEX_CFUNC ) throw HSPERR_SYNTAX;
-	old_funcres = funcres;
-	funcres = TYPE_ERROR;
 
 	//			'('で始まるかを調べる
 	//
 	if ( type != TYPE_MARK ) throw HSPERR_INVALID_FUNCPARAM;
 	if ( val != '(' ) throw HSPERR_INVALID_FUNCPARAM;
-
 	code_next();
-	code_callfunc( arg );
 
-	*type_res = funcres;					// 返値のタイプを指定する
-	switch( funcres ) {						// 返値のポインタを設定する
-	case TYPE_STRING:
-		ptr = hspctx->refstr;
-		break;
-	case TYPE_DNUM:
-		ptr = &hspctx->refdval;
-		break;
-	case TYPE_INUM:
-		ptr = &hspctx->stat;
-		break;
-	default:
-		throw HSPERR_NORETVAL;
-	}
+	code_callfunc_ctype_function( arg );
+
+	*type_res = mpval->flag;
+	ptr = HspVarCorePtr( mpval );
 
 	//			')'で終わるかを調べる
 	//
@@ -1489,7 +1471,6 @@ static void *reffunc_custom( int *type_res, int arg )
 	if ( val != ')' ) throw HSPERR_INVALID_FUNCPARAM;
 	code_next();
 
-	funcres = old_funcres;
 	return ptr;
 }
 
@@ -1598,31 +1579,6 @@ static int cmdfunc_var( int cmd )
 }
 
 
-static void cmdfunc_return_setval( void )
-{
-	//		引数をシステム変数にセットする(返値用)
-	//
-	if ( code_get() <= PARAM_END ) return;
-
-	hspctx->retval_level = hspctx->sublev;
-	funcres = mpval->flag;
-
-	switch( funcres ) {
-	case HSPVAR_FLAG_INT:
-		hspctx->stat = *(int *)mpval->pt;
-		break;
-	case HSPVAR_FLAG_STR:
-		sbStrCopy( &hspctx->refstr, mpval->pt );
-		break;
-	case HSPVAR_FLAG_DOUBLE:
-		hspctx->refdval = *(double *)mpval->pt;
-		break;
-	default:
-		throw HSPERR_TYPE_MISMATCH;
-	}
-}
-
-
 static int cmdfunc_ifcmd( int cmd )
 {
 	//	'if' command execute
@@ -1684,7 +1640,10 @@ static int cmdfunc_prog( int cmd )
 		return cmdfunc_gosub( sbr );
 		}
 	case 0x02:								// return
-		if ( exflg == 0 ) cmdfunc_return_setval();
+		hspctx->retval_level = 0;
+		if ( exflg == 0 && code_get() > PARAM_END ) {
+			hspctx->retval_level = hspctx->sublev;
+		}
 		//return cmdfunc_return();
 		hspctx->runmode = RUNMODE_RETURN;
 		return RUNMODE_RETURN;
@@ -1876,7 +1835,7 @@ static int cmdfunc_prog( int cmd )
 		char *p;
 		PVal *pval;
 		APTR aptr;
-		FlexValue *fv;
+		STRUCT *obj;
 		STRUCTDAT *st;
 		STRUCTPRM *prm;
 		if ( cmd == 0x12 ) {
@@ -1886,18 +1845,21 @@ static int cmdfunc_prog( int cmd )
 			aptr = code_getva( &pval );
 		}
 		st = code_getstruct();
-		fv = code_setvs( pval, aptr, NULL, st->size, st->prmindex );
-		fv->type = FLEXVAL_TYPE_ALLOC;
-		p = sbAlloc( fv->size );
-		fv->ptr = (void *)p;
+
+		p = sbAlloc( st->size + sizeof(int) );
+		// [memo] メンバーのセットアップ中に GC が起こった場合にメンバーがマークされないけれど、
+		//        メンバーが MPTYPE_LOCALVAR だけなら問題ないので放置
+		code_expandstruct( p, st, CODE_EXPANDSTRUCT_OPT_NONE );
+
+		obj = new_struct( st, p );
+		code_setva( pval, aptr, TYPE_STRUCT, &obj );
+		
 		prm = &hspctx->mem_minfo[ st->prmindex ];
 		if ( prm->mptype != MPTYPE_STRUCTTAG ) throw HSPERR_STRUCT_REQUIRED;
-		code_expandstruct( p, st, CODE_EXPANDSTRUCT_OPT_NONE );
 		if ( prm->offset != -1 ) {
 			modvar_init.magic = MODVAR_MAGICCODE;
 			modvar_init.subid = prm->subid;
-			modvar_init.pval = pval;
-			modvar_init.aptr = aptr;
+			modvar_init.obj = obj;
 			return code_callfunc( prm->offset );
 		}
 		break;
@@ -1906,9 +1868,10 @@ static int cmdfunc_prog( int cmd )
 		{
 		PVal *pval;
 		APTR aptr;
+		STRUCT *obj = NULL;
 		aptr = code_getva( &pval );
 		if ( pval->flag != TYPE_STRUCT ) throw HSPERR_TYPE_MISMATCH;
-		code_delstruct( pval, aptr );
+		code_setva( pval, aptr, TYPE_STRUCT, &obj );
 		break;
 		}
 /*
@@ -2525,6 +2488,11 @@ void code_init( void )
 	exinfo->HspFunc_varname = code_getdebug_varname;
 	exinfo->HspFunc_seekvar = code_getdebug_seekvar;
 
+	//		3.2拡張フィールド
+	exinfo->HspFunc_new_struct = new_struct;
+	exinfo->HspFunc_add_struct_ref = add_struct_ref;
+	exinfo->HspFunc_remove_struct_ref = remove_struct_ref;
+
 	//		HSPCTXにコピーする
 	//
 	memcpy( &hspctx->exinfo, exinfo, sizeof(HSPEXINFO30) );
@@ -2568,6 +2536,8 @@ void code_init( void )
 	hspctx->stmp = sbAlloc( HSPCTX_REFSTR_MAX );
 	hspctx->cmdline = sbAlloc( HSPCTX_CMDLINE_MAX );
 
+	struct_init( hspctx );
+
 #ifdef HSPDEBUG
 	//		デバッグ情報の初期化
 	//
@@ -2595,16 +2565,8 @@ void code_termfunc( void )
 	int prmmax;
 	STRUCTDAT *st;
 	HSP3TYPEINFO *info;
-	PVal *pval;
 
-	//		モジュール変数デストラクタ呼び出し
-	//
-	prmmax = hspctx->hsphed->max_val;
-	pval = hspctx->mem_var;
-	for(i=0;i<prmmax;i++) {
-		if ( pval->flag == HSPVAR_FLAG_STRUCT ) code_delstruct_all( pval );
-		pval++;
-	}
+	struct_bye();
 
 	//		クリーンアップモジュールの呼び出し
 	//
@@ -3195,12 +3157,16 @@ static void code_dbgvarinf_ext( PVal *pv, void *src, char *buf )
 		break;
 	case HSPVAR_FLAG_STRUCT:
 		{
-		FlexValue *fv;
-		fv = (FlexValue *)src;
-		if ( fv->type == FLEXVAL_TYPE_NONE ) {
+		STRUCT *obj = *(STRUCT **)src;
+		if ( obj == NULL ) {
 			sprintf( buf,"STRUCT (Empty)" ); 
 		} else {
-			sprintf( buf,"STRUCT ID%d-%d PTR$%08x SIZE%d(%d)", fv->myid, fv->customid, (int)fv->ptr, fv->size, fv->type ); 
+			sprintf( buf,"STRUCT $%p ID%d(%s) PTR$%p SIZE%d",
+			         obj,
+			         get_struct_prm(obj)->subid,
+			         strp(get_struct_dat(obj)->nameidx),
+			         GET_STRUCT_MEMBERS_BUFFER(obj),
+			         get_struct_dat(obj)->size );
 		}
 		break;
 		}

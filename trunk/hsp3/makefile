@@ -110,7 +110,7 @@ ifneq ($(filter linux,$(PLATFORM)),)
 
     OBJS = linux/main.o hsp3.o hsp3code.o hsp3debug.o hsp3int.o \
            hspvar_core.o hspvar_double.o hspvar_int.o hspvar_label.o \
-           hspvar_str.o hspvar_struct.o stack.o strbuf.o strnote.o \
+           hspvar_str.o hspvar_struct.o stack.o strbuf.o strnote.o struct.o \
            dpmread.o linux/supio_linux.o linux/hsp3cl.o \
            linux/hsp3ext_linux.o linux/hsp3gr_linux.o
     RESES =
@@ -164,7 +164,7 @@ ifneq ($(filter win32_mingw,$(PLATFORM)),)
 
     OBJS = dpmread.o hsp3.o hsp3code.o hsp3debug.o hsp3int.o hspvar_core.o \
            hspvar_double.o hspvar_int.o hspvar_label.o hspvar_str.o \
-           hspvar_struct.o stack.o strbuf.o strnote.o \
+           hspvar_struct.o stack.o strbuf.o strnote.o struct.o \
            hsp3cl.o hsp3gr_win.o main.o \
            comobj.o comobj_event.o filedlg.o hsp3ext_win.o hsp3extlib.o \
            hspvar_comobj.o hspvar_variant.o supio_win.o
@@ -219,7 +219,7 @@ ifneq ($(filter win32gui_mingw,$(PLATFORM)),)
 
     OBJS = dpmread.o hsp3.o hsp3code.o hsp3debug.o hsp3int.o hspvar_core.o \
            hspvar_double.o hspvar_int.o hspvar_label.o hspvar_str.o \
-           hspvar_struct.o stack.o strbuf.o strnote.o \
+           hspvar_struct.o stack.o strbuf.o strnote.o struct.o \
            comobj.o comobj_event.o fcpoly.o filedlg.o hsp3ext_win.o \
            hsp3extlib.o hsp3gr_wingui.o hsp3win.o hspvar_comobj.o \
            hspvar_variant.o hspwnd_obj.o hspwnd_win.o main.o mmman.o supio_win.o \
@@ -345,7 +345,7 @@ hsp3.o: hsp3.cpp hsp3.h hsp3debug.h hsp3struct.h hspvar_core.h hsp3ext.h \
   hsp3code.h hsp3config.h dpmread.h supio.h
 hsp3code.o: hsp3code.cpp hspwnd.h supio.h dpmread.h stack.h strbuf.h \
   hsp3code.h hsp3debug.h hsp3struct.h hspvar_core.h hsp3config.h \
-  hsp3int.h
+  hsp3int.h struct.h
 hsp3debug.o: hsp3debug.cpp hsp3config.h hsp3.h hsp3debug.h hsp3struct.h \
   hspvar_core.h hsp3ext.h hsp3code.h
 hsp3int.o: hsp3int.cpp hsp3config.h hspwnd.h supio.h dpmread.h strbuf.h \
@@ -358,10 +358,12 @@ hspvar_label.o: hspvar_label.cpp hsp3code.h hsp3debug.h hsp3struct.h \
   hspvar_core.h hspvar_label.h strbuf.h supio.h
 hspvar_str.o: hspvar_str.cpp hspvar_core.h hsp3debug.h strbuf.h supio.h
 hspvar_struct.o: hspvar_struct.cpp hsp3code.h hsp3debug.h hsp3struct.h \
-  hspvar_core.h strbuf.h supio.h
+  hspvar_core.h strbuf.h supio.h struct.h
 stack.o: stack.cpp stack.h hspvar_core.h hsp3debug.h
 strbuf.o: strbuf.cpp supio.h strbuf.h hsp3debug.h
 strnote.o: strnote.cpp strnote.h
+struct.o: struct.cpp hsp3code.h hsp3debug.h hsp3struct.h hspvar_core.h \
+  struct.h stack.h
 
 
 #/*-------------------------------------------*/
@@ -382,7 +384,7 @@ hsp3.o: hsp3.h hsp3debug.h hsp3struct.h \
   dpmread.h supio.h
 hsp3code.o: hspwnd.h hsp3code.h hsp3debug.h \
   hsp3struct.h hspvar_core.h supio.h dpmread.h stack.h \
-  strbuf.h hsp3config.h hsp3int.h
+  strbuf.h hsp3config.h hsp3int.h struct.h
 hsp3debug.o: hsp3config.h hsp3.h hsp3debug.h \
   hsp3struct.h hspvar_core.h hsp3ext.h hsp3code.h
 hsp3int.o: hspwnd.h hsp3code.h hsp3debug.h \
@@ -400,10 +402,12 @@ hspvar_label.o: hsp3code.h hsp3debug.h \
 hspvar_str.o: hspvar_core.h hsp3debug.h \
   strbuf.h supio.h
 hspvar_struct.o: hsp3code.h hsp3debug.h \
-  hsp3struct.h hspvar_core.h strbuf.h supio.h
+  hsp3struct.h hspvar_core.h strbuf.h supio.h struct.h
 stack.o: stack.h hspvar_core.h hsp3debug.h
 strbuf.o: supio.h strbuf.h hsp3debug.h
 strnote.o: strnote.h
+struct.o: hsp3code.h hsp3debug.h hsp3struct.h \
+  hspvar_core.h struct.h stack.h
 Dpmread.o: dpmread.h supio.h
 linux/supio_linux.o: linux/supio_linux.h supio.h dpmread.h strbuf.h
 

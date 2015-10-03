@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <map>
 
 #include "../hpi3sample/hsp3plugin.h"
 #include "membuf.h"
@@ -806,17 +807,43 @@ typedef struct HSP3VARFILEDATA
 	//
 	int	name;					// name ptr
 	int data;					// data ptr
-	int opt;					// option (reserved)
+	unsigned int flags;			// flags
 	int encode;					// encode param (reserved)
 	PVal master;				// PVal Master Data
 
 } HSP3VARFILEDATA;
 
+#define HVFDATA_FLAG_TYPE_MASK 3
+#define HVFDATA_TYPE_VAR 0
+#define HVFDATA_TYPE_STRUCT 1
+#define HVFDATA_TYPE_MODULE 2
+#define HVFDATA_TYPE_MEMBER 3
+#define HVFDATA_GET_TYPE(hvfdata) ((hvfdata)->flags & HVFDATA_FLAG_TYPE_MASK)
+#define HVFDATA_IS_VAR(hvfdata)    (HVFDATA_GET_TYPE(hvfdata) == HVFDATA_TYPE_VAR)
+#define HVFDATA_IS_STRUCT(hvfdata) (HVFDATA_GET_TYPE(hvfdata) == HVFDATA_TYPE_STRUCT)
+#define HVFDATA_IS_MODULE(hvfdata) (HVFDATA_GET_TYPE(hvfdata) == HVFDATA_TYPE_MODULE)
+#define HVFDATA_IS_MEMBER(hvfdata) (HVFDATA_GET_TYPE(hvfdata) == HVFDATA_TYPE_MEMBER)
+
+//	for save
 static	HSP3VARFILEHED varhed;
 static	CMemBuf *varinfo;
 static	CMemBuf *vardata;
+typedef std::map< STRUCT *, int > saved_struct_t;
+static	saved_struct_t *saved_struct;
+typedef std::map< int, int > saved_module_t;
+static	saved_module_t *saved_module;
+
+//	for load
 static	HSP3VARFILEHED *vmem;
 static	char *vload_tmp;
+static	HSP3VARFILEDATA *vmem_infos;
+static	char *vmem_buf;
+typedef std::map< int, STRUCT_REF * > loaded_struct_t;
+static	loaded_struct_t *loaded_struct;
+typedef std::map< int, STRUCTDAT * > loaded_module_t;
+static	loaded_module_t *loaded_module;
+
+#define MODNAME_SIZE 64
 
 /*------------------------------------------------------------*/
 
@@ -856,16 +883,6 @@ static void pv_allocblock( HSPEXINFO *hei, PVal *pv, int offset, int size )
 	varproc->AllocBlock( pv, p, size );
 }
 
-static FlexValue *pv_getfv( HSPEXINFO *hei, PVal *pv, int offset )
-{
-	PDAT *p;
-	HspVarProc *varproc;
-	pv->offset=offset;
-	varproc = hei->HspFunc_getproc( pv->flag );
-	p = varproc->GetPtr( pv );
-	return (FlexValue *)p;
-}
-
 static int pv_seekstruct( HSPEXINFO *hei, char *name )
 {
 	//		特定名称のモジュールを検索する
@@ -888,40 +905,25 @@ static int pv_seekstruct( HSPEXINFO *hei, char *name )
 	return -1;
 }
 
-static void *pv_setmodvar( HSPEXINFO *hei, PVal *pv, int offset, int id, int size )
+static PVal *create_struct_members_buffer( HSPEXINFO *hei, STRUCTDAT *st )
 {
-	//		モジュール変数の内容を新規に設定する
-	//
-	PDAT *p;
-	HspVarProc *varproc;
-	FlexValue fv;
-	FlexValue *target;
-	char *newmem;
-
-	fv.customid = id;
-	fv.clonetype = 0;
-	fv.size = size;
-	fv.ptr = NULL;
-
-	pv->offset=offset;
-	varproc = hei->HspFunc_getproc( pv->flag );
-	p = varproc->GetPtr( pv );
-	varproc->Set( pv, p, &fv );
-
-	newmem = hei->HspFunc_malloc( size );
-
-	target = (FlexValue *)p;
-	target->type = FLEXVAL_TYPE_ALLOC;
-	target->ptr = (void *)newmem;
-
-	return newmem;
+	int max = st->prmmax - 1;
+	int len = st->size + sizeof(int);
+	PVal *members = (PVal *)hei->HspFunc_malloc( len );
+	memset( members, 0, len );
+	for ( int i = 0; i < max; i ++ ) {
+		members[i].mode = HSPVAR_MODE_NONE;
+		members[i].flag = HSPVAR_FLAG_INT;
+	}
+	*(int *)(members + max) = st->prmmax;
+	return members;
 }
 
 
 /*------------------------------------------------------------*/
 
-static int varsave_putvar( HSPEXINFO *hei, PVal *pv, int encode, int opt );
-static int varload_getvar( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt );
+static int varsave_putvar( HSPEXINFO *hei, PVal *pv, int encode );
+static int varload_getvar( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode );
 
 static void varsave_init( void )
 {
@@ -931,6 +933,8 @@ static void varsave_init( void )
 	varhed.pt_data = 0;
 	varinfo = new CMemBuf;
 	vardata = new CMemBuf;
+	saved_struct = NULL;
+	saved_module = NULL;
 }
 
 
@@ -961,11 +965,152 @@ static int varsave_bye( char *fname )
 
 	delete vardata;
 	delete varinfo;
+	delete saved_struct;
+	delete saved_module;
 	return res;
 }
 
 
-static int varsave_put_storage( HSPEXINFO *hei, PVal *pv, int encode, int opt )
+static void varsave_put_module_direct( HSPEXINFO *hei, STRUCTDAT *st, int encode )
+{
+	HSP3VARFILEDATA *dat = (HSP3VARFILEDATA *)varinfo->PreparePtr( sizeof(HSP3VARFILEDATA) );
+
+	dat->name = vardata->GetSize();
+	vardata->PutStrBlock( "" );
+	dat->data = vardata->GetSize();
+	dat->flags = HVFDATA_TYPE_MODULE;
+	dat->encode = encode;
+	memset( &dat->master, 0, sizeof(PVal) );
+	
+	// メンバの数を記録する
+	vardata->Put( st->prmmax - 1 );
+
+	// モジュール名を記録する
+	char *modname = vardata->PreparePtr( MODNAME_SIZE );
+	memset( modname, 0, MODNAME_SIZE );
+	strncpy( modname, ((HSPCTX *)hei->hspctx)->mem_mds + st->nameidx, MODNAME_SIZE - 1 );
+}
+
+
+static int varsave_put_module( HSPEXINFO *hei, STRUCTDAT *st, int encode )
+{
+	// モジュールの情報を書き込んでその varinfo インデックスを返す
+	if ( saved_module != NULL ) {
+		saved_module_t::iterator it = saved_module->find( st->prmindex );
+		if ( it != saved_module->end() ) {
+			return it->second;
+		}
+	}
+	int index = varhed.num++;
+	if ( saved_module == NULL ) {
+		saved_module = new saved_module_t;
+	}
+	(*saved_module)[st->prmindex] = index;
+	varsave_put_module_direct( hei, st, encode );
+	return index;
+}
+
+
+static int varsave_put_member( HSPEXINFO *hei, PVal *pval, int encode )
+{
+	// struct オブジェクトのメンバの情報を書き込み、その varinfo インデックスを返す
+	HSP3VARFILEDATA *dat = (HSP3VARFILEDATA *)varinfo->PreparePtr( sizeof(HSP3VARFILEDATA) );
+	int index = varhed.num++;
+
+	dat->name = vardata->GetSize();
+	vardata->PutStrBlock( "" );
+	dat->data = vardata->GetSize();
+	dat->flags = HVFDATA_TYPE_MEMBER;
+	dat->encode = encode;
+	dat->master = *pval;
+	varsave_putvar( hei, pval, encode );
+	return index;
+}
+
+static void varsave_put_struct_direct( HSPEXINFO *hei, STRUCT *obj, int encode )
+{
+	HSPCTX *hspctx = (HSPCTX *)hei->hspctx;
+	STRUCTPRM *prm = &hspctx->mem_minfo[ STRUCT_GET_MODULE( obj ) ];
+	STRUCTDAT *st = &hspctx->mem_finfo[ prm->subid ];
+
+	HSP3VARFILEDATA *dat = (HSP3VARFILEDATA *)varinfo->PreparePtr( sizeof(HSP3VARFILEDATA) );
+
+	dat->name = vardata->GetSize();
+	vardata->PutStrBlock( "" );
+	dat->data = vardata->GetSize();
+	dat->flags = HVFDATA_TYPE_STRUCT;
+	dat->encode = encode;
+	memset( &dat->master, 0, sizeof(PVal) );
+
+	int max = st->prmmax - 1;
+	prm ++;
+
+	// モジュールを指す varinfo インデックスと、
+	// メンバを指す varinfo インデックスをメンバの数だけ書き込む
+	int pos = vardata->GetSize();
+	vardata->PreparePtr( sizeof(int) + sizeof(int) * max );
+
+	int module_index = varsave_put_module( hei, st, encode );
+	*(int *)(vardata->GetBuffer() + pos) = module_index;
+	pos += sizeof(int);
+
+	PVal *p = (PVal *)GET_STRUCT_MEMBERS_BUFFER(obj);
+	PVal *pend = p + max;
+	while ( p < pend ) {
+		int member_index = varsave_put_member( hei, p, encode );
+		*(int *)(vardata->GetBuffer() + pos) = member_index;
+		pos += sizeof(int);
+		p ++;
+	}
+}
+
+
+static int varsave_put_struct( HSPEXINFO *hei, STRUCT *obj, int encode )
+{
+	//	struct オブジェクトの情報を書き込んでその varinfo インデックスを返す
+	//	同一のオブジェクトをすでに書き込んでいる場合は同じインデックスを返す
+	//	struct オブジェクトが empty (NULL) の場合は 0 を返す
+	//	( varinfo の 0 番目は HVFDATA_TYPE_VAR のデータが格納されていて、
+	//    HVFDATA_TYPE_STRUCT のデータが格納されていることはありえないはず）
+	if ( obj == NULL ) {
+		return 0;
+	}
+	if ( saved_struct != NULL ) {
+		saved_struct_t::iterator it = saved_struct->find( obj );
+		if ( it != saved_struct->end() ) {
+			return it->second;
+		}
+	}
+	int index = varhed.num++;
+	if ( saved_struct == NULL ) {
+		saved_struct = new saved_struct_t;
+	}
+	(*saved_struct)[obj] = index;
+	varsave_put_struct_direct( hei, obj, encode );
+	return index;
+}
+
+
+static int varsave_put_storage_struct( HSPEXINFO *hei, PVal *pv, int encode )
+{
+	STRUCT **p = (STRUCT **)pv->pt;
+	int len = pv->size / sizeof(STRUCT *);
+	STRUCT **pend = p + len;
+	int pos = vardata->GetSize();
+	vardata->PreparePtr( sizeof(int) * len );
+	
+	// struct オブジェクト情報の varinfo インデックスを配列のサイズ分書き込む
+	while ( p < pend ) {
+		int struct_index = varsave_put_struct( hei, *p, encode );
+		*(int *)(vardata->GetBuffer() + pos) = 0x80000000 | struct_index;
+		pos += sizeof(int);
+		p ++;
+	}
+	return 0;
+}
+
+
+static int varsave_put_storage( HSPEXINFO *hei, PVal *pv, int encode )
 {
 	//		固定長ストレージの保存
 	//
@@ -988,60 +1133,8 @@ static int varsave_put_storage( HSPEXINFO *hei, PVal *pv, int encode, int opt )
 		}
 		break;
 	case HSPVAR_FLAG_STRUCT:
-		{
-		int i,j,max,vmax;
-		HSPCTX *hspctx;
-		FlexValue *fv;
-		PVal *fvbase;
-		STRUCTPRM *prm;
-		STRUCTDAT *st;
-		char modname[64];
-		int prevcnt,nowcnt;
-		int *cntbak;
-
-		hspctx = (HSPCTX *)hei->hspctx;
-		fv = pv_getfv( hei, pv, 0 );
-		prm = &hspctx->mem_minfo[ fv->customid ];
-		st = &hspctx->mem_finfo[ prm->subid ];
-		memset( modname, 0, 64 );
-		strcpy( modname, hspctx->mem_mds + st->nameidx );
-		max = st->prmmax - 1;
-		prm++;
-		vmax = pv->size / sizeof(FlexValue);
-
-		//Alertf( "#%d(%d) size(%d,%d) %s",fv->customid,max, fv->size, st->size, modname );
-
-		//		タグコード + モジュール変数個数, モジュール名(64byte)を記録する
-		vardata->Put( (int)HSP3VARFILEFXCODE + max );
-		vardata->PutData( modname, 64 );				// モジュール名を保存する
-
-//		for(i=0;i<max;i++) {
-//			Alertf( "#%d(%s) PRM%d",i,modname, prm->mptype );
-//			prm++;
-//		}
-
-		for(i=0;i<vmax;i++) {
-			fv = pv_getfv( hei, pv, i );
-			fvbase = (PVal *)fv->ptr;
-
-			//		タグコード + typeを記録する
-			vardata->Put( (int)HSP3VARFILEFXCODE + fv->type );
-			//		実データを記録する
-			if ( fv->type == FLEXVAL_TYPE_ALLOC ) {
-				for(j=0;j<max;j++) {
-					vardata->PutData( fvbase, sizeof(PVal) );
-					cntbak = (int *)vardata->GetCurrentPtr();
-					vardata->Put( (int)0 );
-					prevcnt = vardata->GetSize();
-					varsave_putvar( hei, fvbase, encode, opt );
-					nowcnt = vardata->GetSize();
-					*cntbak = nowcnt - prevcnt;			// 実データサイズを記録する
-					fvbase++;
-				}
-			}
-		}
+		varsave_put_storage_struct( hei, pv, encode );
 		break;
-		}
 	case HSPVAR_FLAG_COMSTRUCT:							// COMOBJ型は無効にする
 	case 7:												// Variant型は無効にする
 		return -1;
@@ -1053,7 +1146,7 @@ static int varsave_put_storage( HSPEXINFO *hei, PVal *pv, int encode, int opt )
 }
 
 
-static int varsave_put_flexstorage( HSPEXINFO *hei, PVal *pv, int encode, int opt )
+static int varsave_put_flexstorage( HSPEXINFO *hei, PVal *pv, int encode )
 {
 	//		可変長ストレージの保存
 	//
@@ -1075,22 +1168,21 @@ static int varsave_put_flexstorage( HSPEXINFO *hei, PVal *pv, int encode, int op
 }
 
 
-static int varsave_putvar( HSPEXINFO *hei, PVal *pv, int encode, int opt )
+static int varsave_putvar( HSPEXINFO *hei, PVal *pv, int encode )
 {
 	int res;
 	unsigned short	support;
 	res = -1;
 	support = pv->support;
-	if ( support & HSPVAR_SUPPORT_STORAGE ) res = varsave_put_storage( hei, pv, encode, opt );
-	if ( support & HSPVAR_SUPPORT_FLEXSTORAGE ) res = varsave_put_flexstorage( hei, pv, encode, opt );
+	if ( support & HSPVAR_SUPPORT_STORAGE ) res = varsave_put_storage( hei, pv, encode );
+	if ( support & HSPVAR_SUPPORT_FLEXSTORAGE ) res = varsave_put_flexstorage( hei, pv, encode );
 	return res;
 }
 
 
-static int varsave_put( HSPEXINFO *hei, int varid, int encode, int opt )
+static int varsave_put( HSPEXINFO *hei, int varid, int encode )
 {
 	HSPCTX *hspctx;
-	HSP3VARFILEDATA dat;
 	PVal *mem_var;
 	char *name;
 	char tmp[64];
@@ -1106,19 +1198,18 @@ static int varsave_put( HSPEXINFO *hei, int varid, int encode, int opt )
 		name = tmp;
 	}
 
-	dat.master = *mem_var;					// とりあえずPValを保存する
-	dat.encode = encode;
-	dat.opt = opt;
-
-	dat.name = vardata->GetSize();
+	HSP3VARFILEDATA *dat = (HSP3VARFILEDATA *)varinfo->PreparePtr( sizeof(HSP3VARFILEDATA) );
+	varhed.num++;
+	dat->name = vardata->GetSize();
 	vardata->PutStrBlock( name );			// 変数名を保存する
-	dat.data = vardata->GetSize();
+	dat->data = vardata->GetSize();
+	dat->flags = HVFDATA_TYPE_VAR;
+	dat->encode = encode;
+	dat->master = *mem_var;					// とりあえずPValを保存する
 
-	res = varsave_putvar( hei, mem_var, encode, opt );
+	res = varsave_putvar( hei, mem_var, encode );
 	if ( res ) return res;
 
-	varinfo->PutData( &dat, sizeof(HSP3VARFILEDATA) );
-	varhed.num++;
 	return 0;
 }
 
@@ -1127,91 +1218,241 @@ static int varload_init( void *mem )
 {
 	vmem = (HSP3VARFILEHED *)mem;
 	if ( strcmp( vmem->magic, HSP3VARFILECODE ) ) return -1;
+	vmem_infos = (HSP3VARFILEDATA *)(vmem+1);
+	vmem_buf = ((char *)vmem) + vmem->pt_data;
+	loaded_struct = NULL;
+	loaded_module = NULL;
 	return 0;
 }
 
 
-static void varload_bye( void )
+static void varload_bye( HSPEXINFO *hei )
 {
+	if ( loaded_struct != NULL ) {
+		loaded_struct_t::iterator it;
+		for ( it = loaded_struct->begin(); it != loaded_struct->end(); ++it ) {
+			hei->HspFunc_remove_struct_ref( it->second );
+		}
+	}
+	delete loaded_struct;
+	delete loaded_module;
 }
 
 
-static int varload_get_storage_struct( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt )
+#define FLEXVAL_TYPE_NONE 0
+#define FLEXVAL_TYPE_ALLOC 1
+#define FLEXVAL_TYPE_CLONE 2
+typedef struct
+{
+	short type;			// typeID
+	short myid;			// 固有ID(未使用)
+	short customid;		// structure ID
+	short clonetype;	// typeID for clone
+	int size;			// data size
+	void *ptr;			// data ptr
+} FlexValue;
+
+static int varload_get_storage_struct_ver31_compatible( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
+{
+	//	ver 3.1のvsaveで保存されたstruct型のフォーマットから読み込む
+	char *mem = vdata;
+	int vmax = pv2->size / sizeof(FlexValue);
+
+	pv_dispose( hei,pv );								// 変数を破棄
+	*pv = *pv2;
+	pv->size = vmax * sizeof(STRUCT *);
+	pv_alloc( hei, pv, NULL );							// 変数を再確保
+
+
+	// モジュール変数個数を取得
+	int max = *(int *)mem & 0xffff;
+	mem += sizeof(int);
+
+	// モジュール名を取得
+	char modname[MODNAME_SIZE];
+	memcpy( modname, mem, MODNAME_SIZE );
+	mem += MODNAME_SIZE;
+
+	int custid = pv_seekstruct( hei, modname );
+	if ( custid < 0 ) {
+		return -1;
+	}
+
+	HSPCTX *hspctx = (HSPCTX *)hei->hspctx;
+	STRUCTDAT *st = &hspctx->mem_finfo[ custid ];
+	char *orgname = hspctx->mem_mds + st->nameidx;
+	int orgmax = st->prmmax - 1;
+	if ( orgmax != max ) {
+		return -1;
+	}
+
+	STRUCT **p = (STRUCT **)pv->pt;
+
+	for ( int i = 0; i < vmax; i ++ ) {
+		//		タグコード + typeを取得する
+		int code = *(int *)mem;
+		int type = code & 0xffff;
+		code &= 0xffff0000;
+		if ( code != HSP3VARFILEFXCODE ) {
+			return -1;
+		}
+		mem += sizeof(int);
+
+		if ( type == FLEXVAL_TYPE_ALLOC ) {
+			PVal *members = create_struct_members_buffer( hei, st );
+			*p = hei->HspFunc_new_struct( st, members );
+			for ( int j = 0; j < max; j++ ) {
+				PVal *base = (PVal *)mem;
+				mem += sizeof(PVal);
+				int nextcnt = *(int *)mem;
+				mem += sizeof(int);
+				varload_getvar( hei, mem, &members[j], base, encode );
+				mem += nextcnt;
+			}
+		}
+		p ++;
+	}
+	return 0;
+}
+
+static STRUCTDAT *varload_get_module_direct( HSPEXINFO *hei, int index, int encode )
+{
+	if ( index < 0 || index >= vmem->num ) {
+		return NULL;
+	}
+	HSP3VARFILEDATA *info = &vmem_infos[index];
+	if ( !HVFDATA_IS_MODULE(info) ) {
+		return NULL;
+	}
+	char *mem = vmem_buf + info->data;
+	int max = *(int *)mem;
+	mem += sizeof(int);
+	char modname[MODNAME_SIZE];
+	memcpy( modname, mem, MODNAME_SIZE );
+	int custid = pv_seekstruct( hei, modname );
+	if ( custid < 0 ) {
+		return NULL;
+	}
+	HSPCTX *hspctx = (HSPCTX *)hei->hspctx;
+	STRUCTDAT *st = &hspctx->mem_finfo[ custid ];
+	int orgmax = st->prmmax - 1;
+	if ( orgmax != max ) {
+		return NULL;
+	}
+	return st;
+}
+
+
+static STRUCTDAT *varload_get_module( HSPEXINFO *hei, int index, int encode )
+{
+	if ( loaded_module != NULL ) {
+		loaded_module_t::iterator it = loaded_module->find( index );
+		if ( it != loaded_module->end() ) {
+			return it->second;
+		}
+	}
+	STRUCTDAT *st = varload_get_module_direct( hei, index, encode );
+	if ( loaded_module == NULL ) {
+		loaded_module = new loaded_module_t;
+	}
+	(*loaded_module)[index] = st;
+	return st;
+}
+
+
+static int varload_get_member( HSPEXINFO *hei, int index, PVal *member, int encode )
+{
+	if ( index < 0 || index >= vmem->num ) {
+		return -1;
+	}
+	HSP3VARFILEDATA *info = &vmem_infos[index];
+	if ( !HVFDATA_IS_MEMBER(info) ) {
+		return -1;
+	}
+	return varload_getvar( hei, vmem_buf + info->data, member, &info->master, encode );
+}
+
+
+static int varload_get_struct( HSPEXINFO *hei, int index, STRUCT **result, int encode )
+{
+	if ( loaded_struct != NULL ) {
+		loaded_struct_t::iterator it = loaded_struct->find( index );
+		if ( it != loaded_struct->end() ) {
+			*result = it->second->obj;
+			return 0;
+		}
+	}
+	if ( index < 0 || index >= vmem->num ) {
+		return -1;
+	}
+	if ( index == 0 ) {
+		*result = NULL;
+		return 0;
+	}
+	HSP3VARFILEDATA *info = &vmem_infos[index];
+	if ( !HVFDATA_IS_STRUCT(info) ) {
+		return -1;
+	}
+	char *mem = vmem_buf + info->data;
+	int module_index = *(int *)mem;
+	mem += sizeof(int);
+	STRUCTDAT *st = varload_get_module( hei, module_index, encode );
+	if ( st == NULL ) {
+		return -1;
+	}
+	PVal *members = create_struct_members_buffer( hei, st );
+	int max = st->prmmax - 1;
+	STRUCT *obj = hei->HspFunc_new_struct( st, members );
+	STRUCT_REF *ref = hei->HspFunc_add_struct_ref( obj );
+	if ( loaded_struct == NULL ) {
+		loaded_struct = new loaded_struct_t;
+	}
+	(*loaded_struct)[index] = ref;
+	for ( int i = 0; i < max; i ++ ) {
+		int member_index = *(int *)mem;
+		mem += sizeof(int);
+		if ( varload_get_member( hei, member_index, &members[i], encode ) ) {
+			return -1;
+		}
+	}
+	*result = obj;
+	return 0;
+}
+
+
+static int varload_get_storage_struct( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
 {
 	//		固定長ストレージ(STRUCT)の取得
 	//
-	int i,j,code,max,vmax,type;
-	int custid;
-	int orgmax;
-	int nextcnt;
-	char *mem;
-	char modname[64];
-	char *orgname;
-	HSPCTX *hspctx;
-	PVal *fvbase;
-	PVal *fvmem;
-	STRUCTDAT *st;
+	char *mem = vdata;
+	unsigned int code = *(unsigned int *)mem;
+	if ( (code & 0xffff0000) == HSP3VARFILEFXCODE ) {
+		return varload_get_storage_struct_ver31_compatible( hei, vdata, pv, pv2, encode );
+	}
 
 	pv_dispose( hei,pv );								// 変数を破棄
 	*pv = *pv2;
 	pv_alloc( hei, pv, NULL );							// 変数を再確保
 
-	mem = vdata;
-	vmax = pv->size / sizeof(FlexValue);
-
-	//		タグコード + モジュール変数個数, モジュール名(64byte)を取得
-	code = *(int *)mem;
-	max = code & 0xffff;
-	code &= 0xffff0000;
-	if ( code != HSP3VARFILEFXCODE ) return -1;
-	mem += sizeof(int);
-
-	memcpy( modname, mem, 64 );
-	mem += 64;
-
-	custid = pv_seekstruct( hei, modname );
-	if ( custid < 0 ) return -1;
-
-	hspctx = (HSPCTX *)hei->hspctx;
-	st = &hspctx->mem_finfo[ custid ];
-	orgname = hspctx->mem_mds + st->nameidx;
-	orgmax = st->prmmax - 1;
-	if ( orgmax != max ) return -1;
-
-	//Alertf( "%d(prm%d=%d) %s=%s",custid,max,st->prmmax,orgname,modname );
-
-	for(i=0;i<vmax;i++) {
-
-		//		タグコード + typeを取得する
-		code = *(int *)mem;
-		type = code & 0xffff;
-		code &= 0xffff0000;
-		if ( code != HSP3VARFILEFXCODE ) return -1;
+	int len = pv->size / sizeof(STRUCT *);
+	STRUCT **p = (STRUCT **)pv->pt;
+	for ( int i = 0; i < len; i ++ ) {
+		unsigned int code = *(unsigned int *)mem;
 		mem += sizeof(int);
-
-		if ( type == FLEXVAL_TYPE_ALLOC ) {
-			fvmem = (PVal *)pv_setmodvar( hei, pv, i, st->prmindex, st->size );
-			for(j=0;j<max;j++) {
-				fvbase = (PVal *)mem;
-				mem += sizeof(PVal);
-				nextcnt = *(int *)mem;
-				mem += sizeof(int);
-				//Alertf( "#%d:%d (%s) flag%d next=%d", i, j, modname, fvbase->flag, nextcnt );
-
-				fvmem->mode = HSPVAR_MODE_NONE;
-				fvmem->flag = HSPVAR_FLAG_INT;
-				varload_getvar( hei, mem, fvmem, fvbase, encode, opt );
-				fvmem++;
-				mem += nextcnt;
-			}
+		if ( (code & 0x80000000) == 0 ) {
+			return -1;
 		}
-
+		int struct_index = code & 0x7fffffff;
+		if ( varload_get_struct( hei, struct_index, p, encode ) ) {
+			return -1;
+		}
+		p ++;
 	}
 	return 0;
 }
 
 
-static int varload_get_storage_label( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt )
+static int varload_get_storage_label( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
 {
 	//		固定長ストレージ(LABEL)の取得
 	//
@@ -1238,7 +1479,7 @@ static int varload_get_storage_label( HSPEXINFO *hei, char *vdata, PVal *pv, PVa
 }
 
 
-static int varload_get_storage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt )
+static int varload_get_storage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
 {
 	//		固定長ストレージの取得
 	//
@@ -1250,7 +1491,7 @@ static int varload_get_storage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2
 }
 
 
-static int varload_get_flexstorage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt )
+static int varload_get_flexstorage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
 {
 	//		可変長ストレージの取得
 	//
@@ -1281,7 +1522,7 @@ static int varload_get_flexstorage( HSPEXINFO *hei, char *vdata, PVal *pv, PVal 
 }
 
 
-static int varload_getvar( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode, int opt )
+static int varload_getvar( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int encode )
 {
 	int res;
 	unsigned short	support;
@@ -1290,29 +1531,28 @@ static int varload_getvar( HSPEXINFO *hei, char *vdata, PVal *pv, PVal *pv2, int
 	if ( support & HSPVAR_SUPPORT_STORAGE ) {
 		switch( pv2->flag ) {
 		case HSPVAR_FLAG_LABEL:
-			res = varload_get_storage_label( hei, vdata, pv, pv2, encode, opt );
+			res = varload_get_storage_label( hei, vdata, pv, pv2, encode );
 			break;
 		case HSPVAR_FLAG_STRUCT:
-			res = varload_get_storage_struct( hei, vdata, pv, pv2, encode, opt );
+			res = varload_get_storage_struct( hei, vdata, pv, pv2, encode );
 			break;
 		default:
-			res = varload_get_storage( hei, vdata, pv, pv2, encode, opt );
+			res = varload_get_storage( hei, vdata, pv, pv2, encode );
 			break;
 		}
 	}
 	if ( support & HSPVAR_SUPPORT_FLEXSTORAGE ) {
-		res = varload_get_flexstorage( hei, vdata, pv, pv2, encode, opt );
+		res = varload_get_flexstorage( hei, vdata, pv, pv2, encode );
 	}
 	return res;
 }
 
 
-static int varload_get( HSPEXINFO *hei, int varid, char *getname, int encode, int opt )
+static int varload_get( HSPEXINFO *hei, int varid, char *getname, int encode )
 {
 	HSPCTX *hspctx;
 	HSP3VARFILEDATA *dat;
 	PVal *mem_var;
-	char *buf;
 	char *name;
 	char *p;
 	char *vdata;
@@ -1334,13 +1574,12 @@ static int varload_get( HSPEXINFO *hei, int varid, char *getname, int encode, in
 	}
 
 	max = vmem->num;
-	dat = (HSP3VARFILEDATA *)(vmem+1);
-	buf = ( (char *)vmem ) + vmem->pt_data;
+	dat = vmem_infos;
 	for(i=0;i<max;i++) {
-		p = buf + dat->name;
-		vdata = buf + dat->data;
+		p = vmem_buf + dat->name;
+		vdata = vmem_buf + dat->data;
 		if ( strcmp( p, name ) == 0 ) {
-			res = varload_getvar( hei, vdata, mem_var, &dat->master, encode, opt );
+			res = varload_getvar( hei, vdata, mem_var, &dat->master, encode );
 			return res;
 		}
 		dat++;
@@ -1420,7 +1659,7 @@ EXPORT BOOL WINAPI vsave( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 
 	varsave_init();
 	for(i=0;i<max;i++) {
-		varsave_put( hei, i, 0, 0 );
+		varsave_put( hei, i, 0 );
 	}
 	res = varsave_bye( p1 );
 	return res;
@@ -1451,10 +1690,10 @@ EXPORT BOOL WINAPI vload( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 	res = varload_init( tmp );
 	if ( res == 0 ) {
 		for(i=0;i<max;i++) {
-			varload_get( hei, i, NULL, 0, 0 );
+			varload_get( hei, i, NULL, 0 );
 		}
 	}
-	varload_bye();
+	varload_bye( hei );
 	free( tmp );
 	return res;
 }
@@ -1485,7 +1724,7 @@ EXPORT BOOL WINAPI vsave_put( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 	ap = hei->HspFunc_prm_getva( &pv );		// パラメータ1:変数
 
 	if ( type != TYPE_VAR ) return -2;
-	res = varsave_put( hei, val, 0, 0 );
+	res = varsave_put( hei, val, 0 );
 	return res;
 }
 
@@ -1521,7 +1760,7 @@ EXPORT BOOL WINAPI vload_start( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 
 	res = varload_init( vload_tmp );
 	if ( res ) {
-		varload_bye();
+		varload_bye( hei );
 		free( vload_tmp );
 	}
 	return res;
@@ -1543,7 +1782,7 @@ EXPORT BOOL WINAPI vload_get( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 	ap = hei->HspFunc_prm_getva( &pv );		// パラメータ1:変数
 
 	if ( type != TYPE_VAR ) return -2;
-	res = varload_get( hei, val, NULL, 0, 0 );
+	res = varload_get( hei, val, NULL, 0 );
 	return res;
 }
 
@@ -1553,7 +1792,7 @@ EXPORT BOOL WINAPI vload_end( HSPEXINFO *hei, int _p1, int _p2, int _p3 )
 	//
 	//		vload_end  (type$202)
 	//
-	varload_bye();
+	varload_bye( hei );
 	free( vload_tmp );
 	return 0;
 }

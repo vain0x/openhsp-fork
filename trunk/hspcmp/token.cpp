@@ -3017,6 +3017,10 @@ ppresult_t CToken::Preprocess( char *str )
 		res = PP_Struct();
 		return res;
 	}
+ 	if (tstrcmp(word,"modcfunc")) {		// module function (2)
+ 		res = PP_Defcfunc(1);
+ 		return res;
+ 	}
 	if (tstrcmp(word,"func")) {			// DLL function
 		res = PP_Func( "func" );
 		return res;

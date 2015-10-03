@@ -59,7 +59,6 @@ APTR code_getv_proxy( PVal **pval, MPVarData *var, int mptype );
 #define CODE_EXPANDSTRUCT_OPT_LOCALVAR 1
 
 void code_expandstruct( char *p, STRUCTDAT *st, int option );
-void code_setvs( PVal *pval, APTR aptr, int type, void *ptr, int size, int subid );
 
 char *code_stmpstr( char *src );
 char *code_stmp( int size );
@@ -103,8 +102,8 @@ void code_dbgclose( char *buf );
 int code_dbgset( int id );
 void code_dbgtrace( void );
 
-void code_delstruct( PVal *in_pval, APTR in_aptr );
-void code_delstruct_all( PVal *pval );
+void code_delete_struct_members_buffer( STRUCTDAT *dat, void *members_buffer );
+void *code_alloc_parameters_buffer( STRUCTDAT *dat );
 
 /*
 	rev 43

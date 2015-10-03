@@ -39,11 +39,11 @@ public:
 	char *GetFileName( void );
 	char *GetCurrentPtr( void );
 	int GetSize( void ) { return cur; }
+	char *PreparePtr( int sz );
 
 private:
 	virtual void InitMemBuf( int sz );
 	virtual void InitIndexBuf( int sz );
-	char *PreparePtr( int sz );
 
 	//		Data
 	//

@@ -219,8 +219,8 @@ typedef struct MPVarData {
 typedef struct MPModVarData {
 	short subid;
 	short magic;
-	PVal	*pval;
-	APTR	aptr;
+	STRUCT *obj;
+	int reserved;
 } MPModVarData;
 #define MODVAR_MAGICCODE 0x55aa
 
@@ -389,6 +389,12 @@ typedef struct HSPEXINFO
 	//
 	char *(*HspFunc_varname)( int id );
 	int (*HspFunc_seekvar)( const char *name );
+
+	//		Enhaced data (3.2)
+	//
+	STRUCT *(*HspFunc_new_struct)( STRUCTDAT *module, void *members_buffer );
+	STRUCT_REF *(*HspFunc_add_struct_ref)( STRUCT *obj );
+	void (*HspFunc_remove_struct_ref)( STRUCT_REF *ref );
 
 } HSPEXINFO;
 

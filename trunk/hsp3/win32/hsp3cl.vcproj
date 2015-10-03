@@ -357,6 +357,10 @@
 					RelativePath="..\strnote.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\struct.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -469,6 +473,10 @@
 				</File>
 				<File
 					RelativePath="..\strnote.h"
+					>
+				</File>
+				<File
+					RelativePath="..\struct.h"
 					>
 				</File>
 				<File

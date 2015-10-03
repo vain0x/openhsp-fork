@@ -169,20 +169,38 @@ extern PVal *mem_pval;
 #define HspVarCoreGetPVal( flag ) (&mem_pval[flag])
 
 
-//	flex value define
-//
-#define FLEXVAL_TYPE_NONE 0
-#define FLEXVAL_TYPE_ALLOC 1
-#define FLEXVAL_TYPE_CLONE 2
-typedef struct
-{
-	short type;			// typeID
-	short myid;			// ŒÅ—LID(–¢Žg—p)
-	short customid;		// structure ID
-	short clonetype;	// typeID for clone
-	int size;			// data size
-	void *ptr;			// data ptr
-} FlexValue;
+typedef union STRUCT STRUCT;
+
+union STRUCT {
+	struct {
+		unsigned int flags;
+		void *members_buffer;
+	} st;
+	struct {
+		unsigned int flags;
+		STRUCT *next;
+	} free;
+};
+
+#define STRUCT_FLAG_ALIVE   (1 << 0)
+#define STRUCT_FLAG_MARK    (1 << 1)
+#define STRUCT_MODULE_SHIFT 2
+
+#define STRUCT_SET_MODULE(obj, finfo_id) \
+	((obj)->st.flags = (obj)->st.flags & (STRUCT_MODULE_SHIFT - 1) | ((finfo_id) << STRUCT_MODULE_SHIFT))
+
+#define STRUCT_GET_MODULE(obj) \
+	((obj)->st.flags >> STRUCT_MODULE_SHIFT)
+
+#define GET_STRUCT_MEMBERS_BUFFER(obj) ((obj)->st.members_buffer)
+
+typedef struct STRUCT_REF STRUCT_REF;
+
+struct STRUCT_REF {
+	STRUCT *obj;
+	STRUCT_REF *prev;
+	STRUCT_REF *next;
+};
 
 
 /*

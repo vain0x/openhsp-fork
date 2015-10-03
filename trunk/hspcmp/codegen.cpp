@@ -1706,6 +1706,7 @@ int CToken::GetParameterTypeCG( char *name )
 	}
 	if ( !strcmp( cg_str,"str" ) ) return MPTYPE_LOCALSTRING;
 	if ( !strcmp( cg_str,"double" ) ) return MPTYPE_DNUM;
+	if ( !strcmp( cg_str,"struct" ) ) return MPTYPE_STRUCT;
 	if ( !strcmp( cg_str,"label" ) ) return MPTYPE_LABEL;
 	if ( !strcmp( cg_str,"local" ) ) return MPTYPE_LOCALVAR;
 	if ( !strcmp( cg_str,"array" ) ) return MPTYPE_ARRAYVAR;
@@ -2566,7 +2567,6 @@ int CToken::PutStructParam( short mptype, int extype )
 	size = 0;
 	switch( mptype ) {
 	case MPTYPE_INUM:
-	case MPTYPE_STRUCT:
 		size = sizeof(int);
 		break;
 	case MPTYPE_LOCALVAR:
@@ -2580,6 +2580,7 @@ int CToken::PutStructParam( short mptype, int extype )
 		break;
 	case MPTYPE_LOCALSTRING:
 	case MPTYPE_STRING:
+	case MPTYPE_STRUCT:
 	case MPTYPE_LABEL:
 	case MPTYPE_PPVAL:
 	case MPTYPE_PBMSCR:

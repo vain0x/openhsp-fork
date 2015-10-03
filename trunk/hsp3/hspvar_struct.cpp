@@ -12,6 +12,7 @@
 
 #include "strbuf.h"
 #include "supio.h"
+#include "struct.h"
 
 /*------------------------------------------------------------*/
 /*
@@ -19,11 +20,12 @@
 */
 /*------------------------------------------------------------*/
 
+static short *aftertype;
 
 // Core
 static PDAT *HspVarStruct_GetPtr( PVal *pval )
 {
-	return (PDAT *)(( (FlexValue *)(pval->pt))+pval->offset);
+	return (PDAT *)(( (STRUCT **)(pval->pt))+pval->offset);
 }
 
 /*
@@ -50,23 +52,28 @@ static void *HspVarStruct_CnvCustom( const void *buffer, int flag )
 }
 */
 
+static int GetVarSize( PVal *pval )
+{
+	//		PVALポインタの変数が必要とするサイズを取得する
+	//		(sizeフィールドに設定される)
+	//
+	int size;
+	size = pval->len[1];
+	if ( pval->len[2] ) size*=pval->len[2];
+	if ( pval->len[3] ) size*=pval->len[3];
+	if ( pval->len[4] ) size*=pval->len[4];
+	size *= sizeof(STRUCT *);
+	return size;
+}
+
 static void HspVarStruct_Free( PVal *pval )
 {
 	//		PVALポインタの変数メモリを解放する
 	//
-	int i;
-	FlexValue *fv;
 	if ( pval->mode == HSPVAR_MODE_MALLOC ) {
-
-		code_delstruct_all( pval );					// デストラクタがあれば呼び出す
-
-		fv = (FlexValue *)pval->pt;
-		for(i=0;i<pval->len[1];i++) {
-			if ( fv->type == FLEXVAL_TYPE_ALLOC ) sbFree( fv->ptr );
-			fv++;
-		}
 		sbFree( pval->pt );
 	}
+	pval->pt = NULL;
 	pval->mode = HSPVAR_MODE_NONE;
 }
 
@@ -80,23 +87,13 @@ static void HspVarStruct_Alloc( PVal *pval, const PVal *pval2 )
 	//
 	int i,size;
 	char *pt;
-	FlexValue *fv;
 	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
 	pval->mode = HSPVAR_MODE_MALLOC;
-	size = sizeof(FlexValue) * pval->len[1];
+	size = GetVarSize( pval );
 	pt = sbAlloc( size );
-	fv = (FlexValue *)pt;
-	for(i=0;i<pval->len[1];i++) {
-
-/*
-	rev 53
-	BT#113: dimtypeでstruct型(モジュール型)変数が不完全な状態で作成される
-	に対処。
-*/
-
-		memset( fv, 0, sizeof( FlexValue ) );
-		fv->type = FLEXVAL_TYPE_NONE;
-		fv++;
+	STRUCT **st = (STRUCT **)pt;
+	for(i=0;i<(int)(size/sizeof(STRUCT *));i++) {
+		*st++ = NULL;
 	}
 	if ( pval2 != NULL ) {
 		memcpy( pt, pval->pt, pval->size );
@@ -120,29 +117,34 @@ static void *HspVarStruct_ArrayObject( PVal *pval, int *mptype )
 static int HspVarStruct_GetSize( const PDAT *pdat )
 {
 	//		(実態のポインタが渡されます)
-	return sizeof(FlexValue);
+	return sizeof(STRUCT *);
 }
 
 // Using
 static int HspVarStruct_GetUsing( const PDAT *pdat )
 {
 	//		(実態のポインタが渡されます)
-	FlexValue *fv;
-	fv = (FlexValue *)pdat;
-	return fv->type;
+	return *(STRUCT **)pdat != NULL;
 }
 
 // Set
 static void HspVarStruct_Set( PVal *pval, PDAT *pdat, const void *in )
 {
-	FlexValue *fv;
-	FlexValue *fv_src;
-	fv = (FlexValue *)in;
-	fv->type = FLEXVAL_TYPE_CLONE;
-	fv_src = (FlexValue *)pdat;
-	if ( fv_src->type == FLEXVAL_TYPE_ALLOC ) { sbFree( fv_src->ptr ); }
-	memcpy( pdat, fv, sizeof(FlexValue) );
-	//sbCopy( (char **)pdat, (char *)fv->ptr, fv->size );
+	*((STRUCT **)pdat) = *((STRUCT **)in);
+}
+
+// Eq
+static void HspVarStruct_EqI( PDAT *pval, const void *val )
+{
+	*((int *)pval) = ( *(STRUCT **)pval == *(STRUCT **)val );
+	*aftertype = HSPVAR_FLAG_INT;
+}
+
+// Ne
+static void HspVarStruct_NeI( PDAT *pval, const void *val )
+{
+	*((int *)pval) = ( *(STRUCT **)pval != *(STRUCT **)val );
+	*aftertype = HSPVAR_FLAG_INT;
 }
 
 /*
@@ -155,10 +157,13 @@ static void HspVarStruct_Invalid( PDAT *pval, const void *val )
 
 static void *GetBlockSize( PVal *pval, PDAT *pdat, int *size )
 {
-	FlexValue *fv;
-	fv = (FlexValue *)pdat;
-	*size = fv->size;
-	return (void *)(fv->ptr);
+	STRUCT *obj = *(STRUCT **)pdat;
+	if ( obj == NULL ) {
+		*size = 0;
+		return NULL;
+	}
+	*size = get_struct_dat( obj )->size;
+	return GET_STRUCT_MEMBERS_BUFFER(obj);
 }
 
 static void AllocBlock( PVal *pval, PDAT *pdat, int size )
@@ -170,6 +175,8 @@ static void AllocBlock( PVal *pval, PDAT *pdat, int size )
 
 void HspVarStruct_Init( HspVarProc *p )
 {
+	aftertype = &p->aftertype;
+
 	p->Set = HspVarStruct_Set;
 	p->GetPtr = HspVarStruct_GetPtr;
 //	p->Cnv = HspVarStruct_Cnv;
@@ -192,9 +199,10 @@ void HspVarStruct_Init( HspVarProc *p )
 	p->AndI = HspVarStruct_Invalid;
 	p->OrI  = HspVarStruct_Invalid;
 	p->XorI = HspVarStruct_Invalid;
-
-	p->EqI = HspVarStruct_Invalid;
-	p->NeI = HspVarStruct_Invalid;
+*/
+	p->EqI = HspVarStruct_EqI;
+	p->NeI = HspVarStruct_NeI;
+/*
 	p->GtI = HspVarStruct_Invalid;
 	p->LtI = HspVarStruct_Invalid;
 	p->GtEqI = HspVarStruct_Invalid;
@@ -207,7 +215,7 @@ void HspVarStruct_Init( HspVarProc *p )
 	p->version = 0x001;					// 型タイプランタイムバージョン(0x100 = 1.0)
 	p->support = HSPVAR_SUPPORT_STORAGE | HSPVAR_SUPPORT_FLEXARRAY | HSPVAR_SUPPORT_VARUSE;
 										// サポート状況フラグ(HSPVAR_SUPPORT_*)
-	p->basesize = sizeof(FlexValue);	// １つのデータが使用するサイズ(byte) / 可変長の時は-1
+	p->basesize = sizeof(STRUCT *);	// １つのデータが使用するサイズ(byte) / 可変長の時は-1
 }
 
 /*------------------------------------------------------------*/
