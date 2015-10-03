@@ -160,9 +160,10 @@ typedef struct
 	void (*RrI)( PDAT *pval, const void *val );
 	void (*LrI)( PDAT *pval, const void *val );
 
-	//		システム参照
+	//		代入用関数(型の一致が保障されます)
 	// (ver3.X)
 	void(*MoveAlloc)(PVal *pval, PVal *pval2);
+	void(*SwapVar)(PVal *pval, PDAT *pdat, PVal *pval2, PDAT *pdat2);
 } HspVarProc;
 
 extern HspVarProc *hspvarproc;
@@ -253,7 +254,13 @@ inline PDAT *HspVarCorePtrAPTR( PVal *pv, APTR ofs )
 	return hspvarproc[(pv)->flag].GetPtr(pv);
 }
 
-
-
+// std::swap will come in C++11
+template<typename T> T& myswap(T& l, T& r)
+{
+	T t = l;
+	l = r;
+	r = t;
+	return l;
+}
 
 #endif

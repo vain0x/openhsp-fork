@@ -128,7 +128,7 @@ void HspVarCoreRegisterType( int flag, HSPVAR_COREFUNC func )
 	procs = (void **)(&p->Cnv);
 	while(1) {
 		*procs = (void *)(PutInvalid);
-		if ( procs == (void **)(&p->LrI) ) break;
+		if ( procs == (void **)(&p->SwapVar) ) break;
 		procs++;
 	}
 	p->MoveAlloc = HspVarCoreMoveAllocDefault;
