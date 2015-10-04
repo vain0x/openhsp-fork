@@ -15,8 +15,9 @@
 
 //	7ÇÕVARIANTÇ≈ó\ñÒçœÇ›
 
-#define HSPVAR_FLAG_USERDEF 8
-#define HSPVAR_FLAG_MAX 8
+#define HSPVAR_FLAG_INT64 8
+#define HSPVAR_FLAG_USERDEF 9
+#define HSPVAR_FLAG_MAX 9
 
 #define HSPVAR_MODE_NONE -1
 #define HSPVAR_MODE_MALLOC 1
@@ -183,6 +184,10 @@ typedef struct
 	int size;			// data size
 	void *ptr;			// data ptr
 } FlexValue;
+
+
+// int64 type
+typedef signed long long int int64;
 
 
 /*

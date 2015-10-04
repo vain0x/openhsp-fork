@@ -50,6 +50,9 @@ static void *HspVarInt_Cnv( const void *buffer, int flag )
 	case HSPVAR_FLAG_DOUBLE:
 		conv = (int)( *(double *)buffer );
 		return &conv;
+	case HSPVAR_FLAG_INT64:
+		conv = (int)(*(int64 *)buffer);
+		return &conv;
 	default:
 		throw HSPVAR_ERROR_TYPEMISS;
 	}

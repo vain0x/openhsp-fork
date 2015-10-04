@@ -57,6 +57,9 @@ static void *HspVarStr_Cnv( const void *buffer, int flag )
 		sprintf( conv, "%d", *(int*)buffer);
 #endif
 		return conv;
+	case HSPVAR_FLAG_INT64:
+		sprintf(conv, "%I64d", *(int64 *)buffer);
+		return conv;
 	case HSPVAR_FLAG_STR:
 		break;
 	case HSPVAR_FLAG_DOUBLE:
