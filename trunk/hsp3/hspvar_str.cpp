@@ -84,7 +84,6 @@ static void *HspVarStr_CnvCustom( const void *buffer, int flag )
 static int GetVarSize( PVal *pval )
 {
 	//		PVALポインタの変数が必要とするサイズを取得する
-	//		(sizeフィールドに設定される)
 	//
 	int size;
 	size = pval->len[1];
@@ -92,7 +91,6 @@ static int GetVarSize( PVal *pval )
 	if ( pval->len[3] ) size*=pval->len[3];
 	if ( pval->len[4] ) size*=pval->len[4];
 	size *= sizeof(char *);
-	pval->size = size;
 	return size;
 }
 
@@ -104,6 +102,7 @@ static void HspVarStr_Free( PVal *pval )
 	int i,size;
 	if ( pval->mode == HSPVAR_MODE_MALLOC ) {
 		size = GetVarSize( pval );
+		pval->size = size;
 		for(i=0;i<(int)(size/sizeof(char *));i++) {
 			pp = GetFlexBufPtr( pval, i );
 			sbFree( *pp );
@@ -128,12 +127,15 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 	if ( pval2 != NULL ) oldvar = *pval2;			// 拡張時は以前の情報を保存する
 
 	size = GetVarSize( pval );
+
+	pval->size = size;
 	pval->mode = HSPVAR_MODE_MALLOC;
 	pval->master = (char *)calloc( size, 1 );
 	if ( pval->master == NULL ) throw HSPERR_OUT_OF_MEMORY;
 
 	if ( pval2 == NULL ) {							// 配列拡張なし
-		bsize = pval->len[0]; if ( bsize < 64 ) bsize = 64;
+		bsize = pval->len[0];
+		if ( bsize < STRBUF_BLOCKSIZE ) { bsize = STRBUF_BLOCKSIZE; }
 		for(i=0;i<(int)(size/sizeof(char *));i++) {
 			pp = GetFlexBufPtr( pval, i );
 			*pp = sbAllocClear( bsize );
@@ -146,7 +148,7 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 	for(i=0;i<(int)(size/sizeof(char *));i++) {
 		pp = GetFlexBufPtr( pval, i );
 		if ( i>=i2 ) {
-			*pp = sbAllocClear( 64 );				// 新規確保分
+			*pp = sbAllocClear(STRBUF_BLOCKSIZE);	// 新規確保分
 		} else {
 			*pp = *GetFlexBufPtr( &oldvar, i );		// 確保済みバッファ
 		}
