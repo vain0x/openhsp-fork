@@ -78,32 +78,44 @@ static void HspVarStruct_Alloc( PVal *pval, const PVal *pval2 )
 	//		(pval2がNULLの場合は、新規データ)
 	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
 	//
-	int i,size;
+	int size;
 	char *pt;
 	FlexValue *fv;
 	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
-	pval->mode = HSPVAR_MODE_MALLOC;
-	size = sizeof(FlexValue) * pval->len[1];
-	pt = sbAlloc( size );
-	fv = (FlexValue *)pt;
-	for(i=0;i<pval->len[1];i++) {
+	size = pval->len[1] * sizeof(FlexValue);
 
-/*
-	rev 53
-	BT#113: dimtypeでstruct型(モジュール型)変数が不完全な状態で作成される
-	に対処。
-*/
+	int old_size;
+	if ( pval == pval2 ) {
+		old_size = pval2->size;
+		if ( size > STRBUF_BLOCKSIZE ) {
+			size = (size > old_size ? size + size / 8 : old_size);
+		}
+		pt = sbExpand(pval->pt, size);
+	} else {
+		pt = sbAlloc(size);
 
-		memset( fv, 0, sizeof( FlexValue ) );
-		fv->type = FLEXVAL_TYPE_NONE;
-		fv++;
+		if ( pval2 == NULL ) {
+			old_size = 0;
+		} else {
+			old_size = pval2->size;
+			memcpy(pt, pval2->pt, pval2->size);
+			sbFree(pval->pt);
+		}
 	}
-	if ( pval2 != NULL ) {
-		memcpy( pt, pval->pt, pval->size );
-		sbFree( pval->pt );
+
+	// 新規要素を初期化
+	if ( size > old_size ) {
+		memset(pt + old_size, 0, size - old_size);
+#if FLEXVAL_TYPE_NONE != 0
+		for ( int i = (old_size / sizeof(FlexValue)); i < pval->len[1]; ++i ) {
+			fv[i].type = FLEXVAL_TYPE_NONE;
+		}
+#endif
 	}
+
 	pval->pt = pt;
 	pval->size = size;
+	pval->mode = HSPVAR_MODE_MALLOC;
 }
 
 /*
