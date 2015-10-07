@@ -73,29 +73,22 @@ void StackReset( void )
 
 void StackPush( int type, char *data, int size )
 {
-	STMDATA *stm;
 	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
-	stm = stm_cur;
-	stm->type = type;
 	switch( type ) {
 	case HSPVAR_FLAG_LABEL:
+		StackPushl(*(int *)data);
+		return;
 	case HSPVAR_FLAG_INT:
-//		stm->mode = STMMODE_SELF;
-		stm->ival = *(int *)data;
-//		stm->ptr = (char *)&(stm->ival);
-		stm_cur++;
+		StackPushi(*(int *)data);
 		return;
 	case HSPVAR_FLAG_DOUBLE:
-		//dptr = (double *)&stm->ival;
-		//*dptr = *(double *)data;
-		memcpy(&stm->ival, data, sizeof(double));
-//		stm->mode = STMMODE_SELF;
-//		stm->ptr = (char *)dptr;
-		stm_cur++;
+		StackPushd(*(double *)data);
 		return;
 	default:
 		break;
 	}
+	STMDATA *stm = stm_cur;
+	stm->type = type;
 	StackAlloc( stm, size );
 	memcpy( stm->ptr, data, size );
 	stm_cur++;

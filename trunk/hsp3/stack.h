@@ -25,7 +25,6 @@ typedef struct
 	short type;
 	short mode;
 	char *ptr;
-	void *pval;
 	int ival HSP_ALIGN_DOUBLE;
 	char itemp[STM_STRSIZE_DEFAULT-4];		// data area padding
 } STMDATA;
