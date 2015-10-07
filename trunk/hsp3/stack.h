@@ -38,9 +38,6 @@ void StackPush( int type, char *str );
 void *StackPushSize( int type, int size );
 void StackPushi( int val );
 void StackPushStr( char *str );
-void StackPushType( int type );
-void StackPushTypeVal( int type, int val, int val2 );
-void StackPushVar( void *pval, int aptr );
 void StackPop( void );
 void StackPopFree( void );
 

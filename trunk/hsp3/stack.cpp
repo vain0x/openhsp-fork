@@ -74,7 +74,6 @@ void StackReset( void )
 void StackPush( int type, char *data, int size )
 {
 	STMDATA *stm;
-	double *dptr;
 	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
 	stm = stm_cur;
 	stm->type = type;
@@ -121,37 +120,6 @@ void *StackPushSize( int type, int size )
 void StackPushStr( char *str )
 {
 	StackPush( HSPVAR_FLAG_STR, str, (int)strlen(str)+1 );
-}
-
-void StackPushTypeVal( int type, int val, int val2 )
-{
-	STMDATA *stm;
-	int *iptr;
-//	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
-	stm = stm_cur;
-	stm->type = type;
-//	stm->mode = STMMODE_SELF;
-	stm->ival = val;
-	iptr = (int *)stm->itemp;
-	*iptr = val2;
-	stm_cur++;
-}
-
-void StackPushVar( void *pval, int aptr )
-{
-    STMDATA *stm;
-    //	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
-    stm = stm_cur;
-    stm->type = -1;         // HSPVAR_FLAG_VAR
-    //	stm->mode = STMMODE_SELF;
-    stm->pval = pval;
-    stm->ival = aptr;
-    stm_cur++;
-}
-
-void StackPushType( int type )
-{
-	StackPushTypeVal( type, 0, 0 );
 }
 
 void StackPopFree( void )
