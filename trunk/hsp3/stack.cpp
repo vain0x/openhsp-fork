@@ -16,6 +16,7 @@
 */
 /*------------------------------------------------------------*/
 
+int stm_cur_len;
 int stm_max;
 STMDATA *mem_stm;
 STMDATA *stm_cur;
@@ -29,19 +30,15 @@ STMDATA *stm_maxptr;
 
 void StackInit( void )
 {
-	int i;
-	STMDATA *stm;
-
 	stm_max = STM_MAX_DEFAULT;
 	mem_stm = (STMDATA *)malloc( sizeof( STMDATA ) * stm_max );
 	stm_maxptr = mem_stm + stm_max;
 	stm_cur = mem_stm;
-	stm = mem_stm;
-	for(i=0;i<stm_max;i++) {
+	stm_cur_len = 0;
+
+	for ( STMDATA *stm = mem_stm; stm != stm_maxptr; stm++ ) {
 		stm->type = HSPVAR_FLAG_INT;
-		stm->mode = STMMODE_SELF;
-		stm->ptr = (char *)&(stm->ival);
-		stm++;
+		stm->prev_len = 1;
 	}
 }
 
@@ -49,18 +46,6 @@ void StackTerm( void )
 {
 	StackReset();
 	free( mem_stm );
-}
-
-
-static inline void StackAlloc( STMDATA *stm, int size )
-{
-	if ( size <= STM_STRSIZE_DEFAULT ) {
-//		stm->mode = STMMODE_SELF;
-//		stm->ptr = (char *)&(stm->ival);
-		return;
-	}
-	stm->mode = STMMODE_ALLOC;
-	stm->ptr = (char *)malloc( size );
 }
 
 void StackReset( void )
@@ -71,9 +56,17 @@ void StackReset( void )
 	}
 }
 
+static inline int CalcLen( int size )
+{
+	if ( size <= STM_STRSIZE_DEFAULT ) {
+		return 1;
+	} else {
+		return 1 + ((size - STM_STRSIZE_DEFAULT) + sizeof(STMDATA) - 1) / sizeof(STMDATA);
+	}
+}
+
 void StackPush( int type, char *data, int size )
 {
-	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
 	switch( type ) {
 	case HSPVAR_FLAG_LABEL:
 		StackPushl(*(int *)data);
@@ -87,11 +80,11 @@ void StackPush( int type, char *data, int size )
 	default:
 		break;
 	}
+	int len = CalcLen(size);
 	STMDATA *stm = stm_cur;
 	stm->type = type;
-	StackAlloc( stm, size );
 	memcpy( stm->ptr, data, size );
-	stm_cur++;
+	StackIncLevel(len);
 }
 
 void StackPush( int type, char *str )
@@ -101,23 +94,14 @@ void StackPush( int type, char *str )
 
 void *StackPushSize( int type, int size )
 {
-	STMDATA *stm;
-	if ( stm_cur >= stm_maxptr ) throw HSPERR_STACK_OVERFLOW;
-	stm = stm_cur;
+	int len = CalcLen(size);
+	STMDATA *stm = stm_cur;
 	stm->type = type;
-	StackAlloc( stm, size );
-	stm_cur++;
-	return (void *)stm->ptr;
+	StackIncLevel(len);
+	return stm->ptr;
 }
 
 void StackPushStr( char *str )
 {
 	StackPush( HSPVAR_FLAG_STR, str, (int)strlen(str)+1 );
-}
-
-void StackPopFree( void )
-{
-	free( stm_cur->ptr );
-	stm_cur->mode = STMMODE_SELF;
-	stm_cur->ptr = (char *)&(stm_cur->ival);
 }

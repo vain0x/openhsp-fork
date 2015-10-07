@@ -269,7 +269,7 @@ static void inline code_calcop( int op )
 	if ( tflag == HSPVAR_FLAG_INT ) {
 		if ( stm2->type == HSPVAR_FLAG_INT ) {					// HSPVAR_FLAG_INT のみ高速化
 			calcprmf( stm1->ival, op, stm2->ival );				// 高速化された演算(intのみ)
-			StackDecLevel;										// stack->Pop() の代わり(高速に)
+			StackPop();
 			stm2->ival = stm1->ival;							// １段目スタックの値を入れ替える
 			return;
 		}
@@ -639,7 +639,7 @@ int code_get( void )
 			code_next();
 			break;
 		case TYPE_DNUM:
-			StackPush( type, strp(val), sizeof(double) );
+			StackPushd( *(double *)strp(val) );
 			code_next();
 			break;
 		case TYPE_STRUCT:
