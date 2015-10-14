@@ -1517,8 +1517,8 @@ static void *reffunc_intfunc( int *type_res, int arg )
 
 	case 0x011:								// limit
 		p1 = code_geti();
-		p2 = code_geti();
-		p3 = code_geti();
+		p2 = code_getdi(INT_MIN);
+		p3 = code_getdi(INT_MAX);
 		reffunc_intfunc_ivalue = GetLimit( p1, p2, p3 );
 		break;
 
