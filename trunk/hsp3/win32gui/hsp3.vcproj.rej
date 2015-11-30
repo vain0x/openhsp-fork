@@ -1,0 +1,38 @@
+***************
+*** 323,328 ****
+  					RelativePath="..\strnote.cpp"
+  					>
+  				</File>
+  			</Filter>
+  			<Filter
+  				Name="win"
+--- 323,332 ----
+  					RelativePath="..\strnote.cpp"
+  					>
+  				</File>
++ 				<File
++ 					RelativePath="..\struct.cpp"
++ 					>
++ 				</File>
+  			</Filter>
+  			<Filter
+  				Name="win"
+***************
+*** 458,463 ****
+  					>
+  				</File>
+  				<File
+  					RelativePath="..\supio.h"
+  					>
+  				</File>
+--- 462,471 ----
+  					>
+  				</File>
+  				<File
++ 					RelativePath="..\struct.h"
++ 					>
++ 				</File>
++ 				<File
+  					RelativePath="..\supio.h"
+  					>
+  				</File>
