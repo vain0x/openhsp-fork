@@ -115,9 +115,14 @@ void PopFontSetEditFont()
 {
 	HDC hDC = CreateCompatibleDC(NULL);
 	int FontSize = (MulDiv(abs(editfont.lfHeight), 720, GetDeviceCaps(hDC, LOGPIXELSY)) + 5) / 10;
-	for(int i = 0; Footy2SetFontFace(i, FFM_ANSI_CHARSET, editfont.lfFaceName) != FOOTY2ERR_NOID; i++) {
+	for(int i = 0;; i++) {
+		static int const charsets[] = { FFM_ANSI_CHARSET, FFM_SHIFTJIS_CHARSET };
+		for (int j = 0; j < 2; j++) {
+			if ( Footy2SetFontFace(i, charsets[j], editfont.lfFaceName) == FOOTY2ERR_NOID ) { goto BREAK; }
+		}
 		Footy2SetFontSize(i, FontSize);
 	}
+BREAK:
 	DeleteDC(hDC);
 }
 
