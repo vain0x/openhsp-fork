@@ -110,6 +110,7 @@ typedef struct tagClassifyTable{
 #define DEFCOLOR_RULER_DIVISION   RGB(  0,   0,   0)
 
 void InitClassify();
+void UpdateClassify();
 void SetClassify(int);
 void ResetClassify();
 void ByeClassify();
