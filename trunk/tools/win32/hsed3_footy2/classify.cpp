@@ -61,6 +61,7 @@ static TYPE_TABLE TypeTable[] = {
 	"sys|func|1",	&(color.Character.Function.Conf),		EMPFLAG_NON_CS,
 	"sys|func|2",	&(color.Character.Function.Conf),		EMPFLAG_NON_CS,
 	"sys|func|3",	&(color.Character.Function.Conf),		EMPFLAG_NON_CS,
+	"sys|var",      	&(color.Character.Var.Conf),			EMPFLAG_NON_CS,
 	"pre|func",		&(color.Character.Preprocessor.Conf),	0,
 	NULL
 };
