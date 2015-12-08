@@ -371,6 +371,7 @@ static void err_bye( void )
 	//	error message print
 	//
 	//MessageBox (hwnd, errbuf, "HSP error message", MB_OK | MB_ICONEXCLAMATION) ;
+	hsc_getmes((int)errbuf, 0, 0, 0);
 	DialogBox (hInst, "ErrBox", hwnd, (DLGPROC)ErrDlgProc);
 }
 
@@ -1196,7 +1197,6 @@ BOOL CALLBACK ErrDlgProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lPara
      switch (message)
           {
           case WM_INITDIALOG:
-				hsc_getmes( (int)errbuf,0,0,0 );
 				SendMessage( GetDlgItem( hDlg, IDC_EDIT1 ), EM_LIMITTEXT, 0, 0L);
 				SetDlgItemText( hDlg,IDC_EDIT1,errbuf );
 				return TRUE ;
