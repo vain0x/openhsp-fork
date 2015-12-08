@@ -15,6 +15,7 @@
 static char szIniFileName[_MAX_PATH + 1];
 
 // Variable changed by this program
+extern char     hsp_dllname[_MAX_PATH];
 extern char	    hsp_cmdopt[TMPSIZE];
 extern char	    hsp_laststr[TMPSIZE];
 extern char	    hsp_helpdir[TMPSIZE];
@@ -90,6 +91,7 @@ int CheckWndFlag ( void );
 
 // Global variable in main.cpp
 extern char szExeDir[_MAX_PATH];
+extern char szDllDir[_MAX_PATH];
 
 // Functions in poppad.cpp
 int fileok( char *fname );
@@ -123,6 +125,10 @@ void LoadConfig()
 		ini_load();
 	else
 		reg_load();
+
+	strcpy(szDllDir, szExeDir);
+	strcat(szDllDir, "\\");
+	strcat(szDllDir, hsp_dllname);
 	return;
 }
 
@@ -272,6 +278,7 @@ static void set_default( void )
 {
 	//		デフォルトの設定を行なう(onitama追加:050218)
 	//
+	strcpy(hsp_dllname, FILE_HSPCMP);
 	hsp_cmdopt[0]=0;
 	hsp_laststr[0]=0;
 	hscroll_flag=1;
@@ -507,6 +514,7 @@ static void reg_load( void )
 		KEY_READ, &hKey) == ERROR_SUCCESS) {
 			reg_getkey( hKey,"fullscr", &hsp_fullscr );
 			reg_getkey( hKey,"hscroll", &hscroll_flag );
+			reg_sgetkey( hKey, "dllname", hsp_dllname, sizeof(hsp_dllname) );
 			reg_sgetkey( hKey,"cmdopt", hsp_cmdopt, sizeof(hsp_cmdopt) );
 			reg_sgetkey( hKey,"laststr", hsp_laststr, sizeof(hsp_laststr) );
 			reg_bgetkey( hKey,"font", (BYTE *)&chg_font, sizeof(LOGFONT) );
@@ -946,6 +954,7 @@ static void ini_load()
 
 		ini_getkey( filename, "Compile", "fullscr", &hsp_fullscr );
 		ini_getkey( filename, "View", "hscroll", &hscroll_flag );
+		ini_sgetkey( filename, "Compile", "dllname", hsp_dllname, sizeof(hsp_dllname) );
 		ini_sgetkey( filename, "Compile", "cmdopt", hsp_cmdopt, sizeof(hsp_cmdopt) );
 		ini_sgetkey( filename, "Compile", "laststr", hsp_laststr, sizeof(hsp_laststr) );
 		ini_bgetkey( filename, "Edit", "font", (BYTE *)&chg_font, sizeof(LOGFONT) );

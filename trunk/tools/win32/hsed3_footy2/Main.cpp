@@ -50,6 +50,7 @@ extern char      szTitleName[_MAX_FNAME + _MAX_EXT] ;
 char szStartDir[_MAX_PATH];
 char szExeDir[_MAX_PATH];
 char szDllDir[_MAX_PATH];
+char hsp_dllname[_MAX_PATH];
 char szAppName[]  = "onipad" ;
 int	 winflg,winx,winy,posx,posy,flg_toolbar,flg_statbar,flg_hspat;
 //int  flag_xpstyle;
@@ -471,11 +472,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 	}
 	szExeDir[a]=0;
 
-	//		DLLを初期化
-
-	strcpy( szDllDir,szExeDir );
-	strcat( szDllDir,"\\" FILE_HSPCMP );
-
 	//		XPのチェック
 
 //	flag_xpstyle = CheckXPEditBox( hInstance );
@@ -488,7 +484,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 	posy=CW_USEDEFAULT;
 	winx=CW_USEDEFAULT;
 	winy=CW_USEDEFAULT;
-    LoadConfig();
+	LoadConfig();
 
 	hwndDummy = CreateWindow("DummyWndProc", NULL, WS_OVERLAPPEDWINDOW, 0, 0, 0, 0,
 		NULL, NULL, hInstance, NULL);
