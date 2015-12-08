@@ -94,6 +94,7 @@ static UINT      iMsgFindReplace ;
 static UINT      iMsgHelp ;
 static char		 kwstr[512];
 char		 hdir[_MAX_PATH];
+char hsp_runtime[_MAX_PATH];
 
 extern char szExeDir[_MAX_PATH];
 extern char szStartDir[_MAX_PATH];
@@ -510,7 +511,7 @@ static void hsprun( char *objname )
 	hspcmp->hsc3_getruntime((int)cfname, (int)objname, 0, 0);
 	
 	if ( *cfname == 0 ) {
-		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, DEFAULT_RUNTIME );
+		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, hsp_runtime );
 	} else {
 		wsprintf( execmd,"\"%s\\%s\" ",szExeDir, cfname );
 	}
