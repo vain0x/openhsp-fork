@@ -1114,17 +1114,13 @@ static int cmdfunc_extcmd( int cmd )
 				break;
 			}
 		}
-		if ( GetAsyncKeyState(37)&0x8000 ) ckey|=1;		// [left]
-		if ( GetAsyncKeyState(38)&0x8000 ) ckey|=2;		// [up]
-		if ( GetAsyncKeyState(39)&0x8000 ) ckey|=4;		// [right]
-		if ( GetAsyncKeyState(40)&0x8000 ) ckey|=8;		// [down]
-		if ( GetAsyncKeyState(32)&0x8000 ) ckey|=16;	// [spc]
-		if ( GetAsyncKeyState(13)&0x8000 ) ckey|=32;	// [ent]
-		if ( GetAsyncKeyState(17)&0x8000 ) ckey|=64;	// [ctrl]
-		if ( GetAsyncKeyState(27)&0x8000 ) ckey|=128;	// [esc]
-		if ( GetAsyncKeyState(1)&0x8000 )  ckey|=256;	// mouse_l
-		if ( GetAsyncKeyState(2)&0x8000 )  ckey|=512;	// mouse_r
-		if ( GetAsyncKeyState(9)&0x8000 )  ckey|=1024;	// [tab]
+		static int const stick_keys[] = {
+			VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN, VK_SPACE, VK_RETURN,
+			VK_CONTROL, VK_ESCAPE, VK_LBUTTON, VK_RBUTTON, VK_TAB
+		};
+		for ( int i = 0; i < sizeof(stick_keys) / sizeof(int); i++ ) {
+			if ( GetAsyncKeyState(stick_keys[i]) & 0x8000 ) { ckey |= 1 << i; }
+		}
 		cktrg = (ckey^cklast)&ckey;
 		cklast = ckey;
 		res = cktrg|(ckey&p1);
