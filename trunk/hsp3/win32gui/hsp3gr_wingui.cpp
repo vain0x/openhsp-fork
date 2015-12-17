@@ -291,7 +291,6 @@ static int chgdisp( int mode, int sx, int sy )
 	return 0;
 }
 
-
 /*------------------------------------------------------------*/
 /*
 		for polygon process interface
@@ -1114,10 +1113,15 @@ static int cmdfunc_extcmd( int cmd )
 				break;
 			}
 		}
-		static int const stick_keys[] = {
+		static bool swap_button = GetSystemMetrics(SM_SWAPBUTTON);
+		static int stick_keys[] = {
 			VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN, VK_SPACE, VK_RETURN,
-			VK_CONTROL, VK_ESCAPE, VK_LBUTTON, VK_RBUTTON, VK_TAB
+			VK_CONTROL, VK_ESCAPE,
+			(swap_button ? VK_RBUTTON : VK_LBUTTON),
+			(swap_button ? VK_LBUTTON : VK_RBUTTON),
+			VK_TAB
 		};
+
 		for ( int i = 0; i < sizeof(stick_keys) / sizeof(int); i++ ) {
 			if ( GetAsyncKeyState(stick_keys[i]) & 0x8000 ) { ckey |= 1 << i; }
 		}
