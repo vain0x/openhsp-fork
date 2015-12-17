@@ -910,6 +910,12 @@ static int cmdfunc_extcmd( int cmd )
 		APTR aptr;
 		aptr = code_getva( &pval );
 		p1=code_getdi(1);
+
+		if ( p1 == VK_LBUTTON || p1 == VK_RBUTTON ) {
+			static bool const swap_button = GetSystemMetrics(SM_SWAPBUTTON);
+			if ( swap_button ) { p1 ^= VK_LBUTTON ^ VK_RBUTTON; }
+		}
+
 		if ( code_event( HSPEVENT_GETKEY, p1, 0, &p2 ) == 0 ) {
 			if ( GetAsyncKeyState(p1)&0x8000 ) p2=1; else p2=0;
 		}
