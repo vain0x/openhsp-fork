@@ -179,7 +179,6 @@ static void Object_StrInput( HSPOBJINFO *info, int wparam )
 {
 	HWND hwnd;
 	BMSCR *bm;
-	char minp[0x8000];
 	int val, cid, notify;
 
 	bm = (BMSCR *)info->bm;
@@ -187,8 +186,11 @@ static void Object_StrInput( HSPOBJINFO *info, int wparam )
 	notify = wparam>>16;
 	if ( notify != EN_UPDATE ) return;
 
+	size_t text_len = SendMessage(info->hCld, WM_GETTEXTLENGTH, 0, 0);
+	char *minp = (char*)malloc(text_len + 1);
+
 	cid = GetDlgCtrlID( info->hCld );
-	val = GetDlgItemText( hwnd, cid, minp, 0x7fff );
+	val = GetDlgItemText( hwnd, cid, minp, text_len );
 
 	if ( val == 0 ) {
 		bmscr_obj_ival = 0;
@@ -197,6 +199,7 @@ static void Object_StrInput( HSPOBJINFO *info, int wparam )
 		info->varset.ptr = minp;
 	}
 	Object_SendSetVar( info );
+	free(minp);
 }
 
 static void Object_ComboBox( HSPOBJINFO *info, int wparam )
