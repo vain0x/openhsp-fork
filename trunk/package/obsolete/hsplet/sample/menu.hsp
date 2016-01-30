@@ -1,0 +1,37 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: Menu
+                                             Copyright (C) 2006.02.12 山田雄己
+*******************************************************************************/
+
+; HSP 3.0 の mod_menu にはバグがあるので応急処置
+#define global p2 _p2
+
+#include "mod_menu.as"
+
+#undef p2
+
+	oncmd *on_command, WM_COMMAND
+
+	; メニューバー
+	newmenu menuBar
+
+	; 「ファイル」メニュー
+	newmenu subMenu, 1
+
+	addmenu subMenu, "&Open", 1
+	addmenu subMenu, "&Save", 2
+	addmenu subMenu, "&Close", 3
+	addmenu subMenu, "", 0, 0x00000800
+	addmenu subMenu, "E&xit", 4
+	
+	addmenu menuBar, "File", subMenu, 0x00000010
+
+	applymenu menuBar
+
+stop
+
+*on_command
+
+	mes "コマンドID="+wparam
+	

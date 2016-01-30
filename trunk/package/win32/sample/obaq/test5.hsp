@@ -1,0 +1,59 @@
+#include "obaq.as"
+
+	;
+	;	オブジェクトに画像を貼り付けて表示
+	;	さらに壁全体を回転させます
+	;	[ESC]で終了します
+	;
+	randomize		; 乱数の初期化
+	screen 0,640,480	; ウィンドウ初期化
+	celload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+	celload "btex.bmp"	; 素材画像を読み込む
+	tex=stat
+	celdiv tex,64,64,32,32	; パーツのサイズと中心位置の設定
+
+	qreset			; OBAQの初期化
+
+	qborder -50,-50,50,50	; 壁の設定
+
+	hako=10			; 箱の出現数
+	frame=0
+*main
+	;	メインループ
+	;
+	redraw 0		; 画面の更新を開始
+	gradf ,,,,1,0,128	; 画面クリア
+	qexec			; OBAQによるオブジェクトの更新
+
+	stick key,15		; キーの取得
+	if key&128 : end	; [ESC]キーで終了
+
+	;	一定時間ごとに出現
+	;
+	if frame\30=0 {
+		if hako>0 {
+			qaddpoly my, 4, 96,24,0.01*rnd(628)	; 三角形を追加
+			qspeed my,0.1*rnd(10)-0.5,0,0.01	; ランダムな方向に飛ばす
+			qmat my,mat_spr,tex
+			hako--
+		}
+	}
+
+	qgetpos 0,x,y,r		; 壁の座標・角度を取得
+	r+=0.01			; 壁を回転させる
+	qpos 0,x,y,r		; 壁の座標・角度を設定
+
+	qdraw			; オブジェクトの描画
+
+	color 255,255,255
+	pos 0,0:mes "Frame:"+frame	; フレーム数を表示
+
+	gmode 2:pos 470,40	; ロゴ表示
+	celput logoid
+
+	redraw 1		; 画面の更新を終了
+	await 12		; 一定時間待つ
+	frame++
+	goto *main

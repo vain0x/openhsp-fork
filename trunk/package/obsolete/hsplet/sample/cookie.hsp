@@ -1,0 +1,36 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: Cookie
+                                             Copyright (C) 2006.02.12 山田雄己
+*******************************************************************************/
+
+#uselib "hspini.dll"
+#func iniset iniset 5
+#func inigets inigets 5
+#func iniget iniget 5
+#func iniput iniput 5
+#func inidel inidel 6
+
+	sdim file,256
+	file=dir_cur+"\\test.ini"
+	iniset file,"HSP"
+	if stat: dialog "お使いのブラウザではJavaからクッキーを操作することはできません。"
+	
+	mes "前回起動時の設定内容を読み込みます。"
+
+	iniget i, "value"
+	if stat=0: mes "初めての起動です。": else: mes "前回入力した数値は"+i+"です。"
+
+	mes " "
+	mes " "
+	mes "保存する内容を入力してください。"
+	input a
+	button "OK", *ok
+	stop
+*ok
+
+	s = ""+a
+	iniput s, "value"
+	if stat=0: mes "保存に失敗しました。": else: mes ""+a+"を保存しました、ページをリロードして確認してください。"
+
+stop

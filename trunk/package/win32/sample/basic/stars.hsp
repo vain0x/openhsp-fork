@@ -1,0 +1,11 @@
+; test1
+	randomize
+	cls 4
+	font "‚l‚r ƒSƒVƒbƒN",40,1
+
+	repeat
+		color rnd(256),rnd(256),rnd(256)
+		pos rnd(640)-20,rnd(480)-20:mes "š"
+		wait 1
+	loop
+	stop

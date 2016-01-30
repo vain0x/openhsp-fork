@@ -1,0 +1,18 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "screen"
+
+#define ウィンドウID	"0"	;;str
+#define 初期化する画面サイズX	"640"	;;str
+#define 初期化する画面サイズY	"480"	;;str
+#define 初期化する画面モード	"0"	;;str
+#define ウィンドウの配置X	"-1"	;;str
+#define ウィンドウの配置Y	"-1"	;;str
+#define ウィンドウのサイズX	"0"	;;str
+#define ウィンドウのサイズY	"0"	;;str
+
+#ahtmes "screen "+ウィンドウID+" , "+初期化する画面サイズX+" , "+初期化する画面サイズY+" , "+初期化する画面モード+" , "+ウィンドウの配置X+" , "+ウィンドウの配置Y+" , "+ウィンドウのサイズX+" , "+ウィンドウのサイズY+

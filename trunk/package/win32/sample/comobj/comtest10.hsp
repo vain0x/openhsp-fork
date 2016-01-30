@@ -1,0 +1,24 @@
+	screen 0,320,150
+	objsize 320,30
+	newcom Shell, "Shell.Application"
+	button "最小化", *win1
+	button "最小化復帰", *win2
+	button "エクスプローラー", *win3
+	button "シャットダウン", *win4
+	button "サスペンド", *win5
+	stop
+*win1
+	Shell->"MinimizeAll"
+	stop
+*win2
+	Shell->"UndoMinimizeALL"
+	stop
+*win3
+	Shell->"Explore" "C:\\"
+	stop
+*win4
+	Shell->"ShutdownWindows"
+	stop
+*win5
+	Shell->"Suspend"
+	stop

@@ -1,0 +1,169 @@
+	;================================================================================
+	;モジュール unicode
+	;ver 2.0
+	;	Unicode関連
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; uni_multiモジュールの命令一覧
+	;
+	; to_uni			Unicodeへ変換
+	; from_uni			UnicodeからANSIに変換
+	;
+	; 計	2個
+
+
+	;使い方
+	;================================================================================
+	; to_uni v1,v2,n3		Unicodeへ変換
+	;
+	;  v1 : Unicodeを格納する変数
+	;  v2 : Unicodeに変換する文字列変数
+	;  n3 : Unicodeに変換する文字列の長さ
+	;================================================================================
+	;
+	;<>説明
+	; ANSI文字列(SJIS)をUNICODEに変換します。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; バッファに書き込まれたUnicode文字の数
+	;  0 変換失敗
+	;
+	;<>例
+	;	s="Unicodeに変換する文字列"
+	;	strlen sl,s
+	;	;alloc buf,(sl+1)*2	;この場合(sl+1)*2が64に満たないのでallocは必要ない
+	;	to_uni buf,s,sl+1
+	;	usize=stat
+	;	if usize=-1 : dialog "エラーが発生しました"
+	;	if usize=0 : dialog "変換が失敗しました"
+	;	if usize>0 : bsave "unicode.dat",buf,usize*2
+	;
+	;<>備考
+	; unicode呼び出し後にstatに入る値の'バッファに書き込まれたUnicode文字の数'は、
+	;	1バイト(半角)文字は1文字､2バイト(全角)文字も1文字
+	; と数えます。例えば
+	;	s="abcあいう"
+	; をすべてUnicodeに変換したあとのstat値は6+1(*注 +1は最後の文字列終結文字ぶん)。
+	; となります。
+	;
+	; 'Unicodeに変換する文字列の長さ'を-1にすると指定した文字列全てを変換します。
+	; 'Unicodeに変換する文字列の長さ'を0にするとUnicodeを格納するのに必要な変数
+	; のサイズを返します。(バイト単位)
+	;
+
+	;================================================================================
+	; from_uni v1,v2,n3		UnicodeからANSIに変換
+	;
+	;  v1 : Multibyteを格納する変数
+	;  v2 : Multibyteに変換するUnicode文字列が入っている変数
+	;  n3 : Multibyteに変換するUnicode文字列の長さ
+	;================================================================================
+	;
+	;<>説明
+	; UNICODEをANSI文字列に変換します。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; バッファに書き込まれたMultibyte文字の数
+	; 0  変換失敗
+	;
+	;<>例
+	;	exist "unicode.dat"
+	;	bload "unicode.dat",uni,strsize
+	;	buf=""
+	;	from_uni buf,uni,-1
+	;	mbsize=stat
+	;	if mbsize=-1 : dialog "エラーが発生しました"
+	;	if mbsize=0 : dialog "変換が失敗しました"
+	;	if mbsize>0 : dialog buf
+	;
+	;<>備考
+	; この命令を呼び出した後のstatの値、'バッファに書き込まれたMultibyte文字の数'は
+	;	1バイト(半角)文字は1文字､2バイト(全角)文字は2文字
+	; と数えます。
+	;
+	; 'Multibyteに変換するUnicode文字列の長さ'を-1にすると全て変換します。
+	; 'Multibyteに変換するUnicode文字列の長さ'を0にするとMultibyteを格納するのに
+	; 必要な変数のサイズを返します。(バイト単位)
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "unicode"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;to_uni
+	;Unicodeへ変換
+	;................................................................................
+	#deffunc to_uni var buf,var mb,int mb_len
+	mref stt,64
+
+	lcl_mb_len = strlen(mb)
+	if(lcl_mb_len >= 64) : sdim lcl_mb,lcl_mb_len + 1
+	lcl_mb = mb	;保存しておかないとまずい
+
+	prm.0 = 0
+	prm.1 = 0
+	getptr prm.2,lcl_mb
+	prm.3 = mb_len
+
+	if(mb_len == 0) {
+		prm.5 = 0 : prm.3 = -1
+	} else {
+		prm.5 = (lcl_mb_len + 1) * 2
+	}
+
+	getptr prm.4,buf
+
+	cnv
+	;@@@@ Unicodeに変換 @@@@
+	dllproc "MultiByteToWideChar",prm,6,D_KERNEL
+;	if stat<0 : stt=-1 : return
+	prm = stat
+
+	if(prm.5 == 0) : prm = prm * 2
+	stt = prm
+
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;from_uni
+	;UnicodeからANSIへ変換
+	;................................................................................
+	#deffunc from_uni var buf,var uni,int uni_len
+	mref stt,64
+
+	prm = 0
+	repeat -1
+		prm = wpeek(uni,cnt * 2)
+		if(prm == 0) : lcl_uni_len = cnt : break
+	loop
+
+	prm.0 = 0
+	prm.1 = 0
+
+	getptr prm.2,uni
+	prm.3 = uni_len
+
+	getptr prm.4,buf
+	if(uni_len == 0) {
+		prm.5 = 0
+		prm.3 = -1
+	} else {
+		prm.5 = (lcl_uni_len + 1) * 2	;<-ほんとは違う
+
+	prm.6 = 0
+	prm.7 = 0
+
+	;@@@@ Multibyteに変換 @@@@
+	dllproc "WideCharToMultiByte",prm,8,D_KERNEL
+
+
+	return
+	#global
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+#endif /* __hsp30__ */

@@ -1,0 +1,18 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "gzoom"
+
+#define 画面にコピーする時の大きさX	"0"	;;str
+#define 画面にコピーする時の大きさY	"0"	;;str
+#define ウィンドウID	"0"	;;str
+#define コピー元の左上X座標	"0"	;;str
+#define コピー元の左上Y座標	"0"	;;str
+#define コピーする大きさX	"0"	;;str
+#define コピーする大きさY	"0"	;;str
+#define ズームのモード	"0"	;;str
+
+#ahtmes "gzoom "+画面にコピーする時の大きさX+" , "+画面にコピーする時の大きさY+" , "+ウィンドウID+" , "+コピー元の左上X座標+" , "+コピー元の左上Y座標+" , "+コピーする大きさX+" , "+コピーする大きさY+" , "+ズームのモード+

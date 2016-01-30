@@ -1,0 +1,94 @@
+
+#include "hspdx.as"
+#include "hsp3util.as"
+
+	;
+	;	HSPDX.DLL sample2
+	;		フルサイズの画像を表示。
+	;		[ESC]キーで終了
+	;
+
+	;------------------------------------------------------------------
+
+	es_ini					; system初期化
+	es_screen 640,480,32,,1,1		; スクリーン初期化
+	if stat=1 : goto *dderr1
+	if stat=2 : goto *dderr2
+
+	goto *start				; 正常に完了
+
+*dderr1
+	dialog {"DirectXの初期化に失敗しました。
+
+"},1
+	end
+*dderr2
+	dialog {"スクリーンの初期化に失敗しました。
+"},1
+	end
+*dderr3
+	es_bye
+	wait 100
+	dialog {"VRAMの容量が不足しています。
+"},1
+	end
+
+	;------------------------------------------------------------------
+
+*start
+	buffer 3,,,1
+	bmppalette "hspdx.bmp"
+	picload "hspdx.bmp"
+	es_buffer 0,2
+	if stat : goto *dderr3
+
+	gsel 0,1
+	color 0,0,0
+	es_cls
+	es_sync
+	wait 100
+
+	di=0
+*okok
+	gosub *hw_ini
+
+*sudden
+	stick b,15				; カーソルキーの情報を取得
+	if b : goto *owari
+
+	es_cls
+	gosub *hw_exe
+	es_sync 12: await 0
+
+	if fin=0 : goto *sudden
+
+	di+:if di=2 : di=0
+	goto *okok
+
+*owari
+	end
+
+
+
+*hw_ini
+	;	LR crossing
+	;
+	if di=0 : px=-650:pp=10 : else : px=650:pp=-10
+	mx=640:my=30
+	fin=0
+	return
+*hw_exe
+	a=px
+	repeat 8
+	a+=80:if a<0 : goto *nodr3
+	if a>mx : a=mx
+	b=cnt*my*2
+	pos 0,b:gmode 0,a,my:es_copy 0,mx-a,b
+	b+=my
+	pos mx-a,b:es_copy 0,0,b
+*nodr3
+	loop
+	px+=pp
+	if (px>650)|(px<-650) : fin=1
+	return
+

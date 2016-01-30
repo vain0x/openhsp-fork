@@ -1,0 +1,84 @@
+#include "hsedsdk.as"
+
+#module
+#deffunc dialog2 int nRet
+	switch nRet
+
+	case 0
+		swbreak
+
+	case 1
+		dialog "エディタが起動していません。", 1, "Error"
+		swbreak
+
+	case -5
+		dialog "内部でのIDの指定が無効です。", 1, "Error"
+		swbreak
+
+	default
+		dialog "何らかの理由で操作に失敗しました。", 1, "Error"
+		swbreak
+
+	swend
+	return
+#global
+
+screen 0, 605, 50
+objmode 1: objsize 70, 20
+
+pos 5, 5: input nTabID, 595, 20
+
+pos 5,   25: button "Copy", *cmd
+pos 80,  25: button "Cut", *cmd
+pos 155, 25: button "Paste", *cmd
+pos 230, 25: button "Undo", *cmd
+pos 305, 25: button "Redo", *cmd
+pos 380, 25: button "Indent", *cmd
+pos 455, 25: button "Unindent", *cmd
+pos 530, 25: button "Select all", *cmd
+stop
+
+*cmd
+	cmdid = stat - 1
+
+	hsed_exist
+	if stat == 0: dialog "エディタが起動していません。", 1, "Error": stop
+
+	hsed_getfootyid nFootyID, nTabID
+	if stat: dialog "IDの指定が無効です。", 1, "Error": stop
+
+	on cmdid gosub *copy, *cut, *paste, *undo, *redo, *indent, *unindent, *selectall
+	dialog2 stat
+	stop
+
+*copy
+	hsed_copy nFootyID
+	return
+
+*cut
+	hsed_cut nFootyID
+	return
+
+*paste
+	hsed_paste nFootyID
+	return
+
+*undo
+	hsed_undo nFootyID
+	return
+
+*redo
+	hsed_redo nFootyID
+	return
+
+*indent
+	hsed_indent nFootyID
+	return
+
+*unindent
+	hsed_unindent nFootyID
+	return
+
+*selectall
+	hsed_selectall nFootyID
+	return

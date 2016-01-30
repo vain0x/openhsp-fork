@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "gsquare"
+
+#define コピー元のウィンドウID 	"0"	;;str
+#define コピー先X座標が格納される数値型配列変数名	""	;;str
+#define コピー先Y座標が格納される数値型配列変数名	""	;;str
+#define コピー元X座標が格納される数値型配列変数名	""	;;str
+#define コピー元Y座標が格納される数値型配列変数名	""	;;str
+
+#ahtmes "gsquare "+コピー元のウィンドウID +" , "+コピー先X座標が格納される数値型配列変数名+" , "+コピー先Y座標が格納される数値型配列変数名+" , "+コピー元X座標が格納される数値型配列変数名+" , "+コピー元Y座標が格納される数値型配列変数名+

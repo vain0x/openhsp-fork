@@ -1,0 +1,71 @@
+
+;============================================================
+;                                                 2010/--/--
+;	d3module  sample script
+;	for HSP 3.0
+;
+;============================================================
+;
+; ローカル座標系変換を使って、オブジェクトの影をイメージした
+; 描画を行うサンプルです。
+;
+;============================================================
+
+#include "d3m.hsp"
+
+	title "S.Programs d3module sample"
+
+
+*mainloop
+	time = d3timer()
+
+	title "fps = " + d3getfps()
+
+	redraw 0
+	color 255, 160, 80 : boxf
+
+
+	; カメラ座標を回転させる
+	d3setcam cos(0.0005 * time) * 1500, sin(0.0005 * time) * 1500, cos(0.0007 * time) * 500 + 600
+
+
+	; オブジェクト描画
+	repeat 2
+		; 影描画モード
+		if cnt = 0 {
+			; 平行光線による影をイメージしたローカル座標系を設定
+			;  (x, y それぞれに z を 2 倍した成分を与え、長く伸ばす)
+			d3setlocal 0,0,0,  1,0,2,  0,1,2,  0,0,0
+
+			; 影色
+			color 0.7 * 255, 0.7 * 160, 0.7 * 80
+		}
+
+		; 本体描画モード
+		if cnt = 1 {
+			; cnt = 0 で描画した影画像をぼかす
+			gmode 3, , , 128
+			pos -2, 0 : gcopy 0, 0, 0, ginfo_winx, ginfo_winy
+			pos 0, -1 : gcopy 0, 0, 0, ginfo_winx, ginfo_winy
+
+			; ローカル座標系設定 (リセット)
+			d3setlocal
+
+			; 本体色
+			color 200, 0, 0
+		}
+
+		; オブジェクト描画
+		randomize 0
+		repeat 50
+			x = rnd(1000) - 500 : y = rnd(1000) - 500 : z = absf(sin(0.0007 * time)) * rnd(1000)
+			d3box x, y, z, x + 100, y + 100, z + 100
+		loop
+	loop
+
+
+	redraw
+	await
+
+
+	goto *mainloop

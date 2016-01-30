@@ -1,0 +1,43 @@
+/*
+ * $Id: contents.css,v 1.1 2006/01/09 12:07:03 Yuki Exp $
+ */
+h1
+{
+	font-size: 130%;
+}
+h2
+{
+	font-size: 120%;
+	margin-bottom: 0.5em;
+}
+h3
+{
+	font-size: 100%;
+	margin-bottom: 0.5em;
+}
+h4
+{
+	font-size: 100%;
+	margin-bottom: 0.5em;
+}
+
+.supportExtend, .supportYes, .supportPartial
+{
+	font-weight: bold;
+	color: green;
+}
+.supportNo, .supportNote
+{
+	font-weight: bold;
+	color: red;
+}
+
+.contents
+{
+	margin-left: 1em;
+}
+
+.links
+{
+	margin-top: 0.5em;
+}

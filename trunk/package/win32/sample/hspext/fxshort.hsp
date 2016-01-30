@@ -1,0 +1,29 @@
+
+#include "hspext.as"
+
+	;
+	;	Windowsファイル名(ロングファイルネーム)
+	;	をDOSファイル名に変換する。
+	;
+
+	sdim fname,128
+	sdim lname,128
+
+	fname="fxshort.hsp"
+	fxshort lname,fname
+
+	mes "original file name="+fname
+	mes "DOS file name="+lname
+
+	;
+	;	ちなみにDOSファイル名をロングファイルネームに変換するには
+	;	dirlist命令を使ってください。
+	;
+	;	    例:
+	;		fname="longna~1.txt"
+	;		dirlist lname,fname
+	;
+
+	stop
+
+

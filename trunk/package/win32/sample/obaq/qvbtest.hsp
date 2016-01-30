@@ -1,0 +1,37 @@
+#include "obaq.as"
+#include "mod_qvb.as"
+
+	;	QVBファイルに保存されたデータのOBAQ描画サンプル
+	;	(qvbload命令の詳細は、mod_qvb.asファイルを参照してください)
+
+	;	初期設定
+	;
+	qreset			; OBAQの初期化
+	celload "obaqlogo.bmp"	; OBAQロゴ読み込み
+	logoid=stat		; ロゴのID
+
+	;	OBAQ設定
+	;
+	qvbload mymodel,"test.qvb"
+	qaddmodel my, mymodel, -1, 96,20,0, 1,1	; モデルを追加
+
+*main
+	;	描画メイン
+	;
+	redraw 0		; 画面の更新を開始
+	gradf ,,,,1,0,128	; 画面クリア
+	qexec			; OBAQによるオブジェクトの更新
+
+	stick key,15		; キーの取得
+	if key&128 : end	; [ESC]キーで終了
+
+	qdraw			; オブジェクトの描画
+
+	gmode 2:pos 470,40	; ロゴ表示
+	celput logoid
+
+	redraw 1		; 画面の更新を終了
+	await 12		; 一定時間待つ
+	frame++
+	goto *main
+

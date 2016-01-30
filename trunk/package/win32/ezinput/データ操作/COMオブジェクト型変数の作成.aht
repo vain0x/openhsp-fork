@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "querycom"
+
+#define 変数名	""	;;str
+#define 参照される変数名	""	;;str
+#define インターフェース名	""	;;str
+
+#ahtmes "querycom "+変数名+" , "+参照される変数名+" , "+インターフェース名+

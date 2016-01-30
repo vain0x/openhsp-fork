@@ -1,0 +1,63 @@
+
+#include "hspsock.as"
+
+	;
+	;	TCP/IP socket sample for HSP3.0
+	;	HTTPサーバーと接続してファイルを受信する
+	;
+	cls 1
+	sdim buf,32000
+	;
+	pos 0,128
+	mesbox buf,620,310,1
+	objsize 100,24,24
+	;
+	pos 100,0
+	url="":rdir=""
+	input url,480
+	input rdir,480
+	;
+	pos 0,0
+	mes "URL HTTP://"
+	mes "DIRECTORY"
+	;
+	pos 0,60
+	button "CONNECT",*sd
+	button "BYE",*bye
+	;
+	rdir="/index.html":objprm 2,rdir
+	url="o2.zener.co.jp":objprm 1,url
+	wait 10
+	;
+	stop
+
+*sd
+	;	HTTPに接続、ファイルを取得
+	;
+	title "Connecting... ["+url+rdir+"]"
+	sockopen 0,url,80
+	if stat : dialog "ERROR\nSTAT="+stat : goto *sdover
+	sockput "GET "+rdir+" HTTP/1.0\nHost:???\nUser-Agent: HSP ver3.0\n\n"
+	if stat : dialog "socket error" : goto *sdover
+	;
+	buf="":a=""
+	b=0:sz=0
+*wloop
+	await 0
+	sockget a,64
+	if stat : dialog "socket error" : goto *sdover
+	b=peek(a,0):if b=0 : goto *sdok
+	buf+=a
+	sz+=64:title "recieve "+sz
+	if sz>30000 : dialog "受信サイズがオーバーしました。" : goto *sdok
+	goto *wloop
+*sdok
+	objprm 0,buf
+	title "Completed."
+*sdover
+	sockclose
+	stop
+
+*bye
+	end
+

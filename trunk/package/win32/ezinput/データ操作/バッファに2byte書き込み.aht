@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "wpoke"
+
+#define バッファを割り当てた変数名	""	;;str
+#define バッファのインデックス	"0"	;;str
+#define バッファに書き込む値	"0"	;;str
+
+#ahtmes "wpoke "+バッファを割り当てた変数名+" , "+バッファのインデックス+" , "+バッファに書き込む値+

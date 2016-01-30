@@ -1,0 +1,78 @@
+	;
+	;	Windows7のマルチタッチ入力を取得するサンプルです。
+	;	マルチタッチに対応したデバイスでのみ実行できます。
+
+#uselib "user32.dll"
+#cfunc GetSystemMetrics "GetSystemMetrics" int
+#func RegisterTouchWindow "RegisterTouchWindow" int,int
+#func GetTouchInputInfo "GetTouchInputInfo" int,int,int,int
+#func CloseTouchInputHandle "CloseTouchInputHandle" int
+#func ScreenToClient "ScreenToClient" int,int
+
+#define NID_MULTI_INPUT		0x40	; マルチタッチ可能フラグ
+#define NID_READY		0x80	; タッチ入力可能フラグ
+
+#define WM_GESTURE		0x0119
+#define WM_TOUCH		0x0240
+#define SM_DIGITIZER		94
+#define SM_MAXIMUMTOUCHES	95
+
+
+#define F_MOVE	0x0001	;Movement has occurred. Cannot be combined with TOUCHEVENTF_DOWN.
+#define F_DOWN	0x0002	;The corresponding touch point was established through a new contact. Cannot be combined with TOUCHEVENTF_MOVE or TOUCHEVENTF_UP.
+#define F_UP	0x0004	;A touch point was removed.
+#define F_INRANGE	0x0008	;A touch point is in range. This flag is used to enable touch hover support on compatible hardware.Applications that do not want support for hover can ignore this flag.
+#define F_PRIMARY	0x0010	;Indicates that this TOUCHINPUT structure corresponds to a primary contact point. See the following text for more information on primary touch points.
+#define F_NOCOALESCE	0x0020	;When received using GetTouchInputInfo, this input was not coalesced.
+#define F_PALM	0x0080	;The touch event came from the user's palm.
+
+#enum I_POSX=0
+#enum I_POSY
+#enum I_SOURCE
+#enum I_ID
+#enum I_FLAGS
+#enum I_MASK
+#enum I_TIME
+#enum I_EXINFO
+#enum I_CX
+#enum I_CY
+
+	title "マルチタッチ入力テスト"
+
+	maxinput=32
+	size_tinput=10
+	dim tinput,size_tinput*maxinput		; TOUCHINPUT構造体のバッファ
+	dim posxy,4
+
+	sysm=GetSystemMetrics(SM_DIGITIZER)
+	i=NID_MULTI_INPUT|NID_READY
+	if (sysm&i)!=i {
+		dialog "マルチタッチに対応していません。" : end
+	}
+	RegisterTouchWindow hwnd, 0		; タッチウインドウ登録
+
+	onexit *bye
+	oncmd gosub *OnTouch, WM_TOUCH		; メッセージ割り込み
+	stop
+*bye
+	end
+
+*OnTouch
+	;	タッチ割り込み
+	hinput=lparam	; HINPUTハンドル
+	num=wparam	; 入力の数
+	GetTouchInputInfo hinput, num, varptr(tinput), size_tinput*4
+	if stat=0 : dialog "ERR:"+hinput+"("+num+")"
+	i=0
+	repeat num
+		fl=tinput(i+I_FLAGS)
+		posxy(0)=tinput(i+I_POSX)/100
+		posxy(1)=tinput(i+I_POSY)/100
+		ScreenToClient hwnd,varptr(posxy)
+		if fl&F_DOWN {
+			mes "DOWN("+cnt+"):"+posxy(0)+","+posxy(1)
+		}
+		i+=size_tinput
+	loop
+	CloseTouchInputHandle hinput
+	return

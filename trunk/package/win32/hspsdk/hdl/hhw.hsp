@@ -1,0 +1,1944 @@
+
+;============================================================
+;                                                 2009/xx/xx
+;	S.Programs HHW / HDL Built-in Editor
+;	hs editor (HSP 3.0)
+;                               http://sprocket.babyblue.jp/
+;============================================================
+
+
+;============================================================
+; includes
+#include "gpm.hsp"
+#ifndef HDL_LIB_INCLUDED
+ #include "hdl_lib.hsp"
+#endif
+
+
+
+;============================================================
+; マウス関係
+
+#module
+#uselib "user32"
+#cfunc LoadCursorA "LoadCursorA" int, int
+#func SetCursor "SetCursor" int
+#func ScreenToClient "ScreenToClient" int, int
+
+#define global IDC_SIZEWE 32644
+#define global IDC_SIZENS 32645
+#define global IDC_SIZEALL 32646
+
+#deffunc SetMouseCursor int p1
+	h = LoadCursorA(hinst, p1)
+	if h : SetCursor h
+	return
+
+#defcfunc rtmousex
+	p = ginfo_mx, 0
+	ScreenToClient hwnd, varptr(p)
+	return p.0
+
+#defcfunc rtmousey
+	p = 0, ginfo_my
+	ScreenToClient hwnd, varptr(p)
+	return p.1
+#global
+
+
+
+;============================================================
+; tricorn / drawborder
+
+#module
+#deffunc tricorn int px, int py, int pdir  ; top-x, top-y, direction (clock)
+	if (pdir & 1) = 0 {
+		dir = 1 - pdir ; (0, 2) -> (1, -1)
+		repeat 4
+			boxf px, py-cnt*dir, px+cnt, py-cnt*dir
+			boxf px-cnt, py-cnt*dir, px, py-cnt*dir
+		loop
+	} else {
+		dir = 2 - pdir ; (1, 3) -> (1, -1)
+		repeat 4
+			boxf px+cnt*dir, py-cnt, px+cnt*dir, py
+			boxf px+cnt*dir, py, px+cnt*dir, py+cnt
+		loop
+	}
+	return
+
+#deffunc drawborder int x10, int y10, int x19, int y19
+	syscolor 8
+	boxf x10, y10, x19-1, y10+1
+	boxf x10, y10, x10+1, y19-1
+	boxf x19-2, y10, x19-1, y19-1
+	boxf x10, y19-2, x19-1, y19-1
+	syscolor 15
+	boxf x10, y10, x19-1, y10
+	boxf x10, y10, x10, y19-1
+	boxf x19-1, y10, x19-1, y19-1
+	boxf x10, y19-1, x19-1, y19-1
+	return
+#global
+
+
+
+;============================================================
+; Windows Timer
+
+#module
+; winapi
+#uselib "user32"
+#func	SetTimer	"SetTimer" int, int, int, int
+#func	KillTimer	"KillTimer" int, int
+;--------------------------------------------------
+#define global timer_setlabel(%1)  oncmd gosub %1, 0x113
+;--------------------------------------------------
+#deffunc timer_start
+	SetTimer hwnd, 333, 33, 0
+	return
+;--------------------------------------------------
+#deffunc timer_stop
+	KillTimer hwnd, 333
+	return
+#global
+
+
+
+;============================================================
+; wstrlen
+; ダブルバイト対応 文字数カウント
+
+;#uselib "kernel32"
+;#cfunc wstrlen "lstrlenW" wptr
+
+#module
+; winapi
+#uselib "kernel32"
+#cfunc MultiByteToWideChar "MultiByteToWideChar" int, int, var, int, int, int
+;--------------------------------------------------
+#defcfunc wstrlen var v
+	return (MultiByteToWideChar(0, 0, v, -1, 0, 0) - 1)
+#global
+
+
+
+;============================================================
+; hs エディタ モジュール
+; (hhw_start で起動 元のスクリプトに制御を返さず終了)
+
+#module
+; winapi
+#uselib "user32"
+#func	CharLower	"CharLowerA" var
+#func	MoveWindow	"MoveWindow" sptr, sptr, sptr, sptr, sptr, sptr
+#func	EnableWindow	"EnableWindow" int, int
+#cfunc	GetScrollPos	"GetScrollPos" int, int
+#func	SetWindowLongA	"SetWindowLongA" sptr, sptr, sptr
+#cfunc	MessageBox	"MessageBoxA" int, sptr, sptr, int
+#func	GetWindowRect	"GetWindowRect" int, var
+#func	MapWindowPoints	"MapWindowPoints" int, int, var, int
+
+; (menu api)
+#func CreateMenu	"CreateMenu"
+#cfunc CreatePopupMenu	"CreatePopupMenu"
+#func AppendMenu	"AppendMenuA"     int,int,int,sptr
+#func SetMenu		"SetMenu"         int,int
+#func DrawMenuBar	"DrawMenuBar"     int
+
+; const
+#enum	CMD_N = 333
+#enum	CMD_O
+#enum	CMD_S
+#enum	CMD_A
+#enum	CMD_Q
+#enum	CMD_V
+#enum	CMD_E
+#enum	CMD_SORT
+#enum	CMD_OPTIM
+#enum	CMD_INP
+#enum	CMD_IH_STRONG
+#enum	CMD_IH_TABLE
+#enum	CMD_OPT_SHOWHV
+#enum	CMD_OPT_HIDEHV
+#define ctype objhwnd(%1)  objinfo(%1, 2)
+
+; capacity
+#define MAX_ID 3000
+#define EDIT_MAX 128000 ; editbox max length
+
+;============================================================
+;============================================================
+; 起動・メインループ
+#deffunc hhw_start str s1, str s2, str s3, str s4
+
+	cur_file = s1
+	appname	= s2
+	appver	= s3
+	appsig	= s4
+
+	; cur_file を分解 ("hoge>foo" -> "hoge", "foo")
+	a = instr(cur_file, , ">")
+	if a >= 0 {
+		symbol_select = strmid(cur_file, a+1, 999)
+		poke cur_file, a
+	}
+
+
+
+	;============================================================
+	; ウィンドウ作成
+
+	;--------------------------------------------------
+	; UI 変数初期化
+
+	str_insbox = ""	; 新規レコード追加
+	str_find = ""	; シンボル検索
+	str_tagbox = ""	; フィールドタグ追加
+	str_tagbox += "(フィールドタグ挿入 ...)\n"
+	str_tagbox += "%prm      ; パラメータリスト, パラメータ説明文\n"
+	str_tagbox += "%inst     ; 解説文\n"
+	str_tagbox += "%sample   ; サンプルスクリプト\n"
+	str_tagbox += "%href     ; 関連項目\n"
+	str_tagbox += "%dll      ; 使用プラグイン/モジュール\n"
+	str_tagbox += "%ver      ; バージョン\n"
+	str_tagbox += "%date     ; 日付\n"
+	str_tagbox += "%author   ; 著作者\n"
+	str_tagbox += "%url      ; 関連 URL\n"
+	str_tagbox += "%note     ; 備考 (補足情報等)\n"
+	str_tagbox += "%type     ; タイプ\n"
+	str_tagbox += "%group    ; グループ\n"
+	str_tagbox += "%port     ; 対応環境\n"
+	str_tagbox += "%port+    ; 対応環境 (追加)\n"
+	str_tagbox += "%port-    ; 対応環境 (除外)\n"
+	str_tagbox += "%portinfo ; 移植のヒント\n"
+	pos_tagbox = 0
+	pos_reclist = 0	; インデックス
+	sdim str_edit, EDIT_MAX ; hs ソース
+
+	sdim astr, 4096 ; テンポラリ ミニマム容量設定
+	sdim bstr, 4096
+
+
+	;--------------------------------------------------
+	; create window
+
+	screen 0, ginfo_dispx+4, ginfo_dispy, 2
+	Window_resizable
+	status_create	; ステータスバー 初期化
+	title appname
+
+
+	; メニュー 初期化
+	; ファイル(F)
+	hmenuFile = CreatePopupMenu()
+	AppendMenu hmenuFile, 0, CMD_N, "新規作成(&N)"
+	AppendMenu hmenuFile, 0, CMD_O, "開く(&O)"
+	AppendMenu hmenuFile, 0, CMD_S, "上書き保存(&S)"
+	AppendMenu hmenuFile, 0, CMD_A, "名前をつけて保存(&A)"
+	AppendMenu hmenuFile, $800, 0, ""
+	AppendMenu hmenuFile, 0, CMD_Q, "終了(&Q)"
+	; 表示(V)
+	hmenuView = CreatePopupMenu()
+	AppendMenu hmenuView, 0, CMD_OPT_SHOWHV, "%href ビューを表示(&S)"
+	AppendMenu hmenuView, 0, CMD_OPT_HIDEHV, "%href ビューを非表示(&H)"
+	; ツール(T)
+	hmenuTool = CreatePopupMenu()
+	AppendMenu hmenuTool, 0, CMD_OPTIM, "レコードの並び順を最適化"
+	AppendMenu hmenuTool, 0, CMD_SORT, "レコードの並び順をソート"
+	AppendMenu hmenuTool, $800, 0, ""
+	AppendMenu hmenuTool, 0, CMD_IH_TABLE, "インライン HTML <table> 挿入"
+	AppendMenu hmenuTool, 0, CMD_IH_STRONG, "インライン HTML <strong> 挿入"
+	AppendMenu hmenuTool, $800, 0, ""
+	AppendMenu hmenuTool, 0, CMD_INP, "HSP スクリプトからシンボルをインポート"
+	; ヘルプ(H)
+	hmenuHelp = CreatePopupMenu()
+	AppendMenu hmenuHelp, 0, CMD_V, "バージョン情報(&V)"
+	; メニューバー作成
+	CreateMenu : hmenu = stat
+	AppendMenu hmenu, $10, hmenuFile, "ファイル(&F)"
+	AppendMenu hmenu, $00, CMD_E, "編集...(&E)"
+	AppendMenu hmenu, $10, hmenuView, "表示(&V)"
+	AppendMenu hmenu, $10, hmenuTool, "ツール(&T)"
+	AppendMenu hmenu, $10, hmenuHelp, "ヘルプ(&H)"
+	SetMenu hwnd, hmenu
+	DrawMenuBar hwnd
+
+
+	; UI ウィンドウ作成
+	; レコード挿入 box
+	objmode 2
+	font "ＭＳ ゴシック", 12
+	input str_insbox, , , 50
+	id_insbox = stat
+	button gosub "レコード挿入", *ins_rec
+	id_insbtn = stat
+
+	; シンボル検索 box
+	input str_find, , , 20
+	id_find = stat
+
+	; レコードリスト
+	listbox pos_reclist, , astr
+	id_reclist = stat
+	; objhwnd(id_reclist) -> GWL_EXSTYLE -> 0
+	SetWindowLongA objhwnd(id_reclist), -20, 0
+
+	; エディタツール
+	combox pos_tagbox, 200, str_tagbox
+	id_tagbox = stat
+	button gosub "レコード削除", *del_rec
+	id_delbtn = stat
+
+	; エディタ
+	font "Terminal", 18
+	mesbox str_edit, , , 1, -1
+	id_edit = stat
+	; objhwnd(id_edit) -> GWL_EXSTYLE -> 0
+	SetWindowLongA objhwnd(id_edit), -20, 0
+
+
+	; EM_LINEFROMCHAR で与えるべき値のタイプを判別
+	;  (Windows XP は文字数、それ以下ではバイト数)
+	objprm id_edit, "、、\n"
+	; EM_LINEFROMCHAR
+	sendmsg objhwnd(id_edit), 0xc9, 4, 0
+	TYPE_EM_LINEFROMCHAR = stat ; 0->bytes, 1->chars
+
+
+	; 割り込み
+	oncmd gosub *event_WM_ACTIVATE, 0x0006 ; -- これをトップに書くこと
+	oncmd gosub *event_WM_MOUSEWHELL, 0x020a
+	oncmd gosub *event_WM_SIZE, 0x0005
+	oncmd gosub *event_WM_COMMAND, 0x0111
+	oncmd gosub *event_WM_MOUSEMOVE, 0x0200
+	onclick gosub *event_onclick
+	onkey gosub *event_onkey
+	onexit gosub *endapp
+	timer_setlabel *event_WM_TIMER
+
+
+	;--------------------------------------------------
+	; load config / restore window
+
+	Config_open "hhw_config.dat"
+
+	; alias
+	#define CONFIGVER	0x131
+	#define config_ver	cfgdat(11)
+	#define cfg_border_x	cfgdat(12)
+	#define cfg_hrborder_x	cfgdat(13)
+
+	; load default
+	if config_ver ! CONFIGVER {
+		config_ver	= CONFIGVER
+		cfg_border_x	= 200 ; [px]
+		cfg_hrborder_x	= 50  ; [%]
+	}
+
+	Config_restore_window
+
+	objsel id_edit
+	await
+
+
+	;--------------------------------------------------
+	; cur_file をロード
+
+	gosub *loadhs
+
+
+	;--------------------------------------------------
+	; ポーリング ループ
+
+	timer_start
+
+	repeat
+		if cnt : wait 4		; 割り込み先へはここから飛んで、ここへ帰ってくる
+
+
+		; タイトル設定
+		if cur_file = "" {
+			astr = "無題"
+		} else {
+			astr = getpath(cur_file, 8)
+		}
+		if edited {
+			astr += " *"
+		}
+		if id > 0 : astr += " [" + symbuf.id + "]"
+		astr += " - " + appname
+		if astr ! titlebk {
+			titlebk = astr
+			title titlebk
+		}
+
+
+		; ID 切り替え -> 新しいパートバッファ ロード
+		if pos_reclist ! id {
+			id = pos_reclist
+			if id >= 0 {
+				str_edit = recbuf.id
+				objprm id_edit, str_edit
+			}
+			gosub *redrawer
+		}
+
+
+		; EDIT 変更された -> パートバッファ更新 & 再描画
+		if str_edit ! recbuf.id {
+			recbuf.id = str_edit	; パートバッファに保存
+			edited = 1		; 編集されたフラグ
+			bksymbuf = symbuf.id	; シンボル バックアップ
+			gosub *renewref		; パート hs 再解析
+
+			; シンボルが変更された → リンク情報 再構築
+			if bksymbuf ! symbuf.id {
+				bkid = id	; 現在 ID バックアップ
+
+				gosub *rebuild_buf
+				gosub *rebuild_recs
+
+				if bkid >= ids : bkid = ids - 1 ; patch
+
+				pos_reclist = bkid	; バックアップ ID 復元
+				id = bkid	; バックアップ ID 復元
+
+				; LB 状態 復元
+				; LB_SETTOPINDEX
+				sendmsg objhwnd(id_reclist), 0x197, idxsbk, 0
+
+				; 更新の結果、パートバッファ内容が変化した -> エディットボックス内容更新
+				if str_edit ! recbuf.id {
+					; EM_GETSEL
+					a = 0 : b = 0
+					sendmsg objhwnd(id_edit), 0xb0, varptr(a), varptr(b)
+					; 編集文字列
+					str_edit = recbuf.id
+					objprm id_edit, str_edit
+					; EM_SETSEL
+					sendmsg objhwnd(id_edit), 0xb1, a, b
+					; EM_SCROLLCARET
+					sendmsg objhwnd(id_edit), 0xb7, 0, 0
+				}
+			}
+
+			objprm id_reclist, id
+			gosub *redrawer
+		}
+
+
+		; シンボル名で選択
+		if symbol_select ! "" {
+			repeat ids
+				if symbuf.cnt = symbol_select {
+					pos_reclist = cnt
+					objprm id_reclist, pos_reclist
+					break
+				}
+			loop
+			symbol_select = ""
+		}
+
+
+		; ---------- low priority ----------
+
+
+		; 検索文字列が変わった -> 再描画
+		if str_find ! findstrbk {
+			findstrbk = str_find
+
+			; 検索結果が 1 つしかなければ or 完全一致があれば直接ジャンプ
+			icnt = 0
+			repeat ids-1, 1
+				if instr(symbuf.cnt, 0, str_find) >= 0 {
+					i = cnt
+					icnt++
+				}
+				if symbuf.cnt = str_find {
+					i = cnt
+					icnt = 1
+					break
+				}
+			loop
+			if (icnt = 1) & (i ! id) {
+				symbol_select = symbuf.i
+				continue
+			}
+
+			gosub *redrawer
+		}
+
+
+		; 項目数が増えた -> ステータスバー 更新
+		if ids ! idsbk {
+			idsbk = ids
+			status_mes 2, ""+(ids-1)+" record(s)"
+		}
+
+
+		; フィールドタグ 挿入
+		if pos_tagbox {
+			notesel str_tagbox
+			noteget astr, pos_tagbox
+			getstr astr, astr, , ' '
+			i = instr(str_edit, 0, astr)
+
+			if i >= 0 {
+				a = i
+				b = i + strlen(astr)
+				; EM_SETSEL
+				sendmsg objhwnd(id_edit), 0xb1, a, b
+				; EM_SCROLLCARET
+				sendmsg objhwnd(id_edit), 0xb7, 0, 0
+			} else {
+				astr = "\n" + astr + "\n"
+				a = strlen(str_edit)
+				; EM_SETSEL
+				sendmsg objhwnd(id_edit), 0xb1, a, a
+				; EM_REPLACESEL
+				sendmsg objhwnd(id_edit), 0xc2, 1, varptr(astr)
+			}
+
+			pos_tagbox = 0
+			objprm id_tagbox, pos_tagbox
+			objsel id_edit
+		}
+
+		gosub *event_WM_TIMER
+	loop
+
+;--------------------------------------------------
+*event_WM_TIMER
+	; ループで完全に取れないところ (スクロールバードラッグ・再描画)
+
+	; idx | hs がスクロール -> 再描画	; (id == -1 のときは描画禁止タイミング)
+	a = GetScrollPos( objhwnd(id_reclist), 1)
+	b = GetScrollPos( objhwnd(id_edit), 1)
+	if ((a ! idxsbk) | (b ! hssbk)) & (id >= 0) {
+		idxsbk = a
+		hssbk = b
+		gosub *redrawer
+	}
+
+	return
+
+
+
+;============================================================
+;============================================================
+; subroutines
+
+
+;============================================================
+; ファイル名設定 / セーブとロード
+
+;--------------------------------------------------
+; ロードファイル名設定 (取得OK -> 0, エラー -> 1)
+#defcfunc loadfn
+	dialog "hs", 16, "hs ファイル"
+	if stat = 0 : return 1
+	cur_file = refstr
+	return 0
+
+;--------------------------------------------------
+; セーブファイル名設定 (取得OK -> 0, エラー -> 1)
+#defcfunc savefn
+	dialog "hs", 17, "hs ファイル"
+	if stat = 0 : return 1
+	cur_file = refstr
+	; 自動拡張子
+	astr = cur_file
+	CharLower astr
+	if strmid(astr, strlen(astr) - 3, 3) ! ".hs" : cur_file += ".hs"
+	return 0
+
+;--------------------------------------------------
+; ファイル名 リセット
+*nullfn
+	cur_file = ""
+	return
+
+;--------------------------------------------------
+; 保存
+*savehs
+	gosub *rebuild_buf
+	bsave cur_file, buf, strlen(buf)
+	edited = 0	; 編集フラグ off
+
+#ifdef HDL_BROWSER
+	;----------------------------------------
+	; セーブのタイミングで HDL へリロード指令
+	if id {
+		exec ModuleFileName@ + " /rebuild:" + symbuf.id
+	} else {
+		exec ModuleFileName@ + " /rebuild:" + cur_file
+	}
+#endif
+
+	return
+
+;--------------------------------------------------
+; ロード (パートバッファ recbuf 作成)
+*loadhs
+	; 作業画面 フラッシュ
+	str_edit = ""
+	objprm id_edit, str_edit
+	gosub *redrawer
+	title appname + " - Loading ..."
+	titlebk = ""	; 次回タイトル再描画させる
+
+	if cur_file ! "" {
+		; ファイルを開く
+		exist cur_file
+		if strsize >= 0 {
+			sdim buf, strsize + 16
+			bload cur_file, buf
+		} else {
+			dialog  "ファイル " + cur_file + " が見つかりません。", 1, appname
+			cur_file = ""
+		}
+	}
+
+	if cur_file = "" {
+		; 新規作成
+		buf =  ";--------------------------------------------------\n"
+		buf += "; HSP ヘルプ ソースファイル (hs 形式)\n"
+		buf += "; hs ファイルの書式については、HS_BIBLE.txt を参照してください。\n"
+		buf += "\n"
+		buf += ";--------------------------------------------------\n"
+		buf += "; この hs ファイルのデフォルトのフィールド値を設定\n\n"
+		buf += "%dll\n; プラグイン/モジュール名 を記入\n\n"
+		buf += "%ver\n; バージョン を記入\n\n"
+		buf += "%date\n; 日付 を記入\n\n"
+		buf += "%author\n; 著作者 を記入\n\n"
+		buf += "%url\n; 関連 URL を記入\n\n"
+		buf += "%note\n; 備考 (補足情報等) を記入\n\n"
+		buf += "%type\n; タイプ を記入\n\n"
+		buf += "%port\n; 対応環境 を記入\n\n"
+		buf += "%portinfo\n; 移植のヒント を記入\n\n"
+	}
+
+	gosub *rebuild_recs
+
+	edited = 0	; 編集フラグ off
+	return
+
+
+;============================================================
+; データ処理
+
+#define C_NAME		0	; %index  line 1
+#define C_SUMMARY	1	; %index  line 2-
+#define C_INST		2	; %inst
+#define C_PRM		3	; %prm    line 1
+#define C_PRM2		4	; %prm    line 2-
+#define C_SAMPLE	5	; %sample
+#define C_HREF		6	; %href
+#define C_PORTINF	7	; %portinfo
+#define C_PORT		8	; %port
+#define C_GROUP		9	; %group
+#define C_TYPE		10	; %type
+#define C_NOTE		11	; %note
+#define C_URL		12	; %url
+#define C_VER		13	; %ver
+#define C_DATE		14	; %date
+#define C_MOD		15	; %dll
+#define C_AUTHOR	16	; %author
+#define C_MAX		17	; 配列の最大値
+#define C_VOID		999	; (無効なメンバ)
+
+;--------------------------------------------------
+; 全体バッファ buf 作成
+*rebuild_buf
+
+	sdim buf, 1048576
+	repeat ids
+		if strlen(recbuf.cnt) = 0 : continue
+		; 末尾改行を強制
+		if peek(recbuf.cnt, strlen(recbuf.cnt)-1) ! 10 {
+			recbuf.cnt += "\n"
+		}
+		; 連結
+		buf += recbuf.cnt
+	loop
+
+	return
+
+;--------------------------------------------------
+; パートバッファ recbuf 作成 (ファイル読み込み・レコードの追加・削除時に発生)
+; パート情報構築
+; UI リスト リビルド
+*rebuild_recs
+	; 終端
+	buf += "\n%index"
+
+	; パートバッファ作成  // 出力 : [int ids], [str array recbuf]
+	sdim recbuf, 64, MAX_ID
+	repeat MAX_ID
+		recbuf.cnt="#DEADBEEF#" ; 見えてはいけない部分を設定
+	loop
+	ids = 0
+
+	lp = 0
+	p = 0
+	c_curr = C_VOID
+	repeat
+		; 処理ライン取得
+		getstr astr, buf, p
+		if strsize = 0 : break
+		bp = p
+		p += strsize
+		a = peek(astr)
+
+		if a = ';' : continue
+
+		; '%' エスケープ (%%hgoehgoe..)
+		if wpeek(astr) = 0x2525 {
+			memcpy astr, astr, strsize + 1, , 1
+			a = '*'
+		}
+
+		if a = '%' {
+			; コメント除去, 小文字化
+			getstr astr, astr, , ' '
+			getstr astr, astr, , ';'
+			getstr astr, astr, , 9
+			CharLower astr
+
+			; レコード開始
+			if astr = "%index" {
+				if ids = MAX_ID {
+					dialog "** 警告 **\n\nレコード数が上限値 " + MAX_ID + " を超えました。\n上限を超えたレコードは読み込まれません。", 1, appname
+					break
+				}
+
+				c_curr = C_NAME
+				recbuf.ids = strmid(buf, lp, bp - lp)
+				lp = bp
+				ids++
+			}
+			continue
+		}
+	loop
+	poke recbuf(ids-1), strlen(recbuf(ids-1)) - 2 ; patch 終端ゴミの削除
+
+
+	; 内容情報 (シンボル名配列・href 参照配列) 更新
+
+	; LB_RESETCONTENT
+	sendmsg objhwnd(id_reclist), 0x184, 0, 0
+
+	; バッファ初期化
+	sdim symbuf, 64, ids
+	sdim refbuf, 64, ids
+	; refs(id), refid(id, refs>自動拡張)
+	dim refs, ids
+	dim refid, ids, 2
+	; 全 ID の内部情報取得 (2-pass)
+	repeat ids
+		id = cnt
+		gosub *renewref_phase1
+	loop
+	repeat ids
+		id = cnt
+		gosub *renewref_phase2
+	loop
+
+
+	id = -1
+	pos_reclist = 0
+	objprm id_reclist, pos_reclist
+
+	return
+
+;--------------------------------------------------
+; ID 情報更新 (target = var id)
+*renewref
+	gosub *renewref_phase1
+	gosub *renewref_phase2
+	return
+
+; - - - - - - - - - - - - - - - - - - - - - - - - -
+*renewref_phase1 ; (target = var id)
+
+	; シンボル, リファの更新
+	symbuf.id = "デフォルトレコード"
+	refbuf.id = ""
+
+	p = 0
+	c_curr = C_VOID
+	repeat
+		; 処理ライン取得
+		getstr astr, recbuf.id, p
+		if strsize = 0 : break
+		p += strsize
+		a = peek(astr)
+
+		; '%' エスケープ (%%hgoehgoe..)
+		if wpeek(astr) = 0x2525 {
+			memcpy astr, astr, strsize + 1, , 1
+			a = '*'
+		}
+
+		if a = ';' : continue
+
+		if a = '%' {
+			; コメント除去, 小文字化
+			getstr astr, astr, , ' '
+			getstr astr, astr, , ';'
+			getstr astr, astr, , 9
+			CharLower astr
+
+			c_curr = C_VOID
+
+			; フィールドタグ
+			if astr = "%index" {
+				symbuf.id = ""
+				refbuf.id = ""
+				c_curr = C_NAME
+			} else:if astr = "%href" {
+				refbuf.id = ""
+				c_curr = C_HREF
+			}
+			continue
+		}
+
+		if c_curr = C_NAME {
+			if astr ! "" {
+				symbuf.id = astr
+				c_curr = C_SUMMARY
+			}
+		} else:if c_curr = C_HREF {
+			if astr ! "" {
+				refbuf.id += astr + "\n"
+			}
+		}
+	loop
+
+
+	; UI リスト変更
+
+	; LB_GETTEXT (現在の文字列を取得)
+	sendmsg objhwnd(id_reclist), 0x189, id, varptr(astr)
+	; 文字列がシンボルと違う場合 更新
+	if (astr ! symbuf.id) | (symbuf.id = "") {
+		; LB_DELETESTRING
+		sendmsg objhwnd(id_reclist), 0x182, id, 0
+		; LB_INSERTSTRING
+		sendmsg objhwnd(id_reclist), 0x181, id, varptr(symbuf.id)
+	}
+
+	return
+
+; - - - - - - - - - - - - - - - - - - - - - - - - -
+*renewref_phase2 ; (target = var id)
+
+	; href リンク先をレコード ID に変換
+	; str multiline refs -> array refid
+	refs.id = 0
+	p = 0
+	repeat
+		; 処理ライン取得
+		getstr astr, refbuf.id, p
+		if strsize = 0 : break
+		p += strsize
+
+		; 内部リンク
+		f = 0
+		repeat ids
+			if symbuf.cnt = astr {
+				refid(id, refs.id) = cnt
+				refs.id++
+				f = 1
+			}
+		loop
+
+		; 外部リンク
+		if f = 0 {
+			refid(id, refs.id) = -1
+			refs.id++
+		}
+	loop
+
+	return
+
+
+;============================================================
+; misc
+
+;--------------------------------------------------
+; 描画
+*redrawer
+	redraw 0
+	syscolor 15
+	boxf
+
+
+	;--------------------------------------------------
+	; Right pane Field marker
+
+	; バー描画
+	syscolor 5 : boxf x20+2, , x21-1
+	syscolor 8 : boxf x21-1, , x21-1
+
+	; マーカー描画
+	scr = GetScrollPos( objhwnd(id_edit), 1) ; hs コード スクロール位置
+	#define ctype  line2y(%1)  ((%1 - scr) * 18 + 11 + y22)
+	h = 0 ; HTML モードフラグ
+	f = 0 ; フィールドタグ フラグ
+	i = 0 ; 文字インデックス
+	p = 0
+	repeat
+		; 処理ライン取得
+		getstr astr, str_edit, p
+		p += strsize
+		if strsize = 0 : break
+
+		if TYPE_EM_LINEFROMCHAR { ; XP Unicode
+			i += wstrlen(astr)
+		} else { ; ANSI
+			i += strlen(astr)
+		}
+
+		; 現在の行の (行末の) y 座標を知る
+		; EM_LINEFROMCHAR
+		sendmsg objhwnd(id_edit), 0xc9, i, 0
+		y = line2y(stat)
+
+
+		; タグ行を空行に変換
+		if (peek(astr) = '^') : if (astr="^") | (astr="^p") | (astr="^P") {
+			poke astr ;= ""
+		}
+
+
+		; フィールドマーカー 描画 (0x2525 -> '%' エスケープ対応)
+		if (peek(astr) = '%') & (wpeek(astr) ! 0x2525) {
+			; コメント除去, 小文字化
+			getstr astr, astr, , ' '
+			getstr astr, astr, , ';'
+			getstr astr, astr, , 9
+			CharLower astr
+			; フィールドタグの種類で色分け
+			a = 0
+			repeat strlen(astr)
+				a = a * 137 + peek(astr, cnt)
+			loop
+			hsvcolor abs(a), 64, 160
+
+			; フィールドマーカー ▽
+			x = x21 - 5
+			repeat 6
+				boxf x-cnt, y-cnt, x-cnt, y+cnt
+			loop
+			f = y
+			h = 0
+
+		} else:if (peek(astr) ! ';') * peek(astr) * f {
+			; バー
+			x = x21 - 9
+			boxf x-1, f, x, y + 7
+
+			; インライン HTML マーカー 描画
+			if h = 0 {
+				if astr = "html{" {
+					x = x21 - 2 ; html マーカー ▽
+					repeat 5
+						boxf x-cnt, y+cnt-2, x-cnt, y+cnt
+					loop
+					h = y
+				}
+			} else {
+				if astr = "}html" {
+					; バー
+					x = x21 - 5
+					boxf x-1, h+2, x, y-2
+					h = 0
+
+					x = x21 - 2 ; html マーカー △
+					repeat 5
+						boxf x-cnt, y-cnt, x-cnt, y-cnt+2
+					loop
+				} else {
+					; バー
+					x = x21 - 5
+					boxf x-1, h+2, x, y + 7
+				}
+			}
+		}
+
+		i += 2 ; 改行分は 2 index で計算
+	loop
+
+	; マーカーを優先して更新
+	redraw 1, x20+2, y22+2, x21-x20-4, y29-y22-4
+	redraw 0
+
+
+	;--------------------------------------------------
+	; Left pane (x10-x19)
+
+	; レコード一覧 実サイズを取得
+	rect = 0, 0, 0, 0
+	GetWindowRect objhwnd(id_reclist), rect
+	MapWindowPoints 0, hwnd, rect, 2
+	y18 = rect.3 + 2 ; y18 を決定
+
+	; Left of Left 描画
+	; LLBox の rect を定義
+	rw = x11 - x10 - 2
+	rh = y18 - y12 - 4
+	rx = gw - rw
+	ry = 0
+	rx2 = rx + rw - 1
+	ry2 = ry + rh - 1
+
+	scr = GetScrollPos( objhwnd(id_reclist), 1) ; レコード一覧 スクロール位置
+	#define ctype  id2y(%1)  ((%1 - scr) * 12 + 6 + ry)
+
+	if cfg_hrborder_x > 0 {
+		; 設定された幅がある場合 : %href view 描画
+		syscolor 5 : boxf rx, ry, rx2, ry2
+
+		; title
+		syscolor 8
+		font "MS UI Gothic", 12
+		pos rx + rw/10, id2y(0)-4
+		if rw >= 60 : mes "%href view" : else:if rw >= 30 : mes "%href"
+
+		repeat 3
+			; config
+			; default
+			a = ids	: b = 0 : mf = 0 : gpm = 1 : exape = 0
+
+			; diff
+			if cnt = 0 {
+				gpcolor 220, 220, 220 ; グレー
+				gpm = 0
+			} else:if cnt = 1 {
+				gpcolor 60, 120, 240 ; 戻り
+				mf = 1
+			} else:if cnt = 2 {
+				gpcolor 220 ; 行き
+				a = 1 : b = id : exape = 1
+			}
+
+			; draw ref-streak
+			repeat a, b
+				ip = cnt
+				py = id2y( ip )
+				outcnt = 0
+				repeat refs(ip)
+					ip2 = refid(ip, cnt)
+					if mf : if ip2 ! id : continue
+					if ip2 >= 0 {
+						if ip2 = ip {
+							tricorn rx2, py, 3 ; 自己参照
+						} else {
+							; 2 点間参照
+							py2 = id2y( ip2 )
+							; 画面領域外の円弧描画は省略
+							if ((py<ry & py2<ry) | (py>ry2 & py2>ry2)) = 0 {
+								; カーブ横幅決定
+								cw = limit(abs(ip-ip2)*6-2, 0, rw-4) + exape
+								if gpm {
+									gpcircle rx2-cw, py, rx2+cw, py2, 0
+								} else {
+									circle rx2-cw, py, rx2+cw, py2, 0
+								}
+								tricorn rx2-cw, (py + py2) / 2, (ip > ip2) * 2
+							}
+						}
+					} else {
+						if py>ry & py<ry2 {
+							; 外部参照
+							boxf rx, py, rx2, py
+							tricorn rx + outcnt*4, py, 1
+							outcnt++
+						}
+					}
+				loop
+			loop
+		loop
+
+		; EDGE
+		syscolor 8 : boxf rx2, ry, rx2, ry2
+	} else {
+		; %href View が無効の場合の表示
+		syscolor 15 : boxf rx, ry, rx2, ry2
+		syscolor 8 : boxf rx2, ry, rx2, ry2
+	}
+
+	; シンボル検索
+	if (str_find ! "") & (ids > 0) {
+		color 128, 0, 128
+		top = 0x7fffffff
+		btm = 0x80000000
+		upcnt = 0
+		dncnt = 0
+		repeat ids-1, 1
+			if instr(symbuf.cnt, 0, str_find) >= 0 {
+				y = id2y(cnt)
+				if top > y : top = y
+				if btm < y : btm = y
+				if y < 0 {
+					if upcnt < 3 : tricorn rx + 3, ry + upcnt*4, 2
+					upcnt++
+				} else:if y > rh {
+					if dncnt < 3 : tricorn rx + 3, ry2 - dncnt*4, 0		:else:break
+					dncnt++
+				} else {
+					x = rx + rw / 2 + 3
+					boxf rx+3, y, x, y
+					tricorn x, y, 3
+				}
+			}
+		loop
+		if top ! 0x7fffffff { ; 縦線
+			boxf rx+3, top, rx+3, btm
+		}
+	}
+
+	; terminate LLBox
+	pos x10+2, y12+2
+	gcopy 0, rx, ry, rw, rh
+
+
+	; LTBox base
+	syscolor 15
+	color (ginfo_r * 5 + 256) / 6, (ginfo_g * 5 + 256) / 6, (ginfo_b * 5 + 256) / 6
+	boxf x10, y10, x19-1, y12-1
+
+	font "MS UI Gothic", 12
+	color 128, 0, 128
+	tricorn pos_findlabel(0) + 6, pos_findlabel(1) + 10, 3
+	pos pos_findlabel(0) + 11, pos_findlabel(1) + 4
+	mes "シンボル検索"
+
+	font "MS UI Gothic", 12, 1
+	syscolor 8 : pos x10+8, y10+8 : mes "レコード一覧"
+
+	; BDR_SUNKEN
+	drawborder x10, y12, x19, y18
+
+
+	;--------------------------------------------------
+	; Right pane toolbar
+
+	; RTBox base
+	syscolor 15
+	color (ginfo_r * 5 + 256) / 6, (ginfo_g * 5 + 256) / 6, (ginfo_b * 5 + 256) / 6
+	boxf x20, y20, x29-1, y22-1
+
+	syscolor 8 : pos x20+8, y20+8 : mes "レコード内容"
+
+	; BDR_SUNKEN
+	drawborder x20, y22, x29, y29
+
+
+	;--------------------------------------------------
+	EnableWindow objhwnd(id_delbtn), (id ! 0) ; [レコード削除] ボタン en/di
+
+	redraw
+	return
+
+;--------------------------------------------------
+; 編集内容 破棄確認 (OK -> 0, キャンセル -> 1)
+#defcfunc confirm_break
+	if edited {
+		if cur_file = "" {
+			astr = "無題"
+		} else {
+			astr = cur_file
+		}
+		a = MessageBox(hwnd, "ファイル " + astr + " の内容は変更されています。\n\n変更を保存しますか?", appname, 0x00000033)
+		if a = 2 { ; キャンセル
+			return 1
+		} else:if a = 6 { ; はい
+			if cur_file = "" {
+				if savefn() = 0 : gosub *savehs
+			} else {
+				gosub *savehs
+			}
+		}
+	}
+	return 0
+
+
+
+;============================================================
+;============================================================
+; event proc
+
+#define MOUSEOVER_REFVIEW	(mousex>x10 & mousex<x11 & mousey>y12 & mousey<y19)
+#define MOUSEOVER_TAGMARKER	(mousex>x20 & mousex<x21 & mousey>y22 & mousey<y29)
+#define MOUSEOVER_BORDER	(mousex>=x19 & mousex<=x20)
+#define MOUSEOVER_HRBORDER	(mousex>=x11-5 & mousex<=x11-1 & mousey>y12 & mousey<y19)
+
+;--------------------------------------------------
+*event_WM_MOUSEMOVE
+	; マウスカーソルを横矢印に設定 (カーソルが動くと元に戻る)
+	if MOUSEOVER_BORDER {
+		SetMouseCursor IDC_SIZEWE
+	} else:if MOUSEOVER_HRBORDER {
+		SetMouseCursor IDC_SIZEWE
+	}
+	return
+
+;--------------------------------------------------
+*event_WM_MOUSEWHELL ; 0x20a
+	if MOUSEOVER_REFVIEW {
+		; ホイールをレコード一覧に Redirect
+		sendmsg objhwnd(id_reclist), 0x20a, wparam, lparam
+	} else:if MOUSEOVER_TAGMARKER {
+		; ホイールを hs edit に Redirect
+		sendmsg objhwnd(id_edit), 0x20a, wparam, lparam
+	}
+	return
+
+;--------------------------------------------------
+; onclick
+*event_onclick
+	if MOUSEOVER_REFVIEW {
+		; 参照ビューをクリックした場合、フォーカスが idx に移動したことにして
+		objsel id_reclist
+	} else:if MOUSEOVER_TAGMARKER {
+		; タグマーカーをクリックした場合、フォーカスが hs edit に移動したことにして
+		objsel id_edit
+	}
+
+	; ボーダー リサイズ操作
+	if MOUSEOVER_BORDER {
+		gosub *border_resize
+	} else:if MOUSEOVER_HRBORDER {
+		gosub *hrborder_resize
+	}
+	return
+
+;--------------------------------------------------
+; 左右ボーダー リサイズ
+*border_resize
+	bkup = cfg_border_x
+	repeat
+		await
+		SetMouseCursor IDC_SIZEWE
+
+		getkey k, 1  : if k = 0 : break
+		getkey k, 27 : if k { cfg_border_x = bkup : gosub *event_WM_SIZE : break }
+
+		x = rtmousex() & 0xfffffffe
+		if x ! cfg_border_x {
+			cfg_border_x = x
+			gosub *event_WM_SIZE
+		}
+	loop
+	return
+
+;--------------------------------------------------
+; %href ボーダー リサイズ
+*hrborder_resize
+	bkup = cfg_hrborder_x
+	repeat
+		await
+		SetMouseCursor IDC_SIZEWE
+
+		getkey k, 1  : if k = 0 : break
+		getkey k, 27 : if k { cfg_hrborder_x = bkup : gosub *event_WM_SIZE : break }
+
+		x = (rtmousex() - x10 + 3) * 100 / (x19 - x10) ; ボーダー位置をパーセントで算出
+		if x < 10 : x = 0	; 最小値を選択しやすくする
+		if x ! cfg_hrborder_x {
+			cfg_hrborder_x = x
+			gosub *event_WM_SIZE
+		}
+	loop
+	return
+
+;--------------------------------------------------
+*event_WM_ACTIVATE
+	; オブジェクトフォーカス復元
+	if wparam & 0xf {
+		objsel selobj
+	} else {
+		objsel -1
+		selobj = stat
+	}
+	return 0
+
+;--------------------------------------------------
+; onkey
+*event_onkey
+	; ctrl と同時押しの?
+	getkey k, 17
+
+	; 現在選択されているオブジェクト
+	objsel -1
+	i = stat
+
+	if i = id_insbox {
+		if iparam = 13 : gosub *ins_rec ; [Enter] レコード挿入
+	} else:if i = id_reclist {
+		if iparam = 46 : gosub *del_rec ; [DEL] レコード削除
+	} else:if i = id_edit {
+		if iparam = 'A' & k { ; [Ctrl-A] すべて選択
+			; EM_SETSEL
+			sendmsg objhwnd(id_edit), 0xb1, 0, -1
+		}
+	}
+	return
+
+;--------------------------------------------------
+; resize
+*event_WM_SIZE
+	status_resize ; ステータスバー フィット
+
+	; 基本位置設定
+	gw = ginfo_winx
+	gh = ginfo_winy - status_height()
+	lineh = 22
+
+	; left pane (list)
+	; X
+	x10 = 2
+	x19 = x10 + limit(cfg_border_x-4, 50, gw/2)
+	x11 = x10 + limit((x19-x10) * cfg_hrborder_x / 100, 9, (x19-x10)-40)
+	; Y
+	y10 = 0		; 上端
+	y11 = y10 + 4	; ここから コントロール類
+;	y12 = 後で	; ここから リストボックス
+;	y18		; リストボックス下端
+	y19 = gh	; 下端
+
+	; right pane (edit)
+	; X
+	x20 = x19 + 4
+	x29 = gw
+	x21 = x20 + 18
+	x22 = x20 + (x29-x20) * 23 / 100
+	x23 = x29 - (x29-x20) * 23 / 100
+	; Y
+	y20 = 0		; 上端
+	y21 = y20 + 4	; ここから コントロール類
+;	y22 = 後で	; ここから エディットボックス
+	y29 = gh	; 下端
+
+
+	; コントロール フィット
+
+	;  left pane
+	; インデックス追加ボックス / シンボル検索 (エッジ分小さく (margin: 0 4px;))
+	a = limit((x19-x10) * 45 / 100, 0, 90)
+	if a >= 80 {
+		y11 += lineh
+		MoveWindow objhwnd(id_insbox),  x10+4, y11, x19-x10-a-6, 20,  1
+		MoveWindow objhwnd(id_insbtn),  x19-a, y11,         a-4, 20,  1
+		y11 += lineh + 4
+		MoveWindow objhwnd(id_find),   x10+4, y11, x19-x10-a-6, 20,  1
+		              pos_findlabel = x19-a, y11
+	} else {
+		a = limit(x19-x10, 0, 90)
+		y11 += lineh
+		MoveWindow objhwnd(id_insbox),  x10+4,   y11, x19-x10-8, 20,  1
+		y11 += lineh
+		MoveWindow objhwnd(id_insbtn),  x19-a+4, y11,       a-8, 20,  1
+		y11 += lineh + 4
+		MoveWindow objhwnd(id_find),   x10+4,   y11, x19-x10-8, 20,  1
+		y11 += lineh
+		            pos_findlabel = x19-a+4, y11
+	}
+	y12 = y11 + lineh + 2
+	; レコード一覧 (エッジ分小さく (margin: 2px 2px 2px 0;))
+	MoveWindow objhwnd(id_reclist),   x11, y12+2, x19-x11-2, y19-y12-4,  1
+
+
+	;  right pane
+	; フィールドタグ 挿入ボックス / レコード削除ボタン
+	a = limit(x29-x23, 0, 90)
+	if a >= 80 {
+		MoveWindow objhwnd(id_tagbox),  x22,   y21, x23-x22, 20,  1
+		MoveWindow objhwnd(id_delbtn),  x29-a, y21, a-4,     20,  1
+	} else {
+		a = limit(x29-x20, 0, 90)
+		y21 += lineh
+		MoveWindow objhwnd(id_tagbox),  x20+4,   y21, x29-x20-8, 20,  1
+		y21 += lineh
+		MoveWindow objhwnd(id_delbtn),  x29-a+4, y21,       a-8, 20,  1
+	}
+	y22 = y21 + lineh + 2
+	; レコード Edit (エッジ分小さく (margin: 2px 2px 2px 0;))
+	MoveWindow objhwnd(id_edit),   x21, y22+2, x29-x21-2, y29-y22-4,  1
+
+
+	; 描画
+	gosub *redrawer
+
+	return
+
+;--------------------------------------------------
+*event_WM_COMMAND
+	if lparam = 0 {
+		i = wparam & 0xffff ; CMD ID
+
+		if (i = CMD_S) & (cur_file = "") : i = CMD_A ; patch
+
+		if i = CMD_N { ; 新規作成
+			if confirm_break() = 0 {
+				gosub *nullfn
+				gosub *loadhs
+			}
+
+		} else:if i = CMD_O { ; 開く
+			if confirm_break() = 0 {
+				if loadfn() = 0 {
+					gosub *loadhs
+				}
+			}
+
+		} else:if i = CMD_S { ; 上書き保存
+			if cur_file = "" {
+				if savefn() = 0 : gosub *savehs
+			} else {
+				gosub *savehs
+			}
+
+		} else:if i = CMD_A { ; 名前をつけて保存
+			if savefn() = 0 {
+				gosub *savehs
+			}
+
+		} else:if i = CMD_Q { ; 終了
+			goto *endapp
+
+		} else:if i = CMD_V { ; バージョン情報
+			dialog  appname + " " + appver + "\n\nhs 形式ヘルプファイル編集ツール\n\n" + appsig + "\n\nTYPE_EM_LINEFROMCHAR = " + TYPE_EM_LINEFROMCHAR, 0, appname
+
+		} else:if i = CMD_E { ; 編集メニュー (適当実装)
+			rect = 64, -1
+			MapWindowPoints hwnd, 0, rect, 1
+			; WM_CONTEXTMENU
+			sendmsg objhwnd(id_edit), 0x7b, 0, (rect.1 << 16) | rect.0
+
+		} else:if i = CMD_SORT {
+			dialog "すべてのレコードをシンボル名順で並べ替えます。\n\nこの操作は元に戻せません。続行しますか?", 3, appname
+			if stat = 6 {
+				gosub *tool_sort_records
+				edited = 1
+			}
+
+		} else:if i = CMD_OPTIM {
+			dialog "すべてのレコードをシンボル名順で並べ替え、さらに関連項目\n (%href) でひもづけられたレコード同士を近くに配置します。\n\nこの処理によって、%href ビューが見やすくなります。\n\nこの操作は元に戻せません。続行しますか?", 3, appname
+			if stat = 6 {
+				gosub *tool_get_href_length
+				len_before = len
+
+				gosub *tool_optimize_order
+
+				gosub *tool_get_href_length
+				dialog "最適化が完了しました。\n\n総リンク長 : "+len_before+" -> "+len+" ("+((len-len_before) * 100 / limit(len_before,1,0x7fffffff))+" %)", , appname
+				edited = 1
+			}
+
+		} else:if i = CMD_INP {
+			gosub *tool_inport_hsp
+
+		} else:if i = CMD_IH_STRONG {
+			gosub *tool_ih_strong
+
+		} else:if i = CMD_IH_TABLE {
+			gosub *tool_ih_table
+
+		} else:if i = CMD_OPT_SHOWHV {
+			; ボーダー 関連項目ビュー 表示 でリセット (アニメーション)
+			repeat 10
+				cfg_border_x   = (cfg_border_x + 200) / 2	; ピクセル
+				cfg_hrborder_x = (cfg_hrborder_x + 50) / 2	; パーセント
+				gosub *event_WM_SIZE
+				await
+			loop
+
+		} else:if i = CMD_OPT_HIDEHV {
+			; ボーダー 関連項目ビュー 非表示 でリセット (アニメーション)
+			repeat 10
+				cfg_border_x   = (cfg_border_x + 160) / 2	; ピクセル
+				cfg_hrborder_x = (cfg_hrborder_x + 0) / 2	; パーセント
+				if cfg_hrborder_x < 10 : cfg_hrborder_x = 0
+				gosub *event_WM_SIZE
+				await
+			loop
+
+		}
+		return 0
+	}
+	return
+
+
+
+;============================================================
+;============================================================
+; ツール
+
+;--------------------------------------------------
+; レコード削除 (str_edit に直接)
+*del_rec
+	if id {
+		dialog "レコード " + symbuf.id + " を削除しますか?\n\n(この操作は元に戻せません。)", 3, appname
+		if stat = 6 : str_edit = ""
+	}
+	return
+
+;--------------------------------------------------
+; レコード挿入 (str_edit に直接)
+*ins_rec
+	if str_insbox = "" {
+		objsel id_insbox
+		return
+	}
+
+	str_edit += "%index\n" + str_insbox + "\n; 見出し を記入\n\n"
+	str_edit += "%prm\n; パラメータリスト を記入\n; パラメータ説明文 を記入\n\n"
+	str_edit += "%inst\n; 解説文 を記入\n\n"
+	str_edit += "%sample\n; サンプルスクリプト を記入\n\n"
+	str_edit += "%href\n; 関連項目 を記入\n\n"
+	str_edit += "%group\n; グループ を記入\n\n"
+	objprm id_edit, str_edit
+
+	symbol_select = str_insbox ; あとでこのシンボルを選択させる
+
+	str_insbox = ""
+	objprm id_insbox, str_insbox
+
+	return
+
+;--------------------------------------------------
+; インライン HTML 挿入確認
+; return : 0=OK, 1=NG
+#defcfunc confitm_ih
+	if f_confitm_ih = 0 {
+		dialog "現在のカーソル位置にインライン HTML コードを挿入しますか?\n\nインライン HTML は、解説文 (%inst) でのみ有効です。", 2, appname
+		if stat = 7 : return 1
+		f_confitm_ih = 1
+	}
+	return 0
+
+;--------------------------------------------------
+; インライン HTML <strong>
+*tool_ih_strong
+	if confitm_ih() = 0 {
+		astr = "html{\n"
+		astr += "<strong>強調する文章</strong>\n"
+		astr += "}html\n"
+
+		objsel id_edit
+		; EM_REPLACESEL
+		sendmsg objhwnd(id_edit), 0xc2, 1, varptr(astr)
+	}
+	return
+
+;--------------------------------------------------
+; インライン HTML <table>
+*tool_ih_table
+	if confitm_ih() = 0 {
+		astr = "html{\n"
+		astr += "<table border=1 cellspacing=1>\n"
+		astr += "<tr><th>項目 1</th><th>項目 2</th></tr>\n"
+		astr += "<tr><td>データ 1</td><td>データ 2</td></tr>\n"
+		astr += "<tr><td>データ 3</td><td>データ 4</td></tr>\n"
+		astr += "</table>\n"
+		astr += "}html\n"
+
+		objsel id_edit
+		; EM_REPLACESEL
+		sendmsg objhwnd(id_edit), 0xc2, 1, varptr(astr)
+	}
+	return
+
+;--------------------------------------------------
+; ヒモの総延長を求める (return : len)
+*tool_get_href_length
+	len = 0
+	repeat ids
+		id = cnt
+		repeat refs(id)
+			i = refid(id, cnt)
+			if i >= 0 {
+				len += abs(id - i)
+			}
+		loop
+	loop
+	return
+
+;--------------------------------------------------
+; シンボルソートされた全体バッファ buf 作成
+*tool_sort_records
+	; マージソート
+	len = ids		; ソートする配列長
+	dim tr, len		; temp arry
+
+	; 正規化
+	symbuf.0 = ""
+	repeat len
+		CharLower symbuf.cnt
+		ar.cnt = cnt
+	loop
+
+	repeat
+		; セグメントサイズ定義
+		n = 1 << cnt	; マージサイズ
+		m = n * 2	; セグメント サイズ
+
+		; 全セグメントに対して
+		repeat
+			; セグメント 領域定義
+			p  = m * cnt			; セグメント開始点
+			p1 = p				; パート 1 開始点
+			e1 = p1 + n			; パート 1 終了点
+			p2 = e1				; パート 2 開始点
+			e2 = limit(p2 + n, 0, len)	; パート 2 終了点 (clipping)
+			s  = e2 - p1			; セグメント サイズ
+
+			if s <= n : break		; セグメント サイズが閾値以下なら マージしない
+
+			; セグメント内 マージ
+			repeat s
+				if p2 >= e2 { ; p2 領域外
+					tr(cnt) = ar(p1) : p1++
+				} else:if p1 >= e1 { ; p1 領域外
+					tr(cnt) = ar(p2) : p2++
+				} else:if (symbuf(ar(p1)) ! symbuf(ar(p2))) <= 0 { ; 比較 & マージ (strcmp)
+					tr(cnt) = ar(p1) : p1++
+				} else {
+					tr(cnt) = ar(p2) : p2++
+				}
+			loop
+
+			; マージされた配列をソース配列に貼り付け
+			memcpy ar(p), tr, s * 4
+		loop
+
+		; ソート 完了
+		if n >= len : break
+	loop
+
+
+	; ソート結果 連結
+	sdim buf, 1048576
+	repeat ids
+		i = ar.cnt
+		if strlen(recbuf.i) = 0 : continue
+		; 末尾改行を強制
+		if peek(recbuf.i, strlen(recbuf.i)-1) ! 10 {
+			recbuf.i += "\n"
+		}
+		; 連結
+		buf += recbuf.i
+	loop
+
+	gosub *rebuild_recs
+	return
+
+;--------------------------------------------------
+; 並び順の最適化
+; %href リンクで結ばれたレコード同士を近くに配置
+*tool_optimize_order
+	; あらかじめ名前順でソート (これを実行したほうが最適化率が上がる傾向にある)
+	gosub *tool_sort_records
+
+	id = 0
+	gosub *redrawer ; 経過を描画
+	id = -1
+
+	; 数パス実行
+	repeat 7
+		; solve et coagula
+
+		; (Phase 1) リンク先のリンク情報に自分へのリンクを追加 (これを実行したほうが最適化率が上がる)
+		repeat ids
+			id = cnt
+			repeat refs(id)
+				i = refid(id, cnt)
+				if i >= 0 {
+					refid(i, refs(i)) = id
+					refs(i)++
+				}
+			loop
+		loop
+
+	#if 1
+		; (Phase 2) リンク配列を ID 順にソート (これを実行したほうが最適化率が上がる傾向にある)
+		repeat ids
+			id = cnt
+			; バブルソート (要素数小さい)
+			repeat refs(id)
+				repeat refs(id) - cnt - 1
+					if refid(id, cnt) > refid(id, cnt+1) {
+						refid(id, cnt) ^= refid(id, cnt+1)
+						refid(id, cnt+1) ^= refid(id, cnt)
+						refid(id, cnt) ^= refid(id, cnt+1)
+					}
+				loop
+			loop
+		loop
+	#else
+		; (Phase 2) リンク配列を名前順にソート
+		; シンボル名 正規化
+		repeat ids
+			CharLower symbuf.cnt
+		loop
+		repeat ids
+			id = cnt
+			; バブルソート (要素数小さい)
+			repeat refs(id)
+				repeat refs(id) - cnt - 1
+					if refid(id, cnt) >= 0 & refid(id, cnt+1) >= 0 {
+					if (symbuf(refid(id, cnt)) ! symbuf(refid(id, cnt+1))) > 0 {
+						refid(id, cnt) ^= refid(id, cnt+1)
+						refid(id, cnt+1) ^= refid(id, cnt)
+						refid(id, cnt) ^= refid(id, cnt+1)
+					}
+					}
+				loop
+			loop
+		loop
+	#endif
+
+		; (Final) リンク先を近くに寄せながらレコードを連結
+	#if 0
+		; 再帰バージョン (1 pass で収束するが、最適化率低い)
+		if 0 {
+		#deffunc connectbuf  int localid
+			; 連結 ("末尾改行を強制" は、*tool_sort_records で実行済みのため省略)
+			if peek(recbuf.localid) {
+				buf += recbuf.localid
+				recbuf.localid = "" ; 連結済みレコードは消去
+			}
+
+			if sublev >= 30 : return
+
+			repeat refs(localid)
+				if refid(localid, cnt) >= 0 {
+					if peek(recbuf( refid(localid, cnt) )) {
+						connectbuf refid(localid, cnt)
+					}
+				}
+			loop
+			return
+		}
+		buf = ""
+		repeat ids
+			connectbuf cnt
+		loop
+	#else
+		; 非再帰バージョン (収束に n pass かかるが、最終的な最適化率高い)
+		buf = ""
+		repeat ids
+			id = cnt
+
+			; 連結 ("末尾改行を強制" は、*tool_sort_records で実行済みのため省略)
+			if peek(recbuf.id) {
+				buf += recbuf.id
+				recbuf.id = "" ; 連結済みレコードは消去
+			}
+
+			repeat refs(id)
+				i = refid(id, cnt)
+				if i >= 0 {
+					if peek(recbuf.i) {
+						buf += recbuf.i
+						recbuf.i = "" ; 連結済みレコードは消去
+					}
+				}
+			loop
+		loop
+	#endif
+
+		; 連結済みレコードを再分解・解析
+		gosub *rebuild_recs
+		id = 0
+		gosub *redrawer	; 経過を描画
+		id = -1
+	loop
+
+	return
+
+
+;--------------------------------------------------
+; hsp ファイルからインポート
+*tool_inport_hsp
+	dialog "インクルード用 HSP ソーススクリプトから、下記のプリプロセッサで定義された\nシンボル/引数を抽出して追加します。続行しますか?\n\n#deffunc\n#defcfunc\n#func\n#cfunc\n#cmd\n\n(この操作は元に戻せません。)", 3, appname
+	if stat ! 6 : return
+
+	dialog "hsp;*.as", 16, "インクルード用 HSP3 ソーススクリプト"
+	if stat = 0 : return
+	hspfn = refstr
+	edited = 1
+
+	; fn = hspfn
+	gosub *rebuild_buf
+
+	exist hspfn
+	sdim hspbuf, strsize + 8
+	bload hspfn, hspbuf
+
+	hspfn = getpath(hspfn, 8) ; path を剥く
+	sdim div, 1024, 64
+
+	; (誤動作防止) リテラル文字列加工
+	p = 0
+	repeat
+		i = instr(hspbuf, p, "\"")
+		if i = -1 : break
+		p += i
+		b = 0
+		repeat
+			p++
+			a = peek(hspbuf, p)
+			if a = 0 : break
+			if (a = '"') & (b ! '\\') {
+				break
+			}
+			if (a <= ' ') | (a = ';') | (a = '/') : poke hspbuf, p, '$'
+			b = a
+		loop
+		if a = 0 : break
+		p++
+	loop
+
+	; /* */ コメント削除
+	p = 0
+	repeat
+		i = instr(hspbuf, p, "/*")
+		if i = -1 : break
+		p += i
+		i = instr(hspbuf, p, "*/")
+		if i = -1 : break
+		memcpy hspbuf, hspbuf, strlen(hspbuf)-p-i-1, p, p+i+2
+	loop
+
+	; データ取得 メイン
+	p = 0
+	repeat
+		; 処理ライン取得
+		getstr astr, hspbuf, p
+		if strsize = 0 : break
+		p += strsize
+
+		; コメント削除
+		getstr astr, astr, , ';'
+		getstr astr, astr, , '/'
+
+		; split
+		i = 0	; id
+		n = 0	; len
+		repeat
+			a = peek(astr, cnt)
+			if (a <= 32) | (a = ',') {
+				if n {
+					div.i = bstr ; store
+					n = 0
+					; ignore words
+					CharLower bstr
+					if (bstr ! "ctype") & (bstr ! "global") {
+						i++
+					}
+				}
+				if a = 0 : break
+				continue
+			}
+			if (a ! '#') & ((i | n) = 0) : break ; プロプロセッサ以外 ignore
+
+			wpoke bstr, n, a
+			n++
+		loop
+
+		if i = 0 : continue
+
+		CharLower div.0
+		tmp = ""
+
+		if (div.0 = "#deffunc") | (div.0 = "#defcfunc") {
+			tmp += "%index\n" + div.1 + "\n; 見出し を記入\n\n"
+			prmlist = ""
+			prmsum  = ""
+			a = 2
+			repeat
+				if a >= i : break
+				if prmlist ! "" : prmlist += ", "
+				prmlist += div(a+1)
+				prmsum += div(a+1) + "\t: (" + div(a) + ")\n"
+				a += 2
+			loop
+			; ctype
+			if div.0 = "#defcfunc" {
+				prmlist = "(" + prmlist + ")"
+			}
+			tmp += "%prm\n" + prmlist + "\n" + prmsum + "\n"
+
+		} else:if (div.0 = "#func") | (div.0 = "#cfunc") {
+			tmp += "%index\n" + div.1 + "\n; 見出し を記入\n\n"
+			prmlist = ""
+			prmsum  = ""
+			a = 3
+			repeat
+				if a >= i : break
+				if prmlist ! "" : prmlist += ", "
+				prmlist += div(a) + (cnt+1)
+				prmsum += div(a) + (cnt+1) + "\t: \n"
+				a++
+			loop
+			; ctype
+			if div.0 = "#cfunc" {
+				prmlist = "(" + prmlist + ")"
+			}
+			tmp += "%prm\n" + prmlist + "\n" + prmsum + "\n"
+
+		} else:if div.0 = "#cmd" {
+			tmp += "%index\n" + div.1 + "\n; 見出し を記入\n\n"
+			str_edit += "%prm\n; パラメータリスト を記入\n; パラメータ説明文 を記入\n\n"
+
+		}
+
+		if tmp ! "" {
+			tmp += "%inst\n; 解説文 を記入\n\n"
+			tmp += "%sample\n; サンプルスクリプト を記入\n\n"
+			tmp += "%href\n; 関連項目 を記入\n\n"
+			tmp += "%group\n; グループ を記入\n\n"
+			tmp += "; 定義 : [" + hspfn + "] " + astr + "\n\n\n"
+			buf += tmp
+		}
+	loop
+
+	gosub *rebuild_recs
+	return
+
+
+
+;============================================================
+;============================================================
+; 終了シーケンス
+
+*endapp
+	if confirm_break() {
+		return
+	} else {
+		timer_stop
+		oncmd 0
+		Config_close
+		end
+		end
+	}
+
+
+#global
+
+
+
+;============================================================
+; テスト
+
+#ifndef HDL_BROWSER
+	hhw_start dir_cmdline, "HHW", "test", "S.Programs"
+#endif
+
+
+

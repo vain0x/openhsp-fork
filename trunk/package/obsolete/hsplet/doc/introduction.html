@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="ja">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta content="Copyright (C) 2005-2006 Yuki. All rights are reserved." name="copyright">
+<meta content="text/css" http-equiv="Content-Style-Type">
+<meta content="text/javascript" http-equiv="Content-Script-Type">
+<title>HSPLet の紹介 - HSPLet リファレンス</title>
+<link href="common.css" type="text/css" rel="stylesheet">
+<link href="page.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+		
+<h1>
+			
+<img src="LetTitle.jpg" width="640" height="240" alt="HSPLet 3.0">
+		</h1>
+	
+<h2>目次</h2>
+<ul>
+<li>
+<a href="#N10013">HSPLet の紹介</a>
+</li>
+<li>
+<a href="#N10025">始める前に</a>
+</li>
+<li>
+<a href="#N10036">使い方</a>
+</li>
+<li>
+<a href="#N10065">使用上の注意</a>
+</li>
+<li>
+<a href="#N10090">HTML のカスタマイズ</a>
+</li>
+<li>
+<a href="#N100A9">拡張ライブラリの使用</a>
+</li>
+<li>
+<a href="#N100B3">ギャラリへの投稿</a>
+</li>
+</ul>
+<hr>
+<h2 id="N10013">HSPLet の紹介</h2>
+		
+<p>HSPLet はインタープリタ言語
+			<a href="http://www.onionsoft.net/hsp/">HSP</a> の Java によるランタイムの実装です。
+			HSPLet は Java によって記述されているので環境依存が少なく、多くのプラットフォームで HSP
+			製のプログラムを動作させることが出来ます。 また、アプレットとして HTML ページに埋め込むことも出来ます。 </p>
+		
+<p>HSPLet のサポートおよび最新版の入手は
+			<a href="http://www.group-finity.com">Group Finity の Web サイト</a>
+			で行っています。</p>
+	
+<hr>
+<h2 id="N10025">始める前に</h2>
+		
+<p>HSPLet を使用するためには HSP のプログラムがコンパイルできる環境と知識が必要です。 HSP の開発環境は
+			<a href="http://www.onionsoft.net/hsp/">HSP の公式サイト</a> で入手できます。 </p>
+		
+<p>アプレットとして Web ページに表示するには FTP など、Web サイトの管理方法に関する知識が必要です。
+			もし自分のサイトを持っていないときやわからないときは連絡してもらえれば Group Finity のサイトで代理公開することもできます。
+		</p>
+		
+<p>このドキュメントでは出来るだけそれ以外の環境、知識は必要ないように説明したいと思いますが、 わからない点があるときはお知らせください。
+			そのようなフィードバックはドキュメントの充実に大変役立ちます。 </p>
+	
+<hr>
+<h2 id="N10036">使い方</h2>
+		
+<p>HSPLet をアプレットとして動作させる方法を説明します。</p>
+		
+<ol>
+			
+<li>
+				
+<p>まず Java アプレットを実行できるように
+					<a href="http://www.java.com/ja/">JRE</a> をインストールします。 IE
+					なら付属のサンプルを表示するだけで自動的にインストールされます。 </p>
+				
+<p>JRE をインストールすると *.jar をアプレットとして実行できるようになります。</p>
+			
+</li>
+			
+<li>
+				
+<p>次に HSP コンパイラを使用して実行したいプログラムをコンパイルして *.ax を作成します。</p>
+			
+</li>
+			
+<li>
+				
+<p>HSPLet 付属の compiler.exe を起動して、*.ax ファイルをパックファイルに追加します。 コンパイルが完了すると
+					*.jar（アプレットの本体）、*.html（アプレットを表示する HTML） ファイルが出来上がります。 </p>
+			
+</li>
+			
+<li>
+				
+<p>*.html を表示するとプログラムを実行できます。</p>
+			
+</li>
+			
+<li>
+				
+<p>サーバーにアップロードするときは、*.jar、*.html を同じフォルダにおいてください、*.ax
+					やパックファイルに詰め込んだファイルを一緒にアップロードする必要はありません。</p>
+			
+</li>
+		
+</ol>
+	
+<hr>
+<h2 id="N10065">使用上の注意</h2>
+		
+<p>HSPLet 用にプログラムを書く際に注意しなければいけないことがいくつかあります。 </p>
+		
+<ul>
+			
+<li>
+				
+<strong>すべての命令がサポートされているわけではありません</strong>
+				
+<p>セキュリティ上問題のある命令や、プラットフォームに依存した命令、あるいは Java
+					では実行できない命令などはサポートされていません。 </p>
+				
+<p>サポートされている命令の中でも、一部の機能しか使用されないものや HSPLet
+					でしか機能しない拡張が行われているものなどもあります。
+					命令サポート状況のリストにリンクの付いているものは、付加説明があるので必ず読んでおいてください。 </p>
+			
+</li>
+			
+<li>
+				
+<strong>アプレットとして使用するときは、codebase
+					より上のディレクトリ上のファイルは読み込めません</strong>
+				
+<p>codebase は必ず必要な全てのファイル (hsplet.jar を含む)
+					よりも上のディレクトリを指定するようにしてください。 （普通は codebase を意識する必要はありません。） </p>
+			
+</li>
+			
+<li>
+				
+<strong>悪意がこめられているのではないかと思われるようなプログラムは組まない</strong>
+				
+<p>ダブルクリックしなければ実行されない exe ファイルと違って HSPLet はページを表示するだけで自動的に実行されます。
+					ページを表示した人が不快に感じるようなプログラムは組まないようにしましょう。 HSPLet や、ひいては HSP
+					全体に対して悪いイメージを持たれることになりかねません。 </p>
+				
+<p>特に別ウィンドウを表示するプログラムを作成するときは注意してください。</p>
+			
+</li>
+		
+</ul>
+	
+<hr>
+<h2 id="N10090">HTML のカスタマイズ</h2>
+		
+<p>オリジナルのテンプレートを使用したり、自動生成された HTML を修正するときは以下のことに注意してください。 </p>
+		
+<ul>
+			
+<li>
+				
+<strong>コメントを削除したり書き換えたりしない</strong>
+				
+<p>生成された HTML 内のコメントは IE と Firefox、Opera の両方で正しく表示するために重要な意味を持っています。
+					コメントだからといって修正したり削除すると正しく表示できなくなります。 </p>
+			
+</li>
+			
+<li>
+				
+<p>HSPLet への入手先のリンクは削除してもかまいませんが、より多くの方に HSPLet を使用してもらえるように何らかの形で残しておいてもらえると幸せです。
+					 </p>
+			
+</li>
+		
+</ul>
+	
+<hr>
+<h2 id="N100A9">拡張ライブラリの使用</h2>
+		
+<p>HSPLet では Windows に依存する DLL は使用できません。 その代わり、HSPLet
+			用に作成された専用のライブラリ（以降拡張ライブラリと呼びます）を使用することができます。 作成した拡張ライブラリに対応するクラスの jar
+			ファイルを lib フォルダ内にコピーすると、 コンパイラにチェックボックスが表示されるので、チェックをつければ使用できます。 </p>
+		
+		
+<p>拡張ライブラリの作成法については src.zip 内に入っている winmm.java などを参考にしてください。 </p>
+	
+<hr>
+<h2 id="N100B3">ギャラリへの投稿</h2>
+		
+		
+<p>
+			
+<a href="http://www.group-finity.com/">Group Finity の Web サイト</a>では HSPLet
+			によるアプレットや、拡張ライブラリの投稿を受け付けています。 自信作ができたらぜひ投稿してください。 投稿の方法は
+			<a href="mailto:yuki@group-finity.com">メール</a> または掲示板にて、
+			形式は、アプレットのファイル一式を投稿し、
+			<a href="http://www.group-finity.com/">Group Finity の Web サイト</a>
+			内に置く形でも、実際に使用しているページにリンクを張る形でもかまいません。 </p>
+	
+<hr>
+<address>
+					HSPLet 3.0 &copy; 2005-2006 <a href="mailto:yuki@group-finity.com">Yuki</a>.<br>
+					Logo Illustration &copy; 2001-2004 chokko.<br>
+					All rights are reserved.<br>
+<a href="http://www.group-finity.com/">http://www.group-finity.com/</a>
+<br>
+</address>
+</body>
+</html>

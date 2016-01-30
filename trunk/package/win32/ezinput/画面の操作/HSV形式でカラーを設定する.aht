@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "hsvcolor"
+
+#define HSV形式 H値	"0"	;;str
+#define HSV形式 S値	"0"	;;str
+#define HSV形式 V値	"0"	;;str
+
+#ahtmes "hsvcolor "+HSV形式 H値+" , "+HSV形式 S値+" , "+HSV形式 V値+

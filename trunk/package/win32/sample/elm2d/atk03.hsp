@@ -1,0 +1,85 @@
+;	このスクリプト単体では実行させることができません
+;
+;generated from elm2d
+#ifndef __atk03__
+#define __atk03__
+#define global atk03_frame 170
+#define global atk03_setevent(%1) setevent %1,atk03_ev1:setevent %1,atk03_ev2
+
+#deffunc atk03_init
+newevent atk03_ev1
+event_pos atk03_ev1,10,1,39,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,24,43,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,25,45,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-5,51,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-59,49,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-31,41,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-5,73,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,25,42,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,38,28,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,44,-10,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,25,-35,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-2,-43,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-42,-31,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-52,-5,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-24,31,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,-2,64,0,3
+event_wait atk03_ev1,10
+event_pos atk03_ev1,10,0,90,0,3
+event_wait atk03_ev1,10
+event_prmset atk03_ev1,PRMSET_FLAG,0
+newevent atk03_ev2
+event_setang atk03_ev2,0,0,3.110177
+event_ang atk03_ev2,10,0,0,2.796017
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,2.550973
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,3.191858
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,3.839026
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,3.813894
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,3.216991
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,3.003363
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,2.437876
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,1.401150
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,0.697434
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,0.062832
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,0.000000
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,-0.339292
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,-2.243097
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,-2.953097
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,-3.216991
+event_wait atk03_ev2,10
+event_ang atk03_ev2,10,0,0,-3.160442
+event_wait atk03_ev2,10
+event_prmset atk03_ev2,PRMSET_FLAG,0
+return
+
+#endif

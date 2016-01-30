@@ -1,0 +1,16 @@
+
+	;
+	;	メディアプレーヤーを配置する
+	;
+	axobj mp, "{22d6f312-b0f6-11d0-94ab-0080c74c7e95}",640,480
+	mp("ShowTracker")=1	; トラックバー表示のON/OFF
+	mp("EnableTracker")=0	; トラックバーの有効/無効
+	mp("ShowControls")=1	; コントロールボタン表示のON/OFF
+	mp("ShowCaptioning")=0	; キャプション表示のON/OFF
+	mp("ShowAudioControls")=0	; ボリューム表示のON/OFF
+	mp("EnableContextMenu")=0 ; コンテキスト(右クリック)メニューの有効/無効
+	mp("PlayCount")=1	; 再生する回数
+	mp("AutoStart")=1	; オートスタートのON/OFF
+	mp("FileName")="test.avi"	; ファイル名またはURL
+	stop
+

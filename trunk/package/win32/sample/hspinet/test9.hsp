@@ -1,0 +1,16 @@
+#include "hspinet.as"
+
+	getctime time1,0
+	getctime time2,1
+	getctime time3,2
+
+	mes "ƒ[ƒJƒ‹ŠÔ‚ğæ“¾‚µ‚Ü‚·"
+	mes time1
+	mes "GMTŠÔ‚ğæ“¾‚µ‚Ü‚·"
+	mes time2
+	mes "GMTŠÔ(RFC1123)‚ğæ“¾‚µ‚Ü‚·"
+	mes time3
+
+	stop
+
+

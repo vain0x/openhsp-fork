@@ -1,0 +1,30 @@
+#include "hgimg.as"
+
+	;	浮動小数サポート命令サンプル
+	;
+	sdim s1,256
+	dim v,16: dim fv,16
+
+	mes "ベクトル値の演算"
+
+	fvset fv, 1.0f, 2.0f, 3.0f
+	fvadd fv, 0.5f, 0.2f, 0.15f
+	fv2str fv
+	s1 = refstr
+	mes "FV=("+s1+")"
+
+	mes "文字列から変換"
+
+	str2fv fv2,s1
+	fv2str fv2
+	s1 = refstr
+	mes "FV=("+s1+")"
+
+	mes "整数に変換"
+
+	f2i v,fv.0,fv.1,fv.2
+	mes "V=("+v.0+","+v.1+","+v.2+")"
+
+	stop
+
+

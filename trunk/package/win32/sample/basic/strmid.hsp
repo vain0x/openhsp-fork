@@ -1,0 +1,23 @@
+
+	i="-------------------------------"
+	mes i
+	a="ABCDEFG"
+	mes "もとの文字列="+a
+	b=strmid(a,0,3)
+	mes "左から３文字を取り出す="+b
+	b=strmid(a,-1,3)
+	mes "右から３文字を取り出す="+b
+	b=strmid(a,2,3)
+	mes "２文字目から３文字を取り出す="+b
+
+	mes i
+	c=instr(a,0,"FG")
+	mes "文字列「FG」のある場所="+c
+	c=instr(a,0,"AB")
+	mes "文字列「AB」のある場所="+c
+	c=instr(a,0,"GH")
+	mes "文字列「GH」のある場所="+c
+
+	mes i
+	stop
+

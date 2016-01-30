@@ -1,0 +1,63 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: Basic
+                                             Copyright (C) 2005.12.27 山田雄己
+*******************************************************************************/
+
+	
+	mes "とりあえず HSPLet を動かしてみるサンプルです。"
+	wait 100
+	mes "このメッセージが表示されていれば、HSPLet を実行する環境が整っています。"
+	wait 200
+	mes ""
+	mes "コンパイル方法..."
+	mes ""
+	wait 200
+	mes "1. basic.hsp を HSP3 エディタで開いて、オブジェクトファイルを作成します。"
+	wait 200
+	mes "  ↓"
+	wait 100
+	mes "2. compiler.exe を起動して basic.ax を選択、コンパイルします。"
+	wait 200
+	mes "  ↓"
+	wait 100
+	mes "3. basic.html を表示します。"
+	wait 500
+	
+	cls
+	
+	mes "いろいろ実験..."
+	mes ""
+	wait 200
+	mes " 計算: 1+2 = "+(1+2)
+	wait 200
+	mes " 関数: sqrt(85720) = "+sqrt(85720)
+	wait 200
+	color 255, 0, 0
+	mes " テキストの色を変えてみる。"
+	wait 200
+	color 0, 0, 0
+	mes " 図形も描いてみる。"
+
+	wait 100
+	color 0, 255, 0
+	boxf 200, 200, 240, 240
+
+	wait 50
+	color 0, 0, 255
+	circle 220, 220, 280, 280
+
+	wait 200
+	mes ""
+	button "ボタン", *l_Button
+	chkbox "チェックボックス", check
+
+	stop
+*l_Button
+
+	dialog "ボタンが押されました\nチェックボックスの値は"+check+"です。", 0, "HSPLet サンプル"
+	
+	cls
+	
+	mes "このサンプルはここまでです。"
+	mes "簡単なのでぜひ皆さんも自分のアプレットを作ってみてください。"

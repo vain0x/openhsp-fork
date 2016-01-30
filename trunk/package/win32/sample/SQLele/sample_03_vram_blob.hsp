@@ -1,0 +1,55 @@
+
+;============================================================
+;                                                 2010/--/--
+;	SQLele sample
+;	BLOB
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+	ビットマップを BLOB で出し入れするサンプル
+
+	(オンメモリ DB を使用します。27MB 程度消費)
+*/
+
+#include "sqlele.hsp"
+
+	; メモリ上のデータベースを作成
+	sql_open ":memory:"
+	sql_q "CREATE TABLE ttest (ID INTEGER PRIMARY KEY, bbitmap)"
+
+
+	; 画面ビットマップを参照する変数
+	size = 640*480*3 ; ビットマップサイズ 640x480 24bpp
+	mref vram, 66    ; HSP スクリーン BMP 参照変数
+
+
+	; 30 フレームの動画ビットマップをデータベースに挿入
+	repeat 30
+		; サンプル画作成
+		color 255, 255, 255 : boxf
+		color : pos 640*cnt/30, 0 : mes cnt
+		p = 0.10472 * cnt
+		repeat 32
+			hsvcolor cnt * 6, 222, 222
+			circle cnt*20+10-cos(p)*16, 240-sin(p)*120, cnt*20+10+cos(p)*16, 240+sin(p)*120
+			p += 0.1
+		loop
+
+
+		; 現在の画面ビットマップを BLOB 型でデータベースへ格納
+		sql_q "INSERT INTO ttest (bbitmap) VALUES (" + prm_blob(vram, size) + ")"
+	loop
+
+
+	; データベースからビットマップを取り出してアニメーション表示
+	repeat
+		; 画面ビットマップをデータベースからコピー
+		sql_q "SELECT * FROM ttest WHERE ID=" + prm_i(cnt\30+1)
+		sql_blobcopy vram, "bbitmap"
+
+
+		; スクリーン更新
+		redraw 1
+		await 25
+	loop
+

@@ -1,0 +1,54 @@
+#include "hgimg3.as"
+
+	;	珠音（たまね）3D model sample
+	;	モデリング&アニメーション製作 : オガワコウサク(チームグリグリ)
+	;	HGIMG3対応 HSP3用スクリプトサンプル
+	;	※このスクリプト及びサンプルデータは、自作ソフトで自由にお使い頂けます
+	;	※詳しくは、 http://hsp.tv/make/tamane3d.html
+	;
+	screen 0,800,600,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+	;
+	clscolor $80
+
+	;	Xモデル登録
+	;
+	addxfile m_girl,"tamane2_w.x"
+
+	;	オブジェクト登録
+	regobj obj, m_girl
+	setscale obj,0.05,0.05,0.05
+
+	;	カメラ
+	setpos HGOBJ_CAMERA, 0,-6,30	; カメラ位置の設定
+
+	;	ライト
+	setdir HGOBJ_LIGHT,255,255,255
+	setang HGOBJ_LIGHT, 9.8, 4, 0
+*main
+	stick key,$3ff
+
+	hgdraw
+
+	fprt "HGIMG3 Test",8,8
+
+	hgsync 16
+
+	if key&128 : goto *owari
+
+	if key&2 : addpos obj, 0,0, -0.5
+	if key&8 : addpos obj, 0,0, 0.5
+	if key&4 : addang obj, 0, 0.05
+	if key&1 : addang obj, 0, -0.05
+
+	goto *main
+
+*owari
+	hgbye
+	end

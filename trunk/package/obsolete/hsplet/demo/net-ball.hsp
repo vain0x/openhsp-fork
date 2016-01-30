@@ -1,0 +1,172 @@
+
+	buffer 2, 100, 200
+	cls 4
+	font "‚l‚r ƒSƒVƒbƒN", 60
+	
+	dim points, 6, 40, 40
+
+	repeat 36
+		x = cnt
+		repeat 36
+			y = cnt
+			points.0.x.y = x*256, y*256
+			if x=0 | y=0 | x=35 | y=35:points.2.x.y = -1000
+		loop
+	loop
+
+	gsel 0
+
+	ballx = 2*256
+	bally = 2*256
+	ballVx = 256
+
+	gmode 5, 50, 50, 256
+
+	randomize
+	frame = rnd(96)*20
+
+*l_Loop
+
+	await 50
+	redraw 1: redraw 0
+
+	gsel 2
+
+	frame++
+	if frame\20=1 {
+		hsvcolor frame/10\192, 127, 50
+		pos -5 ,45
+		mes "Ÿ"
+		pos 0, 10
+		gzoom 50, 30, 2, 0, 50, 50, 50
+	
+		repeat 20
+			hsvcolor (frame/10+96)\192, 160, 192-cnt*192/20
+			circle cnt/2, 100+cnt/2, 100-cnt*2, 200-cnt*2
+		loop
+	}
+
+	gsel 0
+	
+	color
+	boxf
+
+
+	color 255
+
+	getkey left, 1
+	getkey right, 2
+	getkey mid, 4
+
+	if left|right|mid {
+		mx1 = (mousex-320)*256/18
+		my1 = (mousey+60)*256/9
+		mx = ( mx1+my1 )/2
+		my = ( -mx1+my1 )/2
+		force += 100
+		if force>1000: force = 1000
+	} else {
+		force = 0
+	}
+
+	bx = (ballx+128)/256
+	by = (bally+128)/256
+	bd = 1024
+
+	repeat 2: mode = cnt
+		
+		repeat 32, 2
+			x = cnt
+			repeat 32, 2
+				y = cnt
+				dup point, points.0.x.y
+	
+				if mode=0 {
+					point.0 += point.3
+					point.1 += point.4
+					point.2 += point.5
+				} else {
+		
+					point.3 = point.3*999/1000 + (points(0,x-1,y)+points(0,x+1,y))/2-point.0
+					point.4 = point.4*999/1000 + (points(1,x,y-1)+points(1,x,y+1))/2-point.1
+					point.5 = point.5*90/100+(points(2,x-1,y)+points(2,x+1,y)+points(2,x,y-1)+points(2,x,y+1))/5-point.2
+
+					pos (point.0-point.1)*18/256+320-25, (point.0+point.1+point.2)*9/256-60-25
+					gcopy 2, 0, 0
+	
+					dx = mx-point.0
+					dy = my-point.1
+					d = int( sqrt( dx*dx+dy*dy ) )
+					if d<500: d = 500
+					
+					if left {
+						point.5 += force*500/d
+					}
+
+					if right {
+
+						point.3 += force*20*(dx)/d/d
+						point.4 += force*20*(dy)/d/d
+					}
+					
+					if mid {
+
+						point.3 += (dy*10+dx)*force/1000/d
+						point.4 += (-dx*10+dy)*force/1000/d
+					}
+					
+					dx = ballx-point.0
+					dy = bally-point.1
+					d = int( sqrt( dx*dx+dy*dy ) )
+					if d<600 : if ballz>point.2 {
+						if d<bd {
+								bx = x
+								by = y
+								bd = d
+						}
+
+						if d<100: d = 100
+
+						if d<400 {
+							gmode 5, 50, 50, 256*100/d
+							pos (point.0-point.1)*18/256+320-25, (point.0+point.1+point.2)*9/256-60-25
+							gcopy 2, 0, 0
+							gmode 5, 50, 50, 256
+						}
+						
+						point.5 += 50000/d
+						
+					}
+				}
+			loop
+		loop
+	loop
+
+	x = bx
+	y = by
+
+	if x<3:x= 3
+	if x>=33: x = 32
+	if y<3:y= 3
+	if y>=33: y = 32
+
+	dup point, points.0.x.y
+	
+	ballx += ballvx
+	bally += ballvy
+	ballz += ballvz
+
+	ballvx = ballvx*99/100
+	ballvy = ballvy*99/100
+	ballvz = ballvz*99/100+100
+	
+	if ballz>=point.2{ ballvz += (point.2-ballz)/10: ballz = (point.2+ballz)/2
+
+		ballvx += (points( 2, x+3, y )-points( 2, x-3, y ))/50+point.3/10
+		ballvy += (points( 2, x, y+3 )-points( 2, x, y-3 ))/50+point.4/10
+	}
+	
+	pos ((ballx-bally))*18/256+320-50, ((ballx+bally+ballz))*9/256-60-110
+	gcopy 2, 0, 100, 100, 100
+
+goto *l_Loop

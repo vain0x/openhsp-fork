@@ -1,0 +1,41 @@
+	#include "hidmon.as"
+
+	button "終了",*owari
+
+	bits=1,2,4,8,16,32,64,128,64,32,16,8,4,2,1
+	max_bits=length(bits)
+
+	;	hidmon.dllサンプル
+	;
+	hidinit "#"
+	;	↑ヒダピオ等、商用デバイスの場合は、
+	;	「hidinit "#"」で初期化してください
+	if stat<0 {
+		dialog "USBデバイスの初期化に失敗しました。"
+		end
+	}
+	mes "UsbInit成功"
+
+	mes strf("PORTB=$%x",portb)
+	mes strf("PORTD=$%x",portd)
+	mes strf("PINB=$%x",pinb)
+	mes strf("PIND=$%x",pind)
+	mes strf("DDRB=$%x",ddrb)
+
+	count=0
+*main
+	i=bits( count\max_bits )
+	hidpoke portb,i
+	value=hidpeek(pind)
+	pd0=(value&1)=1
+	pd1=(value&2)=2
+	
+	title "PD0="+pd0+"/PD1="+pd1
+	await 30
+	count=count+1
+	goto *main
+
+*owari
+	hidbye
+	end
+

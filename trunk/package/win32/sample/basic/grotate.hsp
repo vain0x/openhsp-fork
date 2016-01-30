@@ -1,0 +1,56 @@
+	;
+	;	grotate–½—ß‚É‚æ‚é‰æ‘œ‰ñ“]ƒTƒ“ƒvƒ‹
+	;
+	randomize
+
+	title "grotate"
+	buffer 3,256,256,0
+	picload "../game/face.bmp"
+
+	screen 0,640,480,0
+	cls 4
+	font "Arial",14
+	m="HSP3 grotate sample"
+
+	max=20
+	dim xx,max
+	dim yy,max
+	dim px,max
+	dim py,max
+	dim rot,max
+	dim prot,max
+	repeat max
+	xx.cnt=rnd(640)
+	yy.cnt=rnd(480)
+	rot.cnt=rnd(4096)
+	p=rnd(2):if p=0 : p=-1
+	px.cnt=p*2
+	p=rnd(2):if p=0 : p=-1
+	py.cnt=p*2
+	prot.cnt=rnd(16)
+	prot.cnt+=8
+	loop
+
+	repeat
+
+	redraw 0
+	color 64,64,64:boxf
+	gmode 2,64,64
+	repeat max
+		pos xx.cnt,yy.cnt:grotate 3,0,0,double(rot.cnt)*0.005
+		xx.cnt+=px.cnt
+		if (xx.cnt<2)|(xx.cnt>638) : px.cnt=-px.cnt
+		yy.cnt+=py.cnt
+		if (yy.cnt<2)|(yy.cnt>478) : py.cnt=-py.cnt
+		rot.cnt+=prot.cnt
+	loop
+
+	pos 462,442:color 0,0,0:mes m
+	pos 460,440:color 255,255,255:mes m
+	redraw 1
+	await 12
+
+	loop
+
+stop
+

@@ -1,0 +1,46 @@
+/*
+ * $Id: functions.css,v 1.1 2006/01/09 12:07:03 Yuki Exp $
+ */
+h5
+{
+	font-size: 140%;
+}
+
+h6
+{
+	font-size: 120%;
+}
+
+.functionCode
+{
+	border: gray 1px solid;
+	padding: 1em;
+	background: silver;
+	font-weight: bold;
+	font-family: 'ÇlÇr ÉSÉVÉbÉN' , monospace;
+}
+
+.functionCode .param
+{
+	font-style: italic;
+}
+
+.params
+{
+}
+
+.params .name
+{
+	font-weight: bold;
+}
+
+.remarks
+{
+	margin: 0 2em;
+}
+.seealso
+{
+	margin: 0 2em;
+	font-weight: bold;
+}
+

@@ -1,0 +1,78 @@
+
+#include "hspext.as"
+
+	;	拡張ファイルアクセス命令テスト
+	;	選んだファイルのタイムスタンプを表示。
+	;	([CLEAR]を押すと、ファイルの時刻が０にリセットされます)
+	;
+
+	sdim dd,32000
+	sdim tmem,32000
+	tmem=""
+	fname=""
+	;
+	dirlist dd,"*.*"
+	sel=0
+	objsize 160,24
+	listbox sel,176,dd	; ID=0
+	pos 180,0
+	mesbox tmem,450,200	; ID=1
+	pos 0,210
+	button "SELECT",*ok	; ID=2
+	button "CLEAR",*ok	; ID=3
+	button "END",*owari	; ID=4
+	stop
+*ok
+	btn=stat
+	notesel dd
+	noteget fname,sel
+	exist fname
+	if strsize=0 : goto *lderr
+	;
+	if btn=3 : gosub *resdate
+	gosub *chkdate
+	objprm 1,tmem
+	stop
+*lderr
+	dialog "LOAD ERROR!"
+	stop
+*owari
+	end
+
+*resdate
+	;	タイムスタンプ時刻を０にする
+	;
+	dim a,24
+	fxtget a,fname
+	if stat>0 : goto *chkerr
+	a.4=0:a.5=0:a.6=0:a.7=0
+	a.12=0:a.13=0:a.14=0:a.15=0
+	;
+	fxtset a,fname
+	if stat>0 : goto *chkerr
+	;
+	return
+
+*chkdate
+	;	タイムスタンプを取得
+	;
+	dim a,24
+	fxtget a,fname
+	if stat>0 : goto *chkerr
+	;
+	dt="Date "+a.0+"/"+a.1+"/"+a.3
+	tm="Time "+a.4+":"+a.5+":"+a.6
+	tmem="作成日 "+dt+" "+tm+"\n"
+	;
+	dt="Date "+a.8+"/"+a.9+"/"+a.11
+	tm="Time "+a.12+":"+a.13+":"+a.14
+	tmem+="更新日 "+dt+" "+tm+"\n"
+	;
+	dt="Date "+a.16+"/"+a.17+"/"+a.19
+	tmem+="アクセス日 "+dt+"\n"
+	;
+	return
+*chkerr
+	dialog "FILE STATUS ERROR!"
+	return
+

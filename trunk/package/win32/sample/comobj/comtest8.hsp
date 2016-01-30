@@ -1,0 +1,17 @@
+
+	;	正規表現(RegExp)を使った検索
+	;
+	#include "mod_regexp.as"
+
+	teststr="012 3456 78 9"
+	testptn="\\d+"
+	mes "対象文字 \""+teststr+"\""
+	mes "パターン \""+testptn+"\""
+
+	matches result, teststr, testptn, 0, 0, 0
+	repeat stat
+		mes "#"+cnt+"="+result(cnt)
+	loop
+
+	stop
+

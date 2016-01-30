@@ -1,0 +1,60 @@
+#include "hgimg.as"
+
+	;	3Dモデルを回転させるサンプル
+	;	(パレットモード)
+	;
+
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,1
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+	onexit *owari
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	MXファイルオブジェクトを登録
+	;
+	mxload "rb_010"		; モデルファイル読み込み
+	regobj mychr,stat	; (変数statにモデルIDが返される)
+
+	gsel 0
+
+	;	カメラ位置設定
+	;
+	cammode CAM_MODE_LOOKAT		; カメラ注視モード
+	selcpos
+	objsetf3 0.0f, -10.0f, 20.0f	; カメラ座標
+	selcint
+	objsetf3 0.0f, -3.0f, 5.0f	; 注視先
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	getsync t1,0			; 前回からの負荷を取得
+	fprt "POLYGON:"+polys,8,8
+	fprt "T:"+t1,8,24
+	hgsync 10			; 処理落ちしてなければ描画
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	自動回転
+	;
+	selang mychr
+	objaddf1 1,0.025f
+
+	goto *main
+
+*owari
+	hgbye
+	end
+

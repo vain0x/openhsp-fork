@@ -1,0 +1,26 @@
+
+	#include "hspda.as"
+
+	;	À”‚Ì—”¶¬
+	;
+	rndf_ini	; —”‚Ì‰Šú‰»(‚È‚­‚Ä‚àOK‚Å‚·)
+	;
+	mes "À”‚Å0`1‚Ü‚Å‚Ì—”‚ğ¶¬‚µ‚Ü‚·B"
+	repeat 20
+	rndf_get dval
+	mes "MTRND="+dval
+	loop
+
+	repeat
+
+	rndf_geti x,300
+	rndf_geti y,300
+	rndf_geti col1,0x100
+	rndf_geti col2,0x100
+	rndf_geti col3,0x100
+	color col1,col2,col3:pset 320+x,y
+	await 20
+
+	loop
+
+

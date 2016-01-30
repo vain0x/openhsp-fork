@@ -1,0 +1,30 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/img.hsp"
+
+	dialog "exe",16
+	if stat = 0 : end
+
+	fname=refstr
+
+	get_icon hicon,fname,-1		;もっているアイコンの数を取得
+	n=stat
+
+	i=0
+	x=0:y=0
+
+	get_icon hicon,fname,i			;大きいアイコン取得
+	draw_icon hicon,x,y,1			;(x,y)に描画
+
+	get_icon hicon,fname,i,1		;小さいアイコン取得
+	draw_icon hicon,x,y+32,1		;(x,y+32)に描画
+
+	redraw		;redrawを行わないと表示されないので注意！
+
+
+	stop

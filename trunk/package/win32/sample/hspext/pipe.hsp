@@ -1,0 +1,20 @@
+;	パイプを使用して、コマンドラインを実行するサンプル
+;	exec命令と異なり実行の終了と結果を受け取ることができます。
+;
+#include "hspext.as"
+
+	cmd="ipconfig /all"
+	sdim ln,4096
+	sdim buf,32000
+	mesbox buf,640,200,1:obj_edit=stat
+	pipeexec buf,cmd,1
+	if stat : dialog "実行できませんでした" : end
+	mes cmd+" を実行中..."
+	repeat
+	pipeget ln
+	if stat=0 : break
+	await 10
+	loop
+	objprm obj_edit,buf
+	mes "実行を終了しました"
+	stop

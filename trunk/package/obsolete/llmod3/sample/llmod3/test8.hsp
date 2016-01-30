@@ -1,0 +1,38 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/input.hsp"
+	cls
+
+	button "終了",*x15
+
+	mes "方向キーでマウスカーソルを移動できます"
+	mes "SHIFTボタンを押すとマウスの左ボタンを押したことになります"
+
+*@
+	movx=0 : movy=0
+	getkey a,37 : if a : movx-	;←キー
+	getkey a,38 : if a : movy-	;↑キー
+	getkey a,39 : if a : movx+	;→キー
+	getkey a,40 : if a : movy+	;↓キー
+
+	;SHIFTが押されたら左ボタンを押す
+	getkey kSHIFT,16
+	if kSHIFT : a=$2 : else : a=0
+	mouse_event $1+a, movx, movy
+
+	;SHIFTを押すとマウスの左ボタンを押したことになりkが1になる
+	getkey k,1 : if k : pset mousex,mousey
+
+	;SHIFTが押されてたら左ボタンを放す
+	if kSHIFT : mouse_event $4
+
+	await 1
+	goto *@b
+
+*x15
+	end

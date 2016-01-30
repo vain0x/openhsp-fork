@@ -1,0 +1,15 @@
+	;
+	;	メモリノートパッド命令テスト１
+	;	"note1.hsp"にインデックス番号をつけて表示
+	;
+	nmax=0
+	b=""
+	notesel a
+	noteload "note1.hsp"
+	idx=0
+	repeat notemax
+	noteget b,idx
+	print "index"+idx+"="+b
+	idx++
+	loop
+	stop

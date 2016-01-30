@@ -1,0 +1,404 @@
+	;================================================================================
+	;モジュール llmod3.hsp
+	;ver 1.0.4
+	;================================================================================
+
+
+	;使い方
+	;================================================================================
+	; getptr v1,v2
+	;
+	;  v1 : ポインタを入れる変数
+	;  v2 : ポインタを取得する変数
+	;================================================================================
+	;
+	;<>説明
+	; v2に指定した変数のポインタをv1に代入します。
+	;
+
+	;================================================================================
+	; dllproc "s1",v2,n3,n4
+	;
+	;  s1 : 関数名
+	;  v2 : 関数に渡す引数が入った数値変数
+	;  n3 : 引数の数
+	;  n4 : ll_libloadでロードしたdllのハンドル
+	;================================================================================
+	;
+	;<>説明
+	; n4に指定したdll内のs1の関数を使用します。
+	; 関数の返り値はグローバル変数dllretに代入されます。
+	; llmod内では主用なdllがロードされていて、そのdllを使用する場合は
+	; 以下の数値を使って関数を使用できます。
+	;	DLL名
+	;	kernel32.dll	0 (D_KERNEL)
+	;	user32.dll	1 (D_USER)
+	;	shell32.dll	2 (D_SHELL)
+	;	comctl32.dll	3 (D_COMCTL)
+	;	comdlg.dll	4 (D_COMDLG)
+	;	gdi32.dll	5 (D_GDI)
+	;
+	;<>例
+	;(1)
+	;	ll_libload dll,"user32"		;user32.dllをロード
+	;	s="test"
+	;	getptr p,s
+	;	prm=0,p,p,0
+	;	dllproc "MessageBoxA",prm,4,dll
+	;	mes dllret
+	;	ll_libfree dll
+	;
+	;(2)
+	;	s="test2"
+	;	getptr p,s
+	;	prm=0,p,p,0
+	;	dllproc "MessageBoxA",prm,4,D_USER
+	;	mes dllret
+	;
+
+#ifdef __hsp30__
+
+#ifndef __llmod3__
+#define __llmod3__
+
+;HSP3対応用
+#uselib "kernel32.dll"
+#func global LoadLibrary "LoadLibraryA" str
+#func global GetProcAddress "GetProcAddress" int,sptr
+#func global FreeLibrary "FreeLibrary" int
+;loadlib.dll用
+#func global lstrlen "lstrlenA" sptr
+
+
+;dllproc用
+#define global D_KERNEL		0
+#define global D_USER		1
+#define global D_SHELL		2
+#define global D_COMCTL		3
+#define global D_COMDLG		4
+#define global D_GDI		5
+
+
+	;グローバル変数
+	dllret = 0
+
+
+;loadlib.dll互換マクロ
+#define global ll_libload(%1,%2) LoadLibrary %2 : %1 = stat
+#define global ll_callfunc(%1,%2,%3) dllret = callfunc(%1,%3,%2)
+#define global ll_callfnv(%1) dllret = callfunc(prm@llmod3,%1,0)
+#define global ll_getproc(%1,%2,%3) GetProcAddress %3,%2 : %1 = stat
+#define global ll_getptr(%1) dllret = varptr(%1)
+#define global ll_libfree(%1) FreeLibrary %1
+#define global ll_peek(%1,%2,%3) dupptr lcl_cl@llmod3,%2,%3,vartype(%1) : memcpy %1,lcl_cl@llmod3,%3
+#define global ll_peek1(%1,%2) dupptr lcl_cl@llmod3,%2,1 : %1 = peek(lcl_cl@llmod3,0)
+#define global ll_peek2(%1,%2) dupptr lcl_cl@llmod3,%2,2 : %1 = wpeek(lcl_cl@llmod3,0)
+#define global ll_peek4(%1,%2) dupptr lcl_cl@llmod3,%2,4 : %1 = lpeek(lcl_cl@llmod3,0)
+#define global ll_poke(%1,%2,%3) lstrlen %2 : dupptr lcl_cl@llmod3,%2,stat : memcpy lcl_cl@llmod3,%1,%3
+#define global ll_poke1(%1,%2) dupptr lcl_cl@llmod3,%2,1 : poke lcl_cl@llmod3,0,%1
+#define global ll_poke2(%1,%2) dupptr lcl_cl@llmod3,%2,2 : wpoke lcl_cl@llmod3,0,%1
+#define global ll_poke4(%1,%2) dupptr lcl_cl@llmod3,%2,4 : lpoke lcl_cl@llmod3,0,%1
+
+;llmod互換マクロ
+#define global getptr(%1,%2) %1 = varptr(%2)
+#define global _get_instance(%1) %1 = hinstance
+#define global _cls(%1=0) cls %1
+#define global _clrobj(%1) clrobj %1
+#define global _objsel(%1) objsel %1
+
+
+;module初め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#module "llmod3"
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	dll_getfunc
+;................................................................................
+
+#deffunc dll_getfunc var _v1,str _v2,int _v3
+	if(_v3 & 0xffffff00) {
+		lcl_hinst = _v3
+	} else {
+		lcl_hinst = mjrdll(_v3)
+	}
+	GetProcAddress lcl_hinst,_v2
+	_v1 = stat
+	if(_v1 == 0) {
+		dialog "can not find '"+_v2+"'\ndll="+_v3
+	}
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	getptr
+;	getptr p,var
+;	変数varのポインタをpに代入
+;................................................................................
+
+;#deffunc getptr var _v1,var _v2
+;	_v1 = varptr(_v2)
+;return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_init_llmod
+;	よく使うDLLをロードしておく
+;	(LoadLibraryでloadしたDLLはHSP終了時に自動的に開放される)
+;................................................................................
+
+#deffunc _init_llmod
+
+	if(mjrdll) {
+		return
+	}
+
+	; loadlibマクロ用クローン変数
+	lcl_cl = 0
+
+	sdim lcl_s,64,16
+	lcl_s(D_KERNEL)	= "kernel32"
+	lcl_s(D_USER)	= "user32"
+	lcl_s(D_SHELL)	= "shell32"
+	lcl_s(D_COMCTL)	= "comctl32"
+	lcl_s(D_COMDLG)	= "comdlg32"
+	lcl_s(D_GDI)	= "gdi32"
+
+	repeat 6
+		LoadLibrary lcl_s(cnt)
+		mjrdll(cnt) = stat
+	loop
+
+#define F_GetActiveWindow	0
+
+	lcl_s = "GetActiveWindow"
+	repeat 1
+		GetProcAddress mjrdll(D_USER),lcl_s.cnt
+		mjrfunc.cnt = stat
+	loop
+
+	alloc lcl_s,64
+
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	dllproc
+;................................................................................
+
+#deffunc dllproc str funcname,array prms,int prm_n,int dll_no
+	if(dll_no & 0xffffff00) {
+		lcl_hinst = dll_no
+	} else {
+		lcl_hinst = mjrdll(dll_no)
+	}
+	GetProcAddress lcl_hinst,funcname
+	func = stat
+	if(func) {
+		_stat = callfunc(prms,func,prm_n)
+	} else {
+		dialog "can not find '"+funcname+"'\ndll="+dll_no
+		getkey a,16
+		if(a) {
+			end
+		}
+	}
+return _stat
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	getmjrdll
+;................................................................................
+
+#deffunc getmjrdll var v1,int v2
+	v1 = mjrdll(v2)
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	getmjrfunc
+;................................................................................
+
+#deffunc getmjrfunc var v1,int v2
+	v1 = mjrfunc(v2)
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_cls
+;	モジュールで作ったcontrolとHSPのオブジェクトを全てクリアする
+;................................................................................
+
+;#deffunc _cls int v1
+	;互換用
+;	cls v1
+;return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_get_instance
+;	instanceの取得
+;................................................................................
+
+;#deffunc _get_instance var v1
+;	v1 = hinstance
+;return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_get_active_window
+;	active windowの取得
+;................................................................................
+
+#deffunc _get_active_window var v1
+	v1 = callfunc(prm,mjrfunc.F_GetActiveWindow,0)
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	setwndlong
+;	SetWindowLong
+;................................................................................
+
+#deffunc setwndlong var v1,int v2
+
+	;#define GWL_WNDPROC         (-4)
+	;#define GWL_HINSTANCE       (-6)
+	;#define GWL_HWNDPARENT      (-8)
+	;#define GWL_STYLE           (-16)
+	;#define GWL_EXSTYLE         (-20)
+	;#define GWL_USERDATA        (-21)
+	;#define GWL_ID              (-12)
+
+	if(v2) {
+		lcl_s = "G"
+		a = 2		;GetWindowLongにする (節約)
+	} else {
+		lcl_s = "S"
+		a = 3		;SetWindowLongにする (節約)
+	}
+	lcl_s += "etWindowLongA"
+	dllproc lcl_s,v1,a,D_USER
+
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_null_sep_str
+;................................................................................
+
+#deffunc _null_sep_str var _v1,int _n1
+
+	L = strlen(_v1)
+	a = 0
+	prm = 0
+	repeat L
+		a = peek(_v1,cnt)
+		if(a == _n1) {
+			poke _v1,cnt,0
+			prm++
+		}
+	loop
+
+return prm
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_makewnd
+;	CreateWindowEx
+;................................................................................
+
+#deffunc _makewnd array handle,str s2
+
+	pos handle.0,handle.1
+	winobj s2,"",handle.6,handle.4,handle.2,handle.3,0,0
+	handle = stat
+
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_is_wnd
+;................................................................................
+
+#deffunc _is_wnd int v1
+	_v1 = v1
+	dllproc "IsWindow",_v1,1,D_USER
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_hspobjhandle
+;	HSPのObjectIDからハンドルを調べてstatに代入
+;................................................................................
+
+#deffunc _hspobjhandle int v1
+return objinfo(v1,2)
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_hspobjid
+;	ハンドルからHSPのObjectIDを調べてstatに代入
+;................................................................................
+
+#deffunc _hspobjid int v1
+	mref bmscr,67
+	_stat = -1
+	repeat bmscr.72
+		if(v1 == objinfo(cnt,2)) : _stat = cnt : break
+	loop
+return _stat
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_objsel
+;................................................................................
+
+;#deffunc _objsel int v1
+	// 互換用
+;	objsel v1
+;return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	_clrobj
+;................................................................................
+
+;#deffunc _clrobj int v1
+	;互換用
+;	clrobj v1
+;return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	charupper
+;	変数内の英字を大文字に変換
+;................................................................................
+
+#deffunc charupper var v1
+	getptr p,v1
+	dllproc "CharUpperA",p,1,D_USER
+return
+
+
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;	charlower
+;	変数内の英字を小文字に変換
+;................................................................................
+
+#deffunc charlower var v1
+	getptr p,v1
+	dllproc "CharLowerA",p,1,D_USER
+return
+
+
+#undef F_GetActiveWindow
+
+
+;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#global
+
+	_init_llmod		;149行 よく使うDLLをロードしておく
+
+#endif /* __llmod3__ */
+
+#endif /* __hsp30__ */

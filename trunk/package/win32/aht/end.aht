@@ -1,0 +1,11 @@
+#aht name "終了"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "実行を終了します。"
+
+#const 終了コード 0	;;
+
+	end
+

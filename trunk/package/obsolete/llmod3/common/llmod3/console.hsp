@@ -1,0 +1,317 @@
+	;================================================================================
+	;モジュール console
+	;ver 2.1
+	;	コンソール関連
+	;	llmod3.hspが必要です
+	;================================================================================
+
+	; consoleモジュール命令一覧
+	;
+	; console				コンソールウィンドウの作成
+	; console_end				コンソールウィンドウを閉じる
+	; puts					コンソールに文字列を書き込む
+	; gets					コンソールから文字列を読み込む
+	; console_color				コンソールのテキストの色設定
+	; console_pos				コンソールの文字表示位置設定
+	;
+	; 計	6個
+
+
+	; このファイルの最後にHSPで作成したプログラムをコンソールプログラムに
+	; 変換するスクリプトがあります。
+
+	;使い方
+	;================================================================================
+	; console				コンソールウィンドウの作成
+	;
+	; パラメータ無し
+	;================================================================================
+	;
+	;<>説明
+	; コンソールウィンドウを作成します。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; 0	成功
+	; 1	失敗
+	;
+
+	;================================================================================
+	; console_end				コンソールウィンドウを閉じる
+	;
+	; パラメータ無し
+	;================================================================================
+	;
+	;<>説明
+	; コンソールウィンドウを閉じます。
+	;
+	;<>この命令を呼び出した後のstatの値
+	; 0	成功
+	; 1	失敗
+	;
+
+
+	;================================================================================
+	; puts v1				コンソールに文字列を書き込む
+	;
+	; v1 : コンソールに表示する文字列が入った文字列変数
+	;================================================================================
+	;
+	;<>説明
+	; コンソールに文字列を表示します。
+	; (putzを使うとv1に直接文字列を代入することができます。)
+	;
+
+	;================================================================================
+	; gets v1,n2				コンソールから文字列を読み込む
+	;
+	; v1 : コンソールからの文字列を取得する変数
+	; n2 : 取得する文字の数
+	;================================================================================
+	;
+	;<>説明
+	; コンソールから文字列を取得します。
+	; n2を省略したときの値は63です。
+	;
+
+	;================================================================================
+	; console_color n1			コンソールのテキストの色設定
+	;
+	; n1 : コンソールの文字列の色
+	;================================================================================
+	;
+	;<>説明
+	; コンソールに表示する文字列の色を設定します。
+	; n1は以下の値を組み合わせて使います。1+4だと紫になります。
+	; 1+4+8で明るい紫になります。
+	;
+	; n1の値	色
+	; 1		青
+	; 2		緑
+	; 4		赤
+	; 8		強調
+	; $10		青(背景)
+	; $20		緑(背景)
+	; $40		赤(背景)
+	; $80		強調(背景)
+	;
+
+	;================================================================================
+	; console_pos n1,n2			コンソールの文字表示位置設定
+	;
+	; n1 : x座標
+	; n2 : y座標
+	;================================================================================
+	;
+	;<>説明
+	; 文字列を表示する座標を設定します。
+	;
+
+#ifdef __hsp30__
+
+	;module始め>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#module "_console"
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console
+	;Consoleの作成
+	;................................................................................
+	#deffunc console int v1
+
+	if(v1 == 0) {
+		dllproc "AllocConsole",prm,0,D_KERNEL
+		if(stat == 0) : return 1
+	}
+
+	;#define STD_INPUT_HANDLE	0xfffffff6
+	;#define STD_OUTPUT_HANDLE	0xfffffff5
+	;#define STD_ERROR_HANDLE	0xfffffff4
+
+	dim prm,3
+	dim std,3
+
+	dll_getfunc func,"GetStdHandle",D_KERNEL
+	if(func == 0) : return 1
+
+	prm = 0xfffffff6,0xfffffff5,0xfffffff4
+	repeat 3
+		prm = prm(cnt)
+		ll_callfunc prm,1,func
+		std(cnt) = dllret
+	loop
+
+	#define	S_INPUT		0
+	#define	S_OUTPUT	1
+	#define	S_ERROR		2
+
+	return 0
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console_end
+	;Consoleの終了
+	;................................................................................
+	#deffunc console_end
+	dllproc "FreeConsole",prm,0,D_KERNEL
+	if(stat == 0) : stt = 1 : else : stt = 0
+	return stt
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console_color
+	;Consoleのテキストの色設定
+	;................................................................................
+	#deffunc console_color int v1
+
+	;#define FOREGROUND_BLUE		1
+	;#define FOREGROUND_GREEN	2
+	;#define FOREGROUND_RED		4
+	;#define FOREGROUND_INTENSITY	8
+	;#define BACKGROUND_BLUE		$10
+	;#define BACKGROUND_GREEN	$20
+	;#define BACKGROUND_RED		$40
+	;#define BACKGROUND_INTENSITY	$80
+
+	prm = std.S_OUTPUT,v1
+	dllproc "SetConsoleTextAttribute",prm,2,D_KERNEL
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console_pos
+	;Consoleのテキストの色設定
+	;................................................................................
+	#deffunc console_pos int v1,int v2
+
+	prm = std.S_OUTPUT
+	prm.1 = v1 | (v2 << 16)
+	dllproc "SetConsoleCursorPosition",prm,2,D_KERNEL
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console_size
+	;Consoleウィンドウのサイズ設定
+	;................................................................................
+	#deffunc console_size int v1,int v2,int v3,int v4,int v5
+
+	prm = std.S_OUTPUT
+	_v1 = v1 | (v2 << 16),v3 | (v4 << 16)
+	prm.1 = v5
+	getptr prm.2,_v1
+	dllproc "SetConsoleWindowInfo",prm,3,D_KERNEL
+	return
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;console_sizeget
+	;Consoleウィンドウのサイズ取得
+	;................................................................................
+	#deffunc console_sizeget array v1
+
+	prm = std.S_OUTPUT
+	getptr prm.1,a
+	dllproc "GetConsoleScreenBufferInfo",prm,2,D_KERNEL
+	repeat 11
+		v1(cnt) = peek(a,cnt * 2)
+	loop
+	return
+
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;puts
+	;Consoleに文字列を書き込む
+	;................................................................................
+	#deffunc putz str v1
+	s = v1
+	prm = std.S_OUTPUT
+	getptr prm.1,s
+	prm.2 = strlen(s)
+	getptr prm.3,a
+	prm.4 = 0
+	dllproc "WriteConsoleA",prm,5,D_KERNEL
+	return prm(3)
+
+	#deffunc puts var v1
+	l = strlen(v1) : if(l >= 64) : sdim s,l + 1
+	s = v1
+	prm = std.S_OUTPUT
+	getptr prm.1,s
+	prm.2 = strlen(s)
+	getptr prm.3,a
+	prm.4 = 0
+	dllproc "WriteConsoleA",prm,5,D_KERNEL
+	return prm(3)
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;gets
+	;Consoleから文字列を読み込む
+	;................................................................................
+	#deffunc gets var v1,int v2
+
+	_v2 = v2
+	if(_v2 == 0) : _v2 = 63
+
+	prm = std.S_INPUT
+	getptr prm.1,v1
+	prm.2 = _v2
+	getptr prm.3,a
+	prm.4 = 0
+	dllproc "ReadConsoleA",prm,5,D_KERNEL
+	return prm.3
+
+	#undef	S_INPUT
+	#undef	S_OUTPUT
+	#undef	S_ERROR
+
+
+	;module終わり>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	#global
+
+#endif /* __hsp30__ */
+
+;
+;	;HSPで作成したプログラムをコンソールプログラムにする
+;
+;
+;	;コンソールプログラムにした場合は
+;	;	console 1
+;	;を実行してから
+;	;puts、putzで文字列を表示できます。
+;
+;	exename = "test.exe"		;変換するexeファイル
+;	new_exename = "c_"+exename	;変換したexeファイルの保存名
+;
+;	exist exename
+;	bufsize = strsize
+;	if(bufsize == -1) : dialog exename+"が見つかりません" : end
+;
+;	;exeファイル読み込み
+;	alloc buf,bufsize
+;	bload exename,buf,bufsize
+;
+;	;new header address   offset $3C(60)
+;	new_hdr_adr = buf.15
+;
+;	;optional header address
+;	opt_hdr_adr = new_hdr_adr + 4 + 20
+;
+;	;subsystemを調べる
+;	subsystem_adr = opt_hdr_adr + $44
+;	sub = wpeek(buf,subsystem_adr)
+;
+;	;1にするとサブシステムを表示して停止
+;	#define	CHECK_SUBSYSTEM		0
+;
+;	if(CHECK_SUBSYSTEM) {
+;		sdim subsystem_str,64,6
+;		subsystem_str.0 = "[IMAGE_SUBSYSTEM_UNKNOWN]"
+;		subsystem_str.1 = "[IMAGE_SUBSYSTEM_NATIVE]"
+;		subsystem_str.2 = "[IMAGE_SUBSYSTEM_WINDOWS_GUI]"	;GUI
+;		subsystem_str.3 = "[IMAGE_SUBSYSTEM_WINDOWS_CUI]"	;コンソール
+;		subsystem_str.4 = "[IMAGE_SUBSYSTEM_OS2_CUI]"
+;		subsystem_str.5 = "[IMAGE_SUBSYSTEM_POSIX_CUI]"
+;		mes subsystem_str.sub + "(" + sub + ")"
+;		stop
+;	}
+;
+;	;サブシステムをコンソールにして保存
+;	sub = 3					;3 コンソール
+;	wpoke buf,subsystem_adr,sub
+;	bsave new_exename,buf,bufsize
+;

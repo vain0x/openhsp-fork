@@ -1,0 +1,67 @@
+#include "hgimg3.as"
+
+	;	2Dスプライトのサンプル
+	;	(カーソルキーで移動、スペースで発射)
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,0
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+
+	;	スプライトモデルを登録
+	;
+	setuv 64,64,127,127
+	addspr pchr,1		; プレイヤーキャラ
+	regobj mychr,pchr
+	setuv 0,64,63,127	; リンゴ
+	addspr mchr,1
+	texload "testchr.bmp"	; テクスチャの登録
+
+	;	イベントリストを登録
+	;
+	newevent ev1			; 新しいイベントIDを取得
+	event_efx ev1, 80, 0		; 80フレーム後に透明度0%
+	event_addang ev1, 0, 0, 0.2	; Z角度を0.2づつ加算する
+	event_wait ev1, 80		; 80フレーム待つ
+
+	;	準備
+	;
+	clscolor 128			 ; 背景色の設定
+	setborder 740.0f, 580.0f, 200.0f ; クリップ範囲
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	;	カーソルキーで移動
+	;
+	if k&1 : addpos mychr, -4, 0
+	if k&4 : addpos mychr, 4, 0
+	if k&2 : addpos mychr, 0, -4
+	if k&8 : addpos mychr, 0, 4
+
+	if k&16 {			; リンゴ発射
+		regobj apple,mchr,OBJ_MOVE|OBJ_BORDER
+		getpos mychr,x,y,z
+		setpos apple,x,y,z
+		fvset fv,0,0,0.001*rnd(6282)
+		fvdir fv, 0, -4, 0
+		seldir apple:objsetfv fv
+		setevent apple,ev1	; イベント設定
+	}
+
+	goto *main
+
+*owari
+	end
+

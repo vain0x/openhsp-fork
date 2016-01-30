@@ -1,0 +1,46 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: SendMsg
+                                             Copyright (C) 2006.05.20 山田雄己
+*******************************************************************************/
+
+
+	font "ＭＳ ゴシック",12
+	objmode 2
+
+	objsize 80,24
+	
+	pos 0,0
+	button "切り取り", *cut
+	pos 80,0
+	button "コピー", *copy
+	pos 160,0
+	button "貼り付け", *paste
+	pos 240,0
+	button "削除", *clear
+	pos 320,0
+	button "全選択", *selectAll
+
+	pos 0,24
+	sdim buf,65000
+	buf = "上のボタンをクリックするとこのエディットボックスを操作することができます。"
+	mesbox buf, ginfo_winx, ginfo_winy-24, 5
+	id = stat
+
+stop
+*cut
+	sendmsg objinfo(id,2),$300,0,0
+stop
+*copy
+	sendmsg objinfo(id,2),$301,0,0
+stop
+*paste
+	sendmsg objinfo(id,2),$302,0,0
+stop
+*clear
+	sendmsg objinfo(id,2),$303,0,0
+stop
+*selectAll
+	objsel id
+	sendmsg objinfo(id,2), $b1, 0, -1
+stop

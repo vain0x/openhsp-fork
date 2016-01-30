@@ -1,0 +1,625 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSP3Dish,iOS,iPhone,iPad">
+	<meta name="description" content="HSP3Dish iOS版に関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3Dish iOS版プログラミングガイド</title>
+</head>
+<body>
+	<div id="CONTAINER">
+	<!-- ヘッダー -->
+	<p id="COPY">HSP : HSP3Dish / onion software 2016(c)</p>
+	<img src="hsp3dish.jpg" width="640" height="200" alt="タイトル">
+	<h1>HSP3Dish iOS版プログラミングガイド</h1>
+
+	<!-- 目次 -->
+	<ol>
+		<li><a href="#ABOUT">iOS版 HSP3Dish概要</a></li>
+		<li><a href="#PREPARE">環境の準備</a></li>
+		<li><a href="#SAMPLE">サンプルプロジェクト</a></li>
+		<li><a href="#MAKECPP">スクリプトの準備</a></li>
+		<li><a href="#RUNPROJ">HSP3Dishの実行と設定</a></li>
+		<li><a href="#APPICON">アプリ名とアイコンの設定</a></li>
+		<li><a href="#BSAVE">bsave命令によるユーザーデータ保存</a></li>
+		<li><a href="#RESOURCE">Resourceフォルダのデータについて</a></li>
+		<li><a href="#EXECURL">exec命令のサポートについて</a></li>
+		<li><a href="#SENSOR">加速度センサーのサポートについて</a></li>
+		<li><a href="#DIALOG">dialog命令のサポートについて</a></li>
+		<li><a href="#RETINA">Retinaディスプレイ対応について</a></li>
+		<li><a href="#UNIVERSAL">Universalアプリ対応について</a></li>
+		<li><a href="#ROTATE">画面の回転について</a></li>
+		<li><a href="#DEVCONTROL">デバイスコントロールについて</a></li>
+		<li><a href="#SIGNING">エラー時の対応について</a></li>
+		<li><a href="#RELEASE">AppStoreへの登録について</a></li>
+		<li><a href="#IAD">iAdの対応について</a></li>
+		<li><a href="#ADMOB">AdMobの対応について</a></li>
+		<li><a href="#NOTICE">iOS版の注意事項、制限</a></li>
+		<li><a href="#NEWVER">iOS版の更新予定</a></li>
+	</ol>
+
+	<h2 id="ABOUT">iOS版 HSP3Dish概要</h2>
+	<p>
+	iOS版 HSP3Dishは、iOS搭載機種(iPhoneシリーズ,iPadシリーズ,iPod Touch)上で動作するHSP3Dishのランタイムです。
+	Windows版 HSP3Dishがサポートする機能をiOS上で再現することが可能です。
+	(iOS版 HSP3Dishは、Windows版のスクリプトを実行させることを目的としており、HSP3開発システムそのものをiOS上で再現するものではありません。)
+	<br>
+	このマニュアルでは、iOS版の利用方法、注意点などを説明していきます。
+	</p>
+
+	<h2 id="PREPARE">環境の準備</h2>
+	<p>
+	現状ではiPhone/iPadの実機上で動作させるためには、MacOSX環境及び開発ツールXcode6.2以降またはXcode7以降、iOS Developer Program(有償)が必要になります。<br>
+	ここまでに必要なプロセスは、通常のiPhone/iPadの開発と変わりません。詳しくは、iOS Developer Programのホームページなど各種資料を参照してください。
+	</p>
+	<pre>
+	iOS Developer Program
+	<a href="http://developer.apple.com/jp/programs/ios/">http://developer.apple.com/jp/programs/ios/</a>
+	</pre>
+	<p>
+	このドキュメントでは、Xcodeが実際に動作し、iPhone/iPadの実機にプログラムが転送できることを前提として、HSP3Dishの導入方法を解説します。
+	それまでの準備については、既存のマニュアル等をご覧ください。
+	<br>
+	使用するSDKのバージョンは、iOS8以降、動作環境はiOS5.1以降を想定しています。
+	</p>
+
+	<h2 id="SAMPLE">サンプルプロジェクト</h2>
+	<p>
+	<img src="hsp3dish/s_block3.jpg" style="float:right;">
+	<img src="hsp3dish/s_hspproj.jpg" style="float:right;">
+	<img src="hsp3dish/s_gcube.jpg" style="float:right;">
+	iOSフォルダには、HSP3Dishランタイム及びxcode用のサンプルプロジェクトが含まれています。
+
+	<ul>
+	<li>iHSP23フォルダ - HSP3Dishランタイム本体</li>
+	<li>hspprojフォルダ - HSP3Dishサンプル(hsplogo.hsp)</li>
+	</ul>
+
+	<br>
+	すべてのフォルダをOSX上にコピーした後、プロジェクトファイル(.xcodeproj)を開いてビルドすることができます。
+	(実際にiOSデバイス上で動作させるためには、iOS Developer Programの登録が必要になります)
+	<br clear="all">
+	</p>
+
+	<h2 id="MAKECPP">スクリプトの準備</h2>
+	<p>
+	iOS上でスクリプトを動作させる場合には、最初にWindows上でスクリプトをCソースコードに変換します。
+	変換ツールとなる、HSP3Dish Helper(hsp3dh.exe)を起動してください。 
+	(スクリプトエディタの、「ツール」メニューから「指定ファイルをCソースに変換」メニューを選択して起動することも可能です。)<br>
+	ツールが起動したら、「ソース変換」のタブが選択されていることを確認して、以下の内容を設定してください。<br>
+	</p>
+
+	<ul>
+	<li>ソーススクリプト - 動作させるためのHSPソーススクリプト。「参照」ボタンでファイルダイアログから選択することができます。</li>
+	<li>プロジェクト名 - XCode上のプロジェクト名になります。半角英数字のみ(空白を含まない)で指定する必要があります。</li>
+	<li>Organization - XCode上のプロジェクトに指定されるOrganization名になります。製作者または団体名を入力してください。。</li>
+	<li>Identifier - XCode上のプロジェクトに指定されるIdentifier(製作者識別名)名になります。半角英数字のみ(空白を含まない)で指定する必要があります。他の製作者と重複しない文字列を指定する必要があります。通常はURLを逆にしたような表記で、「net.onionsoft」のように指定します。このIdentifierにプロジェクト名を付加したものが、AppID(Bundle Identifier)になります。AppIDは実機で動作させたりAppStoreに登録する際に、必ず必要になりますので、あらかじめ準備しておいてください。
+(たとえば、Identifierが「net.onionsoft」で、プロジェクト名が「block3」だった場合には、AppIDは「net.onionsoft.block3」になります。)</li>
+	</ul>
+	<p>
+	上記の指定ができたら、「変換」ボタンを押してください。
+	この時、「XCode用プロジェクトを生成」「出力ソースをUTF-8に変換」のチェックをONにしておくのを忘れないでください。
+	</p>
+	<p>
+	<img src="hsp3dish/s_and1.jpg"><br>
+	</p>
+	<p>
+	正常に終了するとスクリプトと同じフォルダにXCode用プロジェクトフォルダ(プロジェクト名で指定したフォルダ名になります)が作成されます。
+	これでスクリプト及びプロジェクトの準備は完了です。
+	</p>
+
+
+	<h2 id="RUNPROJ">HSP3Dishの実行と設定</h2>
+
+	<p>
+	実際にiOS上で動作させる場合には、XCode上でプロジェクトをコンパイルする必要があります。<br>
+	<a href="#MAKECPP">スクリプトの準備</a>で出力した、XCode用プロジェクトフォルダと、「iHSP23」フォルダ(HSPアーカイブ内のiOSフォルダに同梱されています。)をMacOSX上にコピーしてください。<br>
+	※Xcode5を使用して手動でプロジェクトを作成する場合は<a href="hsp3dish_xcode5.htm">こちらを参照してください</a>。
+	</p>
+	<p>
+	必ず作成されたプロジェクトのフォルダと同じ階層に、「iHSP23」フォルダを配置してください。
+	</p>
+	<p>
+	<img src="hsp3dish/s_folder.jpg"><br>
+	</p>
+
+	<p>
+	プロジェクトフォルダを開いて中にある「hspproj.xcodeproj」ファイルを起動してください。
+	XCodeが自動的に立ち上がり、プロジェクトが読み込まれます。
+	</p>
+
+	<p>
+	<img src="hsp3dish/s_code3.jpg"><br>
+	</p>
+
+	<p>
+	画像やサウンドなど追加のデータファイルがある場合は、「Resource」フォルダにコピーして、「File」メニューの「Add Files to "hspproj"...」を選択し、プロジェクトにリソースファイルを登録する必要があります。<br>
+	(あらかじめ、パックされているファイル(data.dpm)を使用する場合は、「Resourceフォルダのデータについて」の項目を参照してください。)
+	</p>
+
+	<p>
+	基本的には、この状態から左上の実行ボタン(>>)を押せばコンパイルを行ない、選択された機器上で実行を行ないます。<br>
+	また、アプリの内容に合わせて、以下の設定を行なうことができます。
+	</p>
+
+	<p>
+	HSP3Dishの実行時には、AppDelegate.mに書かれているHSPランタイムの初期化コードが参照されます。
+	この内容をXCode上で編集することで、各種設定を変更することができます。<br>
+	AppDelegate.mを編集するためには、画面左のビューでフォルダアイコンを選択して、プロジェクトのファイルツリーを表示させてください。その中にある、AppDelegate.m項目をクリックすると、エディタに内容が表示されます。
+	</p>
+
+	<p>
+	<img src="hsp3dish/s_code4.jpg"><br>
+	</p>
+
+	<pre>
+	    //ビューの生成と追加
+	    HspView* view=[[HspView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]];
+
+	    [view startFrame:60];
+	    [view useRetina];
+	    //    [view dispRotate:3];
+	    [view useMultiTouch];
+	    [view dispViewX:480 Y:800];
+	    [view dispAutoScale:0];
+	    [view clsMode:1 color:0xffffff];
+	    //    [view useAccelerometer:1.0f / 30.0f];
+	</pre>
+
+	<p>
+	上記の部分には、標準的な設定(480×800、60フレーム)による初期化コードが書かれています。
+	冒頭が「//」で始まる行はコメントとして認識され、書かれた内容は無効となります。
+	必要に応じて、「//」を削除することで設定を有効にすることができます。
+	それぞれの行の内容は、以下のような意味を持っています。
+	</p>
+	<br>
+
+	<pre>
+	    [view startFrame:60];
+	</pre>
+	<p>
+	この設定により、タスクが実行されるフレームレートをコントロールすることができます。
+	通常は、60を指定することにより秒間60フレーム(fps)となっていますが、この値を変更することができます。
+	通常のHSPとは異なり、iOS版のHSP3Dishでは指定されたフレームレートを単位として実行を行なっています。
+	高いフレームレートを指定することも可能ですが、CPUにかかる負荷はバッテリー消費に影響がありますので、
+	できる限り抑えた値にしておくことを推奨しています。
+	</p>
+	<pre>
+	    [view clsMode:1 color:0xffffff];
+	</pre>
+	<p>
+	この設定により、「redraw 0」による描画開始時に画面をクリア(消去)するかどうかを変更できます。
+	デフォルトの設定では、クリアは有効に、背景色は白(0xffffff)が指定されています。<br>
+	「clsMode:0」にした場合は画面のクリアは行なわれませんので、自前でクリアする必要があります。
+	(自前で画面クリアを行なう場合に、重複してクリアすることを避けるためのオプション設定になっています。)<br>
+	「color:0xffffff」は、クリアする色を指定するもので16進数によりRGBのコードを記述します。
+	</p>
+	<pre>
+	    [view useRetina];
+	</pre>
+	<p>
+	この設定により、Retinaディスプレイ搭載機種(iPhone4以降)では、解像度を倍にして処理することができます。
+	(あらかじめ、640×960などの高解像度でアプリを作成しておく必要があります)
+	Retinaディスプレイを搭載していない機種では、通常通りの解像度を維持します。
+	意図的にRetinaディスプレイを使用したくない場合は、コメント「//」を入れて無効にしてください。
+	</p>
+	<pre>
+	    [view useMultiTouch];
+	</pre>
+	<p>
+	この設定を追加することにより、mtlist,mtinfo命令によるマルチタッチ情報の取得が可能になります。<br>
+	この指定がない場合は、複数のポイントをタッチした場合でも、1つのタッチとみなされます。
+	</p>
+	<pre>
+	    [view dispViewX:480 Y:800];
+	</pre>
+	<p>
+	スクリプトが動作する解像度(想定される解像度)を設定することができます。
+	画面のスケーリング機能(dispAutoScale、dispScaleX)を使用する場合には、必ず設定するようにしてください。上の例では、横サイズが480、縦サイズが800であることを示しています。<br>
+	この項目をコメントアウト(無効)にした場合は、起動時のデバイス解像度全体がそのまま有効となり、スクリプト側で画面サイズに応じた処理を行なうことが可能になります。
+	</p>
+
+	<pre>
+	    [view dispScaleX:2.0f Y:2.0f];
+	</pre>
+	<p>
+	もともとの画面サイズに対して、指定した倍率で表示を行ないます。倍率を固定したい場合には、こちらを使用してください。画面サイズに合わせて自動設定する場合は、dispAutoScaleを使用してください。
+	</p>
+
+	<pre>
+	    [view dispAutoScale:0];
+	</pre>
+	<p>
+	描画した画面サイズを適切に拡大縮小し、現在のスクリーンに表示させます。<br>
+	カッコ内の数値で、スケーリングの方法をいくつか指定することができます。
+	</p>
+	<ul><pre>
+		0 : 画面全体に収まる最適な大きさ(縦横比は維持)
+		1 : X方向のサイズを基準に拡大縮小(縦横比は維持)
+		2 : Y方向のサイズを基準に拡大縮小(縦横比は維持)
+		3 : 縦横比は無視して画面全体に表示
+	</pre></ul>
+	<p>
+	スケーリングの設定は、起動時に行なわれます。スクリプト実行中に変更することはできません。
+	</p>
+	<pre>
+	    [view useAccelerometer:1.0f / 30.0f];
+	</pre>
+	<p>
+	この設定を追加することにより、加速度センサーの値を取得することが可能になります。<br>
+	指定する値は、センサーの読み取り間隔を設定します。上の設定では、30分の1秒単位に取得を行ないます。
+	加速度センサーの値は、システム変数のginfo_accx、ginfo_accy、ginfo_acczにそれぞれ
+	X,Y,Z軸の値が実数で代入されます。
+	これは、それぞれの座標軸の加速度を-1.0～+1.0の範囲で取得したものになります。<br>
+	加速度センサーを使用しない場合は、この設定を追加しないでください。センサー情報の取得により、余計なバッテリーを消費してしまいます。
+	Windows上など加速度センサーが使用できない環境では、0.0が取得されます。
+	</p>
+
+	<p>
+	<img src="hsp3dish/s_iphone.jpg"><br>
+	</p>
+
+
+	<h2 id="APPICON">アプリ名とアイコンの設定</h2>
+
+	<p>
+	プロジェクトにはあらかじめ、デフォルトのアイコン(HSPスープカップアイコン)とアプリ名、スプラッシュスクリーンが設定されています。<br>
+	これらの設定は、プロジェクトのGeneral項目を選択することで確認できます。
+	</p>
+	<p>
+	<img src="hsp3dish/s_appicon.jpg"><br>
+	</p>
+	<p>
+	最低限必要なアイコンファイルとして、以下の3つのファイルが登録されています。
+	それぞれ画像は同じもので、解像度が異なります。自分で用意した画像を使用する場合は、アイコンファイルを差し替えてください。
+	</p>
+	<ul><pre>
+	icon57.png - iOS上で標準的に使用されるアイコン(57×57ドット)
+	icon58.png - Spotlight及び設定画面で使用されるアイコン(58×58ドット)
+	icon120.png - Retinaディスプレイを搭載したiOS上で標準的に使用されるアイコン(120×120ドット)
+	</pre></ul>
+
+	<p>
+	スプラッシュスクリーンは、アプリ起動時に表示される画面で、画面サイズごとに異なるファイルが用意されています。
+	最低限必要なファイルとして、以下の3つのファイルが登録されています。
+	自分で用意した画像を使用する場合は、画像ファイルを差し替えてください。
+	</p>
+	<ul><pre>
+	Default.png - 古い機種で使用されるスプラッシュスクリーン(320×480ドット)
+	Default@2x.png - Retinaディスプレイ用スプラッシュスクリーン(640×960ドット)
+	Default-568h@2x.png - 4インチRetinaディスプレイ用スプラッシュスクリーン(640×1136ドット)
+	</pre></ul>
+
+	<p>
+	iOS上で表示されるアプリ名は、InfoPlist.stringsファイル内で設定されています。
+	プロジェクトのファイルツリー内の、Supporting Filesフォルダ内にあるInfoPlist.stringsを選択することで、編集することができます。
+	</p>
+
+	<p>
+	<img src="hsp3dish/s_infoplist.jpg"><br>
+	</p>
+	<ul><pre>
+	InfoPlist.strings (English) - 英語によるアプリ名の設定
+	InfoPlist.strings (Japanese) - 日本語によるアプリ名の設定
+	</pre></ul>
+
+	<p>
+	プロジェクトには、日本語と英語の2種類が登録されています。それぞれのファイルを選択して、
+	</p>
+	<ul><pre>
+		CFBundleDisplayName = "hspproj";
+	</pre></ul>
+	<p>
+	となっている部分の「hspproj」文字列を書き換えてアプリ名を設定してください。
+	他国語の名称を追加する場合は、XCodeからローカライズの追加を行なって同様に設定を行なってください。
+	</p>
+
+
+	<h2 id="BSAVE">bsave命令によるユーザーデータ保存</h2>
+	<p>
+	bsave命令により、変数バッファの内容をユーザーデータとして保存することができます。
+	(iOSではフォルダの指定はできませんので、ファイル名だけを指定するようにしてください。)<br>
+	保存されたデータは、同じファイル名を指定することでbload命令により読み出すことが可能です。
+	bsave命令で、リソースにあるファイルと同じ名前で保存することはできません。
+	ユーザーデータは、アプリケーションごとに異なる領域に保存されます。異なるアプリケーション間でデータを共有することはできません。
+	</p>
+
+	<h2 id="RESOURCE">Resourceフォルダのデータについて</h2>
+	<p>
+	スクリプトから読み込まれる画像や音声データのファイルは、Resourceフォルダを作成して
+	プロジェクトに追加することで読み込み可能になります。<br>
+	リソースに、data.dpmファイルを追加することにより、複数ファイルがパックされたデータにアクセスすることが可能です。
+	data.dpmファイルは、Windows上のHSP開発システム上で作成可能です。詳しくは、dpmファイル、パックファイル等の項目を参照してください。
+	また、HSP3Dishでは、音声ファイル(wav、mp3など)やアイコンなどiOSのシステムがアクセスするファイルは含めることができませんのでご注意下さい。ファイル名の長さ制限(12文字以内)などは、HSPのpackfile仕様と同様です。
+	</p>
+
+	<h2 id="EXECURL">exec命令のサポートについて</h2>
+	<p>
+	exec命令でURLスキームを指定することにより、Safariブラウザを指定したURLで開くことができます。
+	</p>
+	<pre>
+	exec "http://hsp.tv/",16
+	</pre>
+	<p>
+	上の例では、「hsp.tv」のサイトを開きます。
+	Windowsの時と同様に、第2パラメーターに16(関連付けアプリケーション実行)を指定するようにしてください。
+	</p>
+
+	<h2 id="DIALOG">dialog命令のサポートについて</h2>
+	<p>
+	システムによるダイアログ表示をサポートしています。
+	タイプ0～3のみをサポートしています。ただし、Windows版のような警告アイコン等は表示されません。
+	「はい」「いいえ」の選択肢を選んだ場合は、Windows版と同様の結果がシステム変数statに代入されます。
+	</p>
+
+	<h2 id="SENSOR">加速度センサーのサポートについて</h2>
+	<p>
+	iOS版では、加速度センサーの情報取得をサポートしています。AppDelegate.mに必要な初期化を追加する必要があります。詳しくは、<a href="#RUNPROJ">HSP3Dishの実行と設定</a>をご覧ください。<br>
+	現在は、Windows版では加速度センサーと同様の値を読み取ることができないため、実行中のランタイムに応じて、テストを行なうコードを作成してテストを行なうようにしてください。
+	</p>
+
+	<h2 id="RETINA">Retinaディスプレイ対応について</h2>
+	<p>
+	AppDelegate.mの初期化(「[view useRetina];」)を有効にすることで、Retinaディスプレイに対応させることができます。<br>
+	あらかじめ、640×960(iPhone5の場合は、640x1136)などの高精細なサイズでアプリの作成を行なった上で、設定を行なってください。
+	</p>
+	<pre>
+	    [view useRetina];
+	</pre>
+	<p>
+	この設定により、Retinaディスプレイ搭載機種で正しく反映され、Retinaディスプレイでない機種では縮小サイズで表示されるようになります。
+	</p>
+
+	<h2 id="UNIVERSAL">Universalアプリ対応について</h2>
+	<p>
+	プロジェクトをUniversalアプリ(iPad,iPhoneどちらでも同一のアプリで動作する)としてビルドする場合は、
+	プロジェクトのGeneral項目→Deployment Info→Deployment TargetをUniversalに変更してください。<br>
+	その後、iPhone、iPadごとの設定ができるようになりますので、同一の設定を行なってビルドを行なってください。<br>
+	Universalアプリでは、AppDelegate.m内の初期化時にview dispViewX項目で、正しくアプリが使用する解像度を指定して、スケーリングを行なうか、
+	アプリ側で画面の初期化サイズ(ginfo_sx,gfino_syなど)を調べた上で、それに対応した描画を行なう必要がありますので注意してください。
+	</p>
+	<img src="hsp3dish/s_universal.jpg"><br>
+
+
+	<h2 id="ROTATE">画面の回転について</h2>
+	<p>
+	現在のバージョンでは、実行中の画面自動回転には対応していません。必ず、縦・横画面を固定して動作する仕様で作成してください。<br>
+	hspprojの設定項目で、TARGETS->General内にあるDevice Orientationのチェックボックスで画面の方向を設定することができます。
+	縦長画面(Portrait,Upside Down)または横長(Landscape Left,Landscape Right)のどちらかにチェックを入れるようにしてください。<br>
+	以前のバージョンでは、AppDelegate.m内の設定で、「view dispRotate:」を設定することで回転の設定を行なっていました。
+	「view dispRotate:」による設定も互換性のため残されていますが、XCode6以降では、Device Orientationにより設定を行なってください。
+
+	</p>
+
+	<h2 id="DEVCONTROL">デバイスコントロールについて</h2>
+	<p>
+	iOSデバイス固有の機能にdevcontrolなどの命令でアクセスすることが可能です。<br>
+	</p>
+	<pre>
+		devcontrol "コントロールコマンド",パラメーター1,パラメーター2,パラメーター3
+	</pre>
+	<p>
+	上のような書式で、デバイスコントロールを行ないます。
+	iOSデバイス上では、文字列として指定するコントロールコマンドは、以下を認識します。
+	(コントロールコマンドの文字列は、大文字小文字も含めて完全に一致する必要があります。)<br>
+	認識しないコントロールコマンドを記述した場合もエラーは発生しませんので注意してください。
+	</p>
+	<pre>
+	コントロールコマンド    内容
+	-------------------------------------------
+	vibrate			バイブ(振動)動作
+	sound			システム音再生(パラメーター1)
+	iAd			iAdの表示
+	</pre>
+	<p>
+	たとえば、
+	</p>
+	<pre>
+		devcontrol "vibrate"
+	</pre>
+	<p>
+	は、バイブ(振動)動作を行なうようデバイスに指示を出します。<br>
+	コントロールコマンドによっては、数値によるパラメーターを認識します。
+	</p>
+	<pre>
+		devcontrol "sound",1000
+	</pre>
+	<p>
+	は、組み込みのサウンド(サウンドID=1000)を再生します。
+	パラメーターの数値を変えることにより、様々な組み込みサウンドを再生可能です。
+	(サウンドIDは、1000～1017が指定できます。詳しくは、iOSのAudioServicesPlaySystemSound関数リファレンスを参照してください。)
+	</p>
+
+	<h2 id="SIGNING">エラー時の対応について</h2>
+	<p>
+	実機デバイスの転送時や、コンパイル時にCode Signing Errorが発生する場合があります。
+	これは多くの場合、Provisioning Profileと、Bundle Identifierが一致しない時に発生します。
+	iOS開発の登録を行なった際に、Provisioning Profileが必要になりますが、その際に指定したAppIDが持つIdentifier(onionsoftware.*などのアプリ識別名)と一致しているかを確認してください。
+	</p>
+	<img src="hsp3dish/ios_signing1.jpg"><br>
+	<p>
+	プロジェクトのTARGETS->Build Settings->Code Signing Error項目にある、Code Signing Identity及び、Provisioning Profileが正しく指定されていない場合、エラーが発生します。
+	</p>
+	<img src="hsp3dish/ios_signing2.jpg"><br>
+	<p>
+	Provisioning Profileがデバイスに正しくインストールされていない場合にも、転送時にエラーが発生します。
+	この場合は、デバイスの登録が正しいか、暗号キーの設定などが正しいか見直して再度コンパイルを行なってください。
+	</p>
+
+
+	<h2 id="RELEASE">AppStoreへの登録について</h2>
+	<p>
+	HSP3Dishを使用してアプリを作成した場合でも、通常のアプリ開発と同じ手順でAppStoreへの登録が可能です。<br>
+	AppStoreへ登録することにより、あなた以外のユーザーがアプリをダウンロードして実行させることができるようになります。また、有料アプリとして設定すれば、AppStore上での販売も可能になります。
+	<br>
+	既にDeveloperの登録が済んでいる場合の、おおまかな流れは以下の通りです。
+	</p>
+	<ul>
+	<li>「iOS Provisioning Portal」サイトからアプリで使用するためのAppIDを作成する</li>
+	<li>Distribution Provisioning Profileを作成し、設定ファイルをダウンロードする</li>
+	<li>xcodeを実行している環境に作成したDistribution用のProvisioning Profileを登録する</li>
+	<li>xcode上のプロジェクトで、Build Settings内のCode Signingに配布用のProfileを設定する</li>
+	<li>Releaseのモードでビルドを行ない、エラーが出ないことを確認する</li>
+	<li>「iTunes Connect」サイトでアプリの登録作業を行なう。アプリ名やスクリーンショット等を設定し、ステータスを「Waiting For Upload」の状態にする</li>
+	<li>xcode上から、「Product」→「Archive」のメニューを実行、アップロード用のファイルを作成する</li>
+	<li>Organizerのウインドウが自動的に開くので、ファイルをValidate(有効化)する</li>
+	<li>Validateに成功した場合は、「Submit」を選択しサーバーにアップロードを行なう</li>
+	<li>正常にアップロードされた後、Appleによる審査が行なわれる。経過は「iTunes Connect」サイトで確認可能</li>
+	<li>無事に審査通過すると、AppStoreにアプリが公開されます</li>
+	</ul>
+	<p>
+	登録のための手順は、非常に煩雑なため最初からすべてうまくいくことは稀です。
+	Appleの公開しているドキュメントや、ネット上の資料などを参考にしながら、登録の方法を学んでいってください。<br>
+	既に、HSP3Dishによる作品が少しずつAppStoreにも登場してきています。
+	全世界のマーケットを対象に作品を公開することができますので、是非あなたもチャレンジしてみてください。
+	</p>
+	<p>
+	※Appleの規約により、64bitコードが含まれないバイナリは申請ができなくなっています。必ず、HSP3Dish 3.5β3以降のランタイムを使用してファイルを作成してください。
+	また、プロジェクトのビルド設定で「Build Active Architecture Only」に「No」を設定するようにしてください。「Build Active Architecture Only」は、PROJECTとTARGETSそれぞれに設定があるので、どちらも「No」が設定されていることを確認してください。
+	また、Architecturesの項目も、「Standard Architectures」(armv7,arm64)が選択されていることを確認してください。
+	</p>
+
+	<h2 id="IAD">iAdの対応について</h2>
+	<p>
+	アプリ内に広告を表示するiAdのシステムに対応しています。<br>
+	iAdを有効にする場合は、
+	</p>
+	<pre>
+		devcontrol "iAd"
+	</pre>
+	<p>
+	の記述を追加してください。iAdが有効になった後は、画面下にiAdが配信する広告表示が行なわれます。<br>
+	iAdによる広告収益を得るためには、iTunes connect上で適切な設定を行なう必要があります。
+	詳しくは、<a href="https://developer.apple.com/jp/support/ios/iad-network.html" target="_blank">デベロッパーサポートのiAd項目</a>を参照してください。
+	</p>
+
+	<h2 id="ADMOB">AdMobの対応について</h2>
+	<p>
+	アプリ内に広告を表示するAdMobのシステムに仮対応しています。<br>
+	標準的なHSP3Dishランタイム(iHSP23フォルダ)と合わせて、AdMob対応のランタイム(iHSP23AdMobフォルダ)を
+	同梱しています。AdMobを使用する際には、iHSP23ではなくiHSP23AdMobフォルダをプロジェクトに追加してください。<br>
+	また、AppDelegate.m内の#import部分のコードを、以下のように修正する必要があります。
+	</p>
+	<pre>
+	    #import "../../iHSP23AdMob/Classes/HspView.h"
+	</pre>
+	<p>
+	さらに、以下のフレームワークをプロジェクトに追加してください。
+	</p>
+	<ul>
+	<li>AdSupport.framework</li>
+	<li>StoreKit.framework</li>
+	<li>MessageUI.framework</li>
+	<li>SystemConfiguration.framework</li>
+	<li>CoreGraphics.framework</li>
+	<li>CoreAudio.framework</li>
+	<li>UIKit.framework</li>
+	<li>Foundation.framework</li>
+	</ul>
+	<p>
+	最後に、ユーザーが個別に取得するAdMobパブリッシャーIDを指定します。
+	「iHSP23admob/Classes/HspViewController.mm」ファイル内のコードを直接修正してください。
+	</p>
+	<pre>
+		// 広告の「ユニット ID」を指定する。これは AdMob パブリッシャーID です。
+		adMobView.adUnitID = @"a??????????????";
+	</pre>
+
+	<p>
+	以上でAdMobに対応したアプリの作成が可能になります。<br>
+	実際にAdMobを有効にする場合は、スクリプト内のdevcontrol命令を記述してください。(これは、android版と共通の記述となります)
+	</p>
+	<pre>
+		devcontrol "AdMob"
+	</pre>
+	<p>
+	AdMobが有効になった後は、画面下にAdMobが配信する広告表示が行なわれます。<br>
+	AdMobによる広告収益を得るためには、web上のAdMobページで適切な設定を行なう必要があります。
+	詳しくは、<a href="http://www.google.co.jp/ads/admob/" target="_blank">AdMobオフィシャルサイト</a>を参照してください。
+	AdMobのメリットの１つは、androidと共通でIDや収益の管理を行なうことができる点になります。
+	</p>
+
+	<h2 id="NOTICE">iOS版の注意事項、制限</h2>
+	<ul>
+	<li>入力可能な情報</li>
+	<p>
+	タップした座標がmousex,mouseyに反映されます。
+	またstick命令により、クリック(タップ)のON/OFFを取得可能です。
+	</p>
+	<li>画像フォーマットについて</li>
+	<p>
+	celload、picload命令などで読み込まれる画像は、以下のフォーマットが使用できます。iOSでは、PNG形式が推奨されます。
+	<ul>
+	<li>JPEG baseline (プログレッシブJPEGは非サポート)</li>
+	<li>PNG (8bit、24bit、24bit+アルファチャンネル形式に対応)</li>
+	<li>TGA (サブセット)</li>
+	<li>BMP (白黒、RLE圧縮は非サポート)</li>
+	<li>PSD (RGB24bitのみ読み出し)</li>
+	<li>GIF</li>
+	<li>HDR (radiance rgbE format)</li>
+	<li>PIC (Softimage PIC)</li>
+	</ul>
+	</p>
+	<li>画像サイズについて</li>
+	<p>
+	celload、picload命令などで読み込まれる画像の縦・横サイズが、2048を越えるものについては、正しく扱えない機種もあるので、推奨されません。
+	縦・横のサイズが2^nのサイズ、つまり1,2,4,8,16,32,64,128,256,512,1024でない画像を
+	読み込む時には、内部で変換を行なうため多少のオーバーヘッドが発生します。
+	(通常はそれほど気にする必要はありません。大量の画像を読み込む場合にCPUリソースが余計に必要となります)
+	</p>
+	<li>再生可能なサウンドファイルについて</li>
+	<p>
+	拡張子が「.wav」「.mp3」「.caf」「.aac」のファイルに対応しています。
+	圧縮された音声ファイルについては、mmload命令で読み込んだ時点ですべての波形がメモリに展開されるため、多くの音楽を同時に読み込むことは推奨されません。
+	「.caf」「.aac」形式は、Mac及びiOSでサポートされている形式です。
+	「.wav」「.mp3」は、Windows版を含めすべてのhsp3dishで幅広くサポートされている形式です。
+	</p>
+	<li>mes,print命令について</li>
+	<p>
+	mes,print命令による文字列描画は、非常にコスト(実行時間)のかかる処理のため多くの文字列を一度に書き換えることは推奨されません。<br>
+	文字列の描画は、システム内部でキャッシュを持っており以前に描画した内容は高速に表示されますが、
+	毎フレームごとに異なる文字列を多く表示するような処理は、高い負荷がかかることをご了承ください。<br>
+	表示する文字が英文字のみの場合は、あらかじめ自前で文字データを用意して使用するなどの工夫で、
+	良いパフォーマンスを得ることができます。(hsp3dishサンプルのtest1.hspなどを参考にしてみてください)
+
+	</p>
+	<li>アプリの終了について</li>
+	<p>
+	iOS版では、end命令によるアプリ終了は行なわれません(stop命令と同様の処理になります)。
+	iOSのアプリ製作ガイドラインでは、プログラム自身による終了を行なわないよう求めています。<br>
+	<a href="https://developer.apple.com/library/ios/#qa/qa2008/qa1561.html" target="_blank">https://developer.apple.com/library/ios/#qa/qa2008/qa1561.html</a><br>
+	Windowsやandroidとは異なり、iOS上では、アプリを終了するという動作のないように作ることが
+	求められるので、注意をしてください。
+	</p>
+	</ul>
+
+	<h2 id="NEWVER">iOS版の更新予定</h2>
+	<p>
+	以下の機能は今後、上から順に高い優先度で追加される予定です。
+	</p>
+	<ul>
+	<li>各種システム情報取得</li>
+	<li>http接続、ブラウザの呼び出しサポート</li>
+	<li>GAMECENTER、Google Play Game Servicesなど各種ランキングサービスの設定</li>
+	<li>HGIMG4のサポート</li>
+	</ul>
+	<p>
+	バージョンアップの告知は、HSPオフィシャルサイトHSPTV!にて行なわれますので、随時ご確認ください。
+	</p>
+
+	<!-- フッター -->
+	<ul id="FOOTER">
+		<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+		<li><a href="../index.htm">インデックスに戻る</a></li>
+	</ul>
+	<a href="http://www.onionsoft.net/">
+		<img src="onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+	</a>
+</div><!-- container -->
+</body>
+</html>

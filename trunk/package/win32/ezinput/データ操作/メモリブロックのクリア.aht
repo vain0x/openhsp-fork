@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "memset"
+
+#define 書き込み先の変数	""	;;str
+#define クリアする値	"0"	;;str
+#define クリアするサイズ	"0"	;;str
+#define 書き込み先の変数メモリオフセット	"0"	;;str
+
+#ahtmes "memset "+書き込み先の変数+" , "+クリアする値+" , "+クリアするサイズ+" , "+書き込み先の変数メモリオフセット+

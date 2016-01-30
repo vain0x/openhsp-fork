@@ -1,0 +1,13 @@
+#include "mod_img.as"
+
+	title "ImgCtx‚É‚æ‚é‰æ‘œ“Ç‚İ‚İ"
+
+	dialog "BMP;*.JPG;*.PNG;*.GIF;*.ICO;*.TIFF",16
+	if stat = 0 : end
+
+	imgload refstr
+
+	title "“Ç‚İ‚İŠ®—¹"
+	stop
+
+

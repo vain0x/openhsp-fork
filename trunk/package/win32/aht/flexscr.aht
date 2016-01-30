@@ -1,0 +1,11 @@
+#aht name "スクリプト"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 4
+#aht exp "任意のHSPスクリプトを埋め込みます。"
+
+#define スクリプト	;;str,help="スクリプト内容を入力してください。",opt="mesbox"
+
+	スクリプト
+

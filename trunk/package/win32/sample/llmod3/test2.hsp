@@ -1,0 +1,70 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/img.hsp"
+	#include "llmod3/treebox.hsp"
+
+	cls
+	objsize 200,20
+
+	style=1|2|4|$20;|$1000		;styleについてはtreebox.hsp参照
+	treebox 300,200,style		;変数tree_idにtreeboxのIDが入る
+	tree_id=stat			;(HSPのボタンなどのIDとは違う意味を持つ)
+					;消去するときは _clrobj tree_id
+
+	treeadd 0, "test1"	;tree_idに親無しのアイテムを作る。
+	itm0=stat
+
+	treeadd 0, "test2"
+	itm1=stat
+
+
+	repeat 10
+		treeadd itm0, "test1`s child "+cnt	;親をitm0にする
+	loop
+	if all_test : treeadd itm0, "test1`s child (goto next)" : gt_nxt=stat
+
+	mes "tree view↑"
+	_objsel tree_id			;treeboxを選択状態にする
+					;(_objselはHSPのオブジェクトにも使えます)
+
+	button "add child itm",*add_child_itm
+	button "del itm",*del_itm
+	button "sort itm",*sort_itm
+*x6_lp
+	wait 10
+	treeget itm
+	if itm=gt_nxt : goto *x7
+	goto *x6_lp
+
+*del_itm
+	treeget itm			;選択されているアイテムのIDを取得
+	treeget txt,6,itm		;itmのテキストを取得
+	itm_val=stat			;itmが持つ値
+	treedel itm
+	treemax max
+	mes txt+"を消去しました itemが持つ値:"+itm_val+"  (残りアイテム:"+max+"個)"
+	_objsel tree_id
+	goto *x6_lp
+
+*add_child_itm
+	x=rnd(1000)
+	sec=gettime(6)
+	treeget itm			;選択されているアイテムのIDを取得
+	treeadd itm,"new item"+x,,,,sec	;親を選択されているアイテムにする
+					;secという値をアイテムに持たせることができる
+	_objsel tree_id
+	goto *x6_lp
+
+*sort_itm
+	treeget itm			;選択されているアイテムを取得
+	treesort itm			;選択されているアイテムが持つ子をソート
+	_objsel tree_id
+	goto *x6_lp
+
+*x7
+	end

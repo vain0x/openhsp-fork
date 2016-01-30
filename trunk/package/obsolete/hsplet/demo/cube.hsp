@@ -1,0 +1,571 @@
+;
+; ルービックキューブ
+;
+; ・マウスでドラッグして回転
+; ・カーソルキーでカメラ移動
+;
+; 山田雄己作 ぱわーどばい d3module
+;
+;
+; 初期状態で
+; 　↑Z
+;X←┘
+; ／
+;Y
+; とする
+;
+; 面の管理方法はいくつか考えられるが、頂点の集合として捉えてみる。
+;
+; 点で管理することの最大のメリットは面の角度を意識する必要が無いこと。
+; 点を適切に移動してやるだけで、面は自動的に回転する。
+;
+; 立方体の面を Side、その中の小さな断片を Face、
+; 頂点を Vertex 座標を Coordinate と呼ぶことにする。
+;
+; 回転する面の選択は、buffer 2 に Face の ID を色として書き込んでおき、
+; クリックしたピクセルの色でどの Face をクリックしたかわかるようにする。
+; 
+; 回転する Face の判断は、Face の中心が、回転範囲内にあるかどうかで判断できる。
+;
+
+
+#include "d3m.hsp"
+
+
+
+#const TRUE 1
+#const FALSE 0
+	
+#const PersistenceMode FALSE
+
+#const SideCount 6 ; 立方体の面の数
+#const FaceCount 3*3 ; 面に含まれる小さな四角の数
+#const CoordinateCount 3 ; 座標軸の数
+#const VertexCount 6 ; 小さな四角の頂点の数 + Face の中心 + Side の中心
+
+#const Coordinate_X 0 ; 配列中の X 座標値のインデックス
+#const Coordinate_Y 1 ; 配列中の Y 座標値のインデックス
+#const Coordinate_Z 2 ; 配列中の Z 座標値のインデックス
+
+#const Vertex_CenterOfFace 4 ; 配列中の Face の中心座標のインデックス、Z オーダー、回転判定に使用する。
+#const Vertex_CenterOfSide 5 ; 配列中の、その Face が属する Side の中心座標のインデックス、回転軸決定に使用する。
+
+#const MainScreen 0
+#const MaskScreen 2
+#const TextureScreen 3
+#const MirrorScreen 4
+
+#const TextureDelta 70
+#const TextureSize 64
+#const TextureOffset (TextureDelta-TextureSize)/2
+
+#define PI 3.14159265358979
+
+	gosub *l_InitMainScreen
+	gosub *l_InitMaskScreen
+	gosub *l_InitTextureScreen
+	gosub *l_InitMirrorScreen
+	gosub *l_InitFaces
+
+	dphase = 1.0
+	randomize
+
+	cameraDistance = 20.0
+
+	currentTime = d3timer()
+
+	
+*l_MainLoop
+
+	frame++
+
+	await
+
+	dt = d3timer()-currentTime
+	currentTime= d3timer()
+
+	if initialized = FALSE {
+
+		phase = dphase*dt/30+phase
+		dphase -= 0.002*dt/30
+
+		cameraZ = cos( 0.05*phase )*5.0
+		cameraAngleZ = 1.0+0.05*phase
+		cameraDistance = (cameraDistance*31+cos( 0.03*phase )*3.0+5.0)/32
+
+		if rotating = FALSE {
+			if rphase>2 {
+				rphase = 0
+				dragFace = rnd( FaceCount )
+				dragSide = rnd( SideCount )
+				rotationAxis = rnd( CoordinateCount )
+				rotationAngle = PI/2*(rnd(5)-2)
+				rotating = TRUE
+			}
+		}
+		if phase>50: rphase = dphase*dt/30+rphase
+
+		if dphase < 0: initialized = TRUE
+		
+	} else {
+		; キーでカメラ移動
+		gosub *l_AcceptKeys
+	
+		if rotating = FALSE {
+	
+			; クリックでドラッグ開始
+			if dragging = FALSE {
+				gosub *l_AcceptClick
+			}
+	
+			; マウスでドラッグ
+			if dragging {
+				gosub *l_AcceptDrag
+			}
+		}
+	}
+	gosub *l_MoveCamera
+
+	; 回転
+	if rotating: gosub *l_Rotate
+
+	; 描画
+	gosub *l_Draw
+
+goto *l_MainLoop
+
+*l_InitMainScreen
+
+	screen MainScreen
+
+	cls 4
+
+	title "ルービックキューブ"
+
+	font "Arial", 24, 1
+	
+return
+
+*l_InitMaskScreen
+
+	buffer MaskScreen
+
+	cls 0
+
+return
+
+*l_InitTextureScreen
+
+	buffer TextureScreen, TextureDelta*SideCount, TextureDelta
+	
+	repeat SideCount
+		side = cnt
+
+		; Side に応じた色
+		switch side
+			case 0: rgb = 192, 0, 0: swbreak
+			case 1: rgb = 0, 192, 0: swbreak
+			case 2: rgb = 0, 0, 192: swbreak
+			case 3: rgb = 192, 192, 0: swbreak
+			case 4: rgb = 0, 192, 192: swbreak
+			case 5: rgb = 192, 0, 192: swbreak
+		swend
+
+		; 真ん中が少し明るくなるように書く
+		repeat TextureDelta
+			x = cnt
+			dx = x-TextureDelta/2
+			repeat TextureDelta
+				y = cnt
+				dy = y-TextureDelta/2
+
+				d2 = sqrt( dx*dx+dy*dy )
+
+				dc = 96-64*d2/(TextureSize/2)
+				if dc<0: dc = 0
+				if abs(dx)>TextureSize/2-4 | abs(dy)>TextureSize/2-4: dc -= 16
+				if abs(dx)>TextureSize/2-3 | abs(dy)>TextureSize/2-3: dc -= 16
+				if abs(dx)>TextureSize/2-2 | abs(dy)>TextureSize/2-2: dc -= 16
+				if abs(dx)>TextureSize/2-1 | abs(dy)>TextureSize/2-1: dc -= 16
+
+				r = limit( rgb.0+dc, 0, 255 )
+				g = limit( rgb.1+dc, 0, 255 )
+				b = limit( rgb.2+dc, 0, 255 )
+
+				color r, g, b
+				pset side*TextureDelta+x, y
+				
+			loop
+		loop
+
+
+	loop
+	
+return
+
+*l_InitMirrorScreen
+
+	buffer MirrorScreen, 160, 120
+
+return
+
+*l_InitFaces
+
+	; 面の頂点の配列、正方形の4つの頂点のほかに、その中心座標もついてる
+	ddim faces, VertexCount, CoordinateCount, FaceCount, SideCount 
+	
+	repeat SideCount
+		side = cnt
+		
+		switch side
+			case 0: c1 = Coordinate_X: c2 = Coordinate_Z: c3 = Coordinate_Y: dsign=1: swbreak
+			case 1: c1 = Coordinate_Y: c2 = Coordinate_Z: c3 = Coordinate_X: dsign=1: swbreak
+			case 2: c1 = Coordinate_X: c2 = Coordinate_Z: c3 = Coordinate_Y: dsign=-1: swbreak
+			case 3: c1 = Coordinate_Y: c2 = Coordinate_Z: c3 = Coordinate_X: dsign=-1: swbreak
+			case 4: c1 = Coordinate_X: c2 = Coordinate_Y: c3 = Coordinate_Z: dsign=1: swbreak
+			case 5: c1 = Coordinate_X: c2 = Coordinate_Y: c3 = Coordinate_Z: dsign=-1: swbreak
+		swend
+
+		repeat FaceCount
+			face = cnt
+			h = face\3-1
+			v = face/3-1
+			d = 1.5*dsign
+
+			faces.0.c1.face.side = -0.5+h, 0.5+h, 0.5+h, -0.5+h, 0.0+h, 0.0
+			faces.0.c2.face.side = 0.5+v, 0.5+v, -0.5+v, -0.5+v, 0.0+v, 0.0
+			faces.0.c3.face.side = d, d, d, d, d, d
+		loop
+	loop
+
+return
+
+*l_AcceptKeys
+
+	if ginfo(2)==MainScreen {
+		getkey left, 37
+		getkey up, 38
+		getkey right,39
+		getkey down, 40
+	} else {
+		left = FALSE
+		up = FALSE
+		right = FALSE
+		down = FALSE
+	}
+
+return
+
+*l_MoveCamera
+
+	if up: cameraZ += 0.02*dt
+	if down: cameraZ -= 0.02*dt
+	if left: cameraAngleZ += 0.004*dt
+	if right: cameraAngleZ -= 0.004*dt
+return
+
+*l_AcceptClick
+
+	stick keys
+	if keys&256 {
+
+		gsel MainScreen
+		
+		clickx = mousex
+		clicky = mousey
+
+		gosub *l_OnClick
+	}
+
+return
+
+*l_OnClick
+		
+	gsel MaskScreen
+	
+	pget clickx, clicky
+
+	dragFace = ginfo_r
+	dragSide = ginfo_g
+	
+	if dragFace!=255: dragging = TRUE
+
+return
+
+*l_AcceptDrag
+	
+	gsel MainScreen
+
+	getkey lbutton, 1
+	if lbutton {
+		dragx = mousex
+		dragy = mousey
+		
+		if d3dist( dragx-clickx, dragy-clicky )>30 {
+			dragging = FALSE
+			gosub *l_OnDrag
+		}
+	} else {
+		dragging = FALSE
+	}
+
+return
+
+*l_OnDrag
+	; ドラッグと回転の関係
+	; クリック位置と、現在位置の差から回転方向を決める。
+	; まず、X,Y,Z軸の角度を求め、マウスドラッグの角度に一番近い方向に回転する。
+
+	gsel MainScreen
+	
+	gosub *l_SetCamera
+	
+	; 座標軸のスクリーン座標を得る
+	dim screenXOf, CoordinateCount
+	dim screenYOf, CoordinateCount
+	ddim angleOf, CoordinateCount
+
+	d3getpos screenXOf.Coordinate_X, screenYOf.Coordinate_X, 3, 0, 0
+	d3getpos screenXOf.Coordinate_Y, screenYOf.Coordinate_Y, 0, 3, 0
+	d3getpos screenXOf.Coordinate_Z, screenYOf.Coordinate_Z, 0, 0, 3
+
+	deltaXOfMouse = dragx-clickx
+	deltaYOfMouse = dragy-clicky
+	; 座標軸の角度と、マウスの移動角度を得る
+	repeat CoordinateCount
+		angleOf.cnt = atan( screenYOf.cnt-320, screenXOf.cnt-240 )
+	loop
+	angleOfMouse = atan( deltaYOfMouse, deltaXOfMouse )
+
+	;マウスの移動角度と座標軸の移動角度のずれを得る
+	ddim angleFrom, CoordinateCount
+	repeat CoordinateCount
+		angleFrom.cnt = absf( sin( angleOf.cnt-angleOfMouse ) )
+	loop
+
+	; マウスの動きに一番近い座標軸を探す
+	dragAxis = -1
+	; 面が向いてない方向で、一番マウスの角度に近いのが軸になる
+	repeat CoordinateCount
+		if faces.Vertex_CenterOfSide.cnt.dragFace.dragSide>1 | faces.Vertex_CenterOfSide.cnt.dragFace.dragSide< -1: continue
+		if dragAxis <0: dragAxis = cnt: else: if angleFrom.cnt<angleFrom.dragAxis: dragAxis = cnt
+	loop
+
+	; マウスが座標軸に沿って動いたか、逆向きに動いたか
+	if cos( angleOf.dragAxis-angleOfMouse )<0: sign = -1: else: sign = 1
+
+	; 軸と向きに応じて回転
+	dup side1s, faces( 0, (dragAxis+1)\CoordinateCount, dragFace, dragSide )
+	dup side2s, faces( 0, (dragAxis+2)\CoordinateCount, dragFace, dragSide )
+
+	if side1s.Vertex_CenterOfSide>1 {
+		rotationAngle = -PI/2*sign
+		rotationAxis = (dragAxis+2)\CoordinateCount
+	}
+	if side1s.Vertex_CenterOfSide<-1 {
+		rotationAngle = PI/2*sign
+		rotationAxis = (dragAxis+2)\CoordinateCount
+	}
+	if side2s.Vertex_CenterOfSide>1 {
+		rotationAngle = PI/2*sign
+		rotationAxis = (dragAxis+1)\CoordinateCount
+	}
+	if side2s.Vertex_CenterOfSide<-1 {
+		rotationAngle = -PI/2*sign
+		rotationAxis = (dragAxis+1)\CoordinateCount
+	}
+	
+	rotating = TRUE
+return
+
+*l_Rotate
+
+	; 1フレームで回転する角度
+	if rotationAngle>0 {
+		if rotationAngle<0.005*dt: deltaAngle = rotationAngle: else: deltaAngle = 0.005*dt
+	} else {
+		if rotationAngle>-0.005*dt: deltaAngle = rotationAngle: else: deltaAngle = -0.005*dt
+	}
+
+	; ドラッグされた Face の回転軸方向の座標
+	; すべての Face のうち、回転軸方向の座標がこの付近にある Face が回転対象となる。
+	maxC = faces.Vertex_CenterOfFace.rotationAxis.dragFace.dragSide+0.75
+	minC = faces.Vertex_CenterOfFace.rotationAxis.dragFace.dragSide-0.75
+
+	repeat SideCount
+		side = cnt
+
+		repeat FaceCount
+			face = cnt
+
+			dup axisCoordinate, faces( 0, rotationAxis, face, side )
+
+			if axisCoordinate.Vertex_CenterOfFace<maxC: if axisCoordinate.Vertex_CenterOfFace>minC {
+				
+				dup c1s, faces( 0, (rotationAxis+1)\CoordinateCount, face, side )
+				dup c2s, faces( 0, (rotationAxis+2)\CoordinateCount, face, side )
+			
+				repeat VertexCount
+					d3rotate c1s.cnt, c2s.cnt, c1s.cnt, c2s.cnt, deltaAngle
+				loop
+			}
+			
+		loop
+	loop
+
+	rotationAngle -= deltaAngle
+	if rotationAngle = 0: rotating = FALSE
+	
+return
+
+*l_Draw
+
+	gsel MainScreen
+
+	redraw FALSE
+
+	if PersistenceMode {
+	
+		color
+		
+		xs = 0, 641, 641, 0
+		ys = 0, 0, 481, 481
+		gmode 3,,,64
+		gsquare -1, xs, ys
+	
+		; HSPBUG gsquare は右と下のクリッピングが正しく行えない。
+		line 639, 479, 639, 0
+		line -1, 479
+		
+	} else {
+		color: boxf
+	}
+	
+	color 224, 224, 224 : pos 0, 0: mes "FPS="+d3getfps()
+
+
+	gsel MaskScreen
+
+	color 255, 255, 255 : boxf
+
+	gsel MirrorScreen
+	color 0, 0, 0: boxf 0, 0, 159, 119
+
+	gosub *l_DrawFaces
+
+	; ミラースクリーンをコピー
+	gsel MainScreen
+
+	color 255, 255, 255
+	boxf 18, 338, 19, 461
+	boxf 180, 338, 181, 461
+	boxf 20, 338, 179, 339
+	boxf 20, 460, 179, 461
+	
+	pos 20, 340
+	gcopy MirrorScreen, 0, 0, 160, 120
+	
+	redraw TRUE
+return
+
+*l_DrawFaces
+	
+	gsel MainScreen
+	
+	gmode 3, ,, 224
+		
+	gosub *l_SetCamera
+	
+	gosub *l_SortFaces
+	
+	; 遠い方から描画
+	repeat SideCount*FaceCount
+		side = 0+sortedFaceSide.2.cnt
+		face = 0+sortedFaceSide.1.cnt
+
+		dup xs, faces.0.Coordinate_X.face.side
+		dup ys, faces.0.Coordinate_Y.face.side
+		dup zs, faces.0.Coordinate_Z.face.side
+
+		gsel MainScreen
+
+		d3texture xs, ys, zs, TextureScreen, side*TextureDelta+TextureOffset, TextureOffset, TextureSize, TextureSize
+
+		;クリック判定用のマスクを描画
+		gsel MaskScreen
+		
+		color face, side, 0
+		d3square xs, ys, zs
+
+	loop
+
+
+	; バックミラーを書く（左右反対にならないのでミラーじゃなくて普通に後ろから見てるだけだけど）
+	
+	gsel MirrorScreen
+
+	gmode 0
+	
+	gosub *l_SetMirrorCamera
+		
+	; こっちは近い方から描画
+	repeat SideCount*FaceCount
+		side = 0+sortedFaceSide( 2, SideCount*FaceCount-cnt-1 )
+		face = 0+sortedFaceSide( 1, SideCount*FaceCount-cnt-1 )
+
+		dup xs, faces.0.Coordinate_X.face.side
+		dup ys, faces.0.Coordinate_Y.face.side
+		dup zs, faces.0.Coordinate_Z.face.side
+
+
+		d3texture xs, ys, zs, TextureScreen, side*TextureDelta+TextureOffset, TextureOffset, TextureSize, TextureSize
+
+	loop
+
+return
+
+*l_SetCamera
+
+	cameraX = sin( cameraAngleZ )*cameraDistance
+	cameraY = cos( cameraAngleZ )*cameraDistance
+
+	d3setcam cameraX, cameraY, cameraZ
+
+return
+
+*l_SetMirrorCamera
+
+	d3setcam -cameraX, -cameraY, -cameraZ
+
+return
+
+*l_SortFaces
+	
+	; 遠い順（描画順）に並べられた面
+	ddim sortedFaceSide, 3, FaceCount*SideCount; 距離, face, side の順に格納
+
+	repeat SideCount
+		side = cnt
+
+		repeat FaceCount
+			face = cnt
+
+			dup xs, faces.0.Coordinate_X.face.side
+			dup ys, faces.0.Coordinate_Y.face.side
+			dup zs, faces.0.Coordinate_Z.face.side
+
+			distance = d3dist( xs.Vertex_CenterOfFace-cameraX, ys.Vertex_CenterOfFace-cameraY, zs.Vertex_CenterOfFace-cameraZ )
+
+			repeat SideCount*FaceCount
+				if distance>sortedFaceSide.0.cnt {
+
+					memcpy sortedFaceSide, sortedFaceSide, (SideCount*FaceCount-cnt-1)*24, (cnt+1)*24, cnt*24
+
+					sortedFaceSide.0.cnt = distance, 0.0+face, 0.0+side
+					break
+				}
+			loop
+		loop
+	loop
+
+return

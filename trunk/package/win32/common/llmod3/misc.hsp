@@ -1,0 +1,243 @@
+	;================================================================================
+	;モジュール misc
+	;ver 2.1
+	;	その他
+	;	llmod3.hspが必要です
+	;================================================================================
+
+
+	; btnimg
+	; tooltip
+	; strtoint
+	;
+	; 計	3個
+
+#ifdef __hsp30__
+
+	;-------------------------------------------------------------------------------
+	#module
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;btnimg buttonID,windowID,x,y,width,height
+	; buttonID	:イメージを貼りつけるボタンのID(0～63)
+	; windowID	:イメージが描画されているウィンドウのID(0～7)
+	; x		:イメージの位置
+	; y		:イメージの位置
+	; width		:イメージの幅
+	; height	:イメージの高さ
+	;
+	;<>説明
+	; buttonにイメージを貼りつけます。
+	;
+	;例
+	;	buffer 1
+	;	picload "mybmp.bmp"	;ウィンドウID 1 にビットマップを表示
+	;	bmp_w=winx:bmp_h=winy
+	;	gsel 0
+	;	button "",*label : btn_id=0
+	;
+	;	;ウィンドウID 1の(0,0)-(bmp_w,bmp_h)の範囲の画像をボタンに描画する
+	;	btmimg btn_id,1,0,0,bmp_w,bmp_h
+	;................................................................................
+	#deffunc btnimg int v1,int v2,int v3,int v4,int v5,int v6
+	mref bmscr,67
+
+	p = v2
+	p(1) = bmscr(18)	;現在アクティブなウィンドウID
+	gsel p
+
+	if(firstcall == 0) : dim hbmp,6,64 : firstcall = 1
+
+	p = bmscr(18) : if(p > 1) : p--
+	if(hbmp(p,v1)) : prm = hbmp(p,v1) : dllproc "DeleteObject",prm,1,D_GDI
+
+	gsel p(1)
+	_hspobjhandle v1
+	a = stat
+	if(a == 0) : return
+	s = ""
+	getptr p,s
+	prm = a,p,64
+	dllproc "GetClassNameA",prm,3,D_USER
+	charupper s
+	if(s != "BUTTON") : return
+
+	gsel p
+	prm = hdc,v5,v6
+	dllproc "CreateCompatibleBitmap",prm,3,D_GDI
+	p = bmscr(18) : if(p > 1) : p--
+	hbmp(p,v1) = stat
+	a(1) = hbmp(p,v1)
+
+	prm = hdc		;hdc
+	dllproc "CreateCompatibleDC",prm,1,D_GDI
+	hmemdc = stat
+
+	prm = hmemdc,a(1)
+	dllproc "SelectObject",prm,2,D_GDI
+
+	#define SRCCOPY	0xCC0020
+
+	prm = hmemdc,0,0,v5,v6,hdc,v3,v4,SRCCOPY
+	dllproc "BitBlt",prm,9,D_GDI
+
+	;#define GWL_STYLE	(-16)
+	#define BS_BITMAP	128
+	#define BS_ICON	64
+	prm = a,-16,$50000000 | BS_BITMAP
+	setwndlong prm
+
+	#define BM_SETIMAGE	247
+	#define IMAGE_BITMAP	0
+	#define IMAGE_ICON	1
+	sendmsg a,BM_SETIMAGE,IMAGE_BITMAP,a.1
+
+	dllproc "DeleteDC",hmemdc,1,D_GDI
+
+	gsel p(1)
+
+	return
+	#global
+	;-------------------------------------------------------------------------------
+
+
+
+	;-------------------------------------------------------------------------------
+	#module
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;tooltip ObjectID,String,BkColor
+	; ObjectID	: button,input,treeboxなどのID
+	; String	: ツールチップ上に表示する文字列
+	; BkColor	: ツールチップの背景色
+	;
+	;<>説明
+	; オブジェクトにツールチップを付けます。
+	; ツールチップとはマウスがbuttonなどのオブジェクト上で一定時間停止したときに
+	; 現れる小さなオブジェクトです。
+	;
+	;例)
+	;	button "test",label	: btn_id=0
+	;	tooltip btn_id,"テストします"
+	;
+	;................................................................................
+	#deffunc tooltip int v1,str v2,int v3
+	mref bmscr,67
+
+	#define TTS_ALWAYSTIP	1
+	#define TTS_NOPREFIX	2
+	#define CW_USEDEF	0x80000000
+
+	a = strlen(v2)
+	if(a >= 64) {
+		sdim s,a + 1
+	}
+	s = v2
+
+	a = bmscr(18)		;bmscr.wid
+	if(handle_of_tt(a) == 0) {
+		prm = TTS_NOPREFIX ;|TTS_ALWAYSTIP
+		m = CW_USEDEF,CW_USEDEF,CW_USEDEF,CW_USEDEF,prm,0,0
+		_makewnd m,"tooltips_class32"
+		handle_of_tt(a) = m
+	}
+	h_tt = objinfo(handle_of_tt(a),2)
+
+	#define TTF_IDISHWND	1
+	#define TTF_CENTERTIP	2
+	#define TTF_RTLREADING	4
+	#define TTF_SUBCLASS	16
+
+	_is_wnd v1
+	if(stat) : a = v1 : else : a = objinfo(v1,2)
+	getptr p,s
+	ti(0) = 40,TTF_IDISHWND | TTF_SUBCLASS ;|TTF_CENTERTIP
+	ti(2) = hwnd			;hwnd
+	ti(3) = a				;uid
+	ti(8) = hinstance
+	ti(9) = p				;ptext
+
+	getptr p,ti
+	#define TTM_ADDTOOLA	1028
+	sendmsg h_tt,TTM_ADDTOOLA,0,p
+
+	;以下はIE 3.0以上でなければ無効
+
+	;#define WM_USER	1024
+	;#define TTM_SETMAXTIPWIDTH	(WM_USER + 24)
+	;#define TTM_SETTIPBKCOLOR	(WM_USER + 19)
+	;#define TTM_SETTIPTEXTCOLOR	(WM_USER + 20)
+
+	sendmsg h_tt,$400 + 24,0,$7fffffff
+	if(v3) : sendmsg h_tt,$400 + 19,v3,0
+	return m
+	#global
+	;-------------------------------------------------------------------------------
+
+
+	;-------------------------------------------------------------------------------
+	#module
+
+	;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	;strtoint String,Base
+	; String	: 数値に変換する文字列
+	; Base		: 基数(2～36)
+	;
+	;<>説明
+	; 文字列を数値に変換します。
+	;
+	;例)
+	;	strtoint "111101",2	;2進数とみなして変換
+	;	mes stat
+	;
+	;	strtoint "0x1F"		;先頭が"0x"だと16進数とみなされる(Base省略時)
+	;	mes stat
+	;
+	;	strtoint "0376"		;先頭が"0"だと8進数とみなされる(Base省略時)
+	;	mes stat
+	;
+	;	strtoint "23413",7	;7進数とみなして変換
+	;	mes stat
+	;
+	;	strtoint "za",36	;36進数とみなして変換
+	;	mes stat
+	;................................................................................
+	#deffunc strtoint str v1,int v2
+
+	s = v1
+	ll_libload dll,"msvcrt"
+	if(dll == 0) {
+		ll_libload dll,"crtdll"
+	}
+	if(dll == 0) {
+		return 0
+	}
+	getptr prm,s
+	prm.1 = 0,v2
+	dllproc "strtol",prm,3,dll
+	ll_libfree dll
+	return dllret
+
+
+	#undef SRCCOPY
+
+	#undef BS_BITMAP
+	#undef BS_ICON
+	#undef BM_SETIMAGE
+	#undef IMAGE_BITMAP
+	#undef IMAGE_ICON
+
+
+	#undef TTS_ALWAYSTIP
+	#undef TTS_NOPREFIX
+	#undef CW_USEDEF
+	#undef TTF_IDISHWND
+	#undef TTF_CENTERTIP
+	#undef TTF_RTLREADING
+	#undef TTF_SUBCLASS
+	#undef TTM_ADDTOOLA
+
+	#global
+	;-------------------------------------------------------------------------------
+
+#endif /* __hsp30__ */

@@ -1,0 +1,34 @@
+
+	onexit goto *owari		; 終了時にジャンプ
+	onkey goto *inkey		; キー入力時にジャンプ
+	onclick goto *inmouse		; マウスクリック時にジャンプ
+
+	btnmes="END"
+	mes "メッセージを入力して[Enter]"
+	objsize 600,24
+	a=""
+	input a
+	button btnmes,*owari		; ボタン名に変数も使用できます
+
+*ao
+	stop
+
+*inkey
+	if iparam=229 : goto *ao	; IMEからの日本語入力
+	if iparam=13 : goto *ok		; [Enter]キー入力チェック
+	mes "KEY="+iparam
+	goto *ao
+
+*inmouse
+	x=lparam & 0xffff:y=lparam>>16	; マウス座標を取得
+	mes "MOUSE="+iparam+"/X="+x+"/Y="+y
+	goto *ao
+
+*ok
+	dialog a
+	end
+
+*owari
+	dialog "終了"
+	end
+

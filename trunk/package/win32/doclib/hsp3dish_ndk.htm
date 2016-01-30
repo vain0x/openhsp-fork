@@ -1,0 +1,839 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSP3Dish,android,ndk,google">
+	<meta name="description" content="HSP3Dish android(NDK)版に関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3Dish android(NDK)版プログラミングガイド</title>
+</head>
+<body>
+	<div id="CONTAINER">
+	<!-- ヘッダー -->
+	<p id="COPY">HSP : HSP3Dish / onion software 2016(c)</p>
+	<img src="hsp3dish.jpg" width="640" height="200" alt="タイトル">
+	<h1>HSP3Dish android(NDK)版プログラミングガイド</h1>
+
+	<!-- 目次 -->
+	<ol>
+		<li><a href="#ABOUT">android版 HSP3Dish概要</a></li>
+		<li><a href="#PREPARE">環境の準備</a></li>
+		<li><a href="#SDKSETUP">Platform APIインストール</a></li>
+		<li><a href="#DHSETUP">HSP3Dish Helperの設定</a></li>
+		<li><a href="#DHNEWPROJ">新規プロジェクトの作成</a></li>
+		<li><a href="#LIBFOLDER">ライブラリフォルダについて</a></li>
+		<li><a href="#DHPROJ">プロジェクトのビルド</a></li>
+		<li><a href="#SAMPLE">サンプルプロジェクト</a></li>
+		<li><a href="#RUNPROJ">実機への転送と実行</a></li>
+		<li><a href="#DATAFILE">データファイルの準備</a></li>
+		<li><a href="#SYSINFO">システム情報の取得</a></li>
+		<li><a href="#EXECTASK">タスク(アクティビティ)呼び出し</a></li>
+		<li><a href="#DISHINI">hsp3dish.ini設定ファイルについて</a></li>
+		<li><a href="#SCALE">マニュアル設定項目について</a></li>
+		<li><a href="#RELEASE">リリースビルド</a></li>
+		<li><a href="#HGIMG4">HGIMG4プロジェクトについて</a></li>
+		<li><a href="#DEVCONTROL">デバイスコントロールについて</a></li>
+		<li><a href="#ADMOB">AdMobによる広告配信</a></li>
+		<li><a href="#FONTMES">mes,print命令について</a></li>
+		<li><a href="#NOTICE">android版の注意事項、制限</a></li>
+		<li><a href="#NEWVER">android版の更新予定</a></li>
+	</ol>
+
+	<h2 id="ABOUT">android版 HSP3Dish概要</h2>
+	<p>
+	android版 HSP3Dishは、android OS搭載機種(スマートフォン、タブレット等)上で動作するHSP3Dishのランタイムです。
+	Windows版 HSP3Dishがサポートする機能をandroid OS上で再現することが可能です。
+	(android版 HSP3Dishは、Windows版のスクリプトを実行させることを目的としており、HSP3開発システムそのものをandroid上で再現するものではありません。)
+	<br>
+	このマニュアルでは、android版の利用方法、注意点などを説明していきます。
+	<br>
+	<br>
+	現状ではandroid上で実行できるファイルをビルドするためには、開発のための環境設定を行なう必要があります。開発環境の構築に費用はかかりません。すべて無料で準備することができます。
+	これらは、Windows上で動作し、接続されているandroidデバイス上で動作の確認を行なうことができます。
+	<br>
+	HSP3Dishでのビルドを支援するための、HSP3Dish Helperツールが同梱されています。
+	これにより、比較的スムーズにandroid向けにビルドを行なうことが可能になります。
+	(尚、<a href="hsp3dish_eclipse.html">統合開発環境Eclipse</a>上でお使い頂くことも可能ですが、
+	手順が多いためHSP3Dish Helperの利用を推奨しています。)
+	</p>
+
+	<h2 id="PREPARE">環境の準備</h2>
+	<p>
+	androidの実機上で動作させるためには、以下が必要となります。
+	<ul>
+	<li>android開発環境(SDK) → <a href="http://developer.android.com/sdk/index.html" target="_blank">[ダウンロードサイト]</a>
+	<ul><p>
+	<a href="http://developer.android.com/sdk/index.html#Other" target="_blank">Other Download Options</a>から、SDK Tools Only(Windows版)をダウンロードします。
+	zipアーカイブまたはインストーラー版を任意のフォルダにインストールしてください。推奨フォルダは、「c:\android\android-sdk～」です。
+	(インストールするSDKは基本的に32bit版を推奨します。64bit版での動作は確認していません。)
+	</p></ul>
+	<li>JDK(Java Development Kit) → <a href="http://www.oracle.com/technetwork/java/index.html" target="_blank">[ダウンロードサイト]</a>
+	<ul><p>
+	JDK (Java Development Kit)をインストールしてください。
+	</p></ul>
+	<li>Android NDK（Native Development Kit）開発環境 → <a href="http://developer.android.com/sdk/ndk/index.html" target="_blank">[ダウンロードサイト]</a>
+	<ul><p>
+	最新版のWindows版zipアーカイブ(32bit版)を任意のフォルダに解凍してください。推奨フォルダは、「c:\android\android-ndk～」です。
+	(動作確認済みのバージョンは、r10です。r10よりも古いバージョンには対応していません)
+	</p></ul>
+	<li>Apache Ant(開発補助ツール) → <a href="http://www.jajakarta.org/ant/ant-1.6.1/docs/ja/" target="_blank">[ダウンロードサイト]</a>
+	<ul><p>
+	最新版のzipアーカイブを任意のフォルダに解凍してください。推奨フォルダは、「c:\android\apache-ant～」です。<br>
+	推奨するantのバージョンは、1.8.4または、1.9.4です。
+	</p></ul>
+	</ul>
+	</p>
+	<ul><img src="hsp3dish/s_and2.jpg"><br></ul>
+	<br>
+	<p>
+	推奨するフォルダにアーカイブを解凍した場合、上のような状態になります。(英文字のみ、スペースを含まないフォルダ名を使用してください)
+	</p>
+
+	<h2 id="DHSETUP">HSP3Dish Helperの設定</h2>
+	<p>
+	HSPインストールフォルダ(最新版のHSP3Dish開発セットによりアップデートされている必要があります)にあるHSP3Dish Helper(hsp3dh.exe)を起動してください。
+	<br>
+	</p>
+	<ul><img src="hsp3dish/s_and1.jpg"><br></ul>
+	<br>
+	<p>
+	「オプション」ボタンを押して表示される画面で、android開発環境(SDK)などのインストール行なったフォルダの場所を設定してください。
+	</p>
+	<ul><img src="hsp3dish/s_and5.jpg"><br></ul>
+	<br>
+	<p>
+	推奨するフォルダにインストールされた場合、上のような設定になります。
+	<br>
+	最後の「プロジェクト」フォルダ設定は、android用にアプリをビルドする際に作成されるプロジェクトフォルダの起点になる位置を示します。推奨フォルダは、「c:\android」です。
+	</p>
+
+	<h2 id="SDKSETUP">Platform APIインストール</h2>
+	<p>
+	ビルドに必要なPlatform APIのインストールを行ないます。
+	android開発環境(SDK)フォルダ内にある、「SDK Manager.exe」を実行してください。
+	(SDKマネージャーは、HSP3Dish Helperの、「オプション」タブの「SDKマネージャー」ボタンからでも起動できます)
+	</p>
+	<ul><img src="hsp3dish/s_and3.jpg"><br></ul>
+	<br>
+	<p>
+	このツールにより、必要なAPIをインストールすることができます。(ネットに接続されている必要があります)
+	<br>
+	「Android 5.0.1 (API 21)」のような形で、それぞれのバージョンに対応したAPIのチェックボックスが表示されます。
+	この中で、「Tools」「Android 5.0.1 (API 21)」はチェックを入れて必ずインストールするようにしてください。
+	それ以外のバージョンは必要に応じてインストールして頂いて構いません。
+	<br>
+	「Install packages...」のボタンを押すことで、ダウンロードとインストールが行なわれます。
+	インストールされた項目は、「Installed」の表示が付加されます。
+	<br>
+	<br>
+	(何らかの理由でネット接続ができない環境で使用する場合は、一時的にネット接続可能な場所で
+	インストールを行なった後、android開発環境(SDK)フォルダそのものを用意すれば、ビルドには問題ありません。)
+	</p>
+
+	<h2 id="DHNEWPROJ">新規プロジェクトの作成</h2>
+	<p>
+	HSP3Dish Helper(hsp3dh.exe)を起動して、中央下にある「android」ボタンを押して、androidビルドのモードにします。
+	<br>
+	</p>
+	<ul><img src="hsp3dish/s_and6.jpg"><br></ul>
+	<br>
+	<p>
+	上のようなプロジェクト新規作成のダイアログが表示されます。(新規作成になっていない場合は、「新規プロジェクト」のボタンを押して下さい)
+	<br>
+	以下の項目を設定して「新規作成」ボタンを押すことで、指定したプロジェクトのフォルダが作成され、android用のビルド準備が整います。
+	android用アプリの開発では、1つのアプリにつき必ず1つのプロジェクトファイルを作成する必要があります。プロジェクトのフォルダは、設定メニューで設定されている場所を起点に作成されます。
+	</p>
+	<ul>
+	<li>プロジェクト名</li><br><p>
+	プロジェクトのタイトル名となります。スペースを含まない英文字のみで指定してください。
+	</p>
+	<li>ID</li><br><p>
+	ビルドのターゲットIDを設定します。ターゲットIDは、SDKのAPIバージョンを指定するための番号になります。デフォルトで「"android-21"」(5.0.1)が指定されています。
+	</p>
+	<ul><img src="hsp3dish/s_and8.jpg"><br></ul>
+	<p>
+	通常は、変更する必要はありません。他のターゲットIDが必要な場合は、「ID...」ボタンを含めず押して表示される一欄の中からIDを選んで入力してください。
+	</p>
+	<li>パッケージ名</li><br><p>
+	アプリを識別するための情報となります。パッケージ名には、他のパッケージ名と重複しない名称が求められます。
+	通常は、ドメインをトップレベルドメインから逆方法に並べたものを使うことが推奨されています。たとえば、「net.onionsoft.testapp」のように階層的に指定します。
+	名称には、スペースを含まない英文字のみで指定してください。<a href="http://ja.wikipedia.org/wiki/%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8_%28Java%29" target="_blank">Javaのパッケージ命名規約</a>なども参考にしてみてください。
+	<br>
+	パッケージ名を省略した場合は、日付とプロジェクト名から自動的に生成される文字列が適用されます。
+	</p>
+	<li>AdMobを使用する</li><br><p>
+	AdMobによる広告配信アプリを作成する場合にチェックを入れてください。
+	Google Play Services及びAndroid Support Libraryが必要となります。詳しくは、「AdMobによる広告配信」を参照してください。
+	</p>
+	<li>ARM7最適化を無効</li><br><p>
+	チェックを入れることでARM7に最適化されたコードの生成を無効にします。
+	通常は、チェックを入れない状態(ARMv7コードに最適化)で使用してください。最適化を行なうことで、実行速度が向上します。
+	ARMv7を持たない古いAndroid端末で実行させる場合には、チェックを入れることで古いARMでも実行できるコードが生成されます。
+	</p>
+	<li>HGIMG4を使用する</li><br><p>
+	HGIMG4向けに作られたスクリプトを使用する場合にチェックを入れてください。
+	HGIMG4のプロジェクト作成については、「HGIMG4プロジェクトについて」の項目を参照してください。
+	</p>
+	</ul>
+
+
+	<h2 id="LIBFOLDER">ライブラリフォルダについて</h2>
+	<p>
+	新規プロジェクト作成時に、ビルドに必要となるライブラリフォルダが作成されます。ライブラリフォルダは、オプションに設定されたプロジェクトの基本(ルート)フォルダ内に作成されます。<br>
+	ライブラリフォルダとして作成されるものは、以下の通りです。
+	</p>
+	<ul>
+	<li>hsplib35～フォルダ</li><br><p>
+	HSP3Dishのビルドに必要なランタイムのソースが含まれています。
+	古いライブラリとの競合を防ぐため、「hsplib35b3」のようにHSPのバージョンごとに異なるフォルダ名が使用されます。
+	</p>
+	<li>gameplayフォルダ</li><br><p>
+	HGIMG4のビルドに必要なgameplayランタイムのソースが含まれています。
+	</p>
+	<li>extlibフォルダ</li><br><p>
+	HGIMG4のビルドに必要な各種ライブラリのソースが含まれています。
+	</p>
+	</ul>
+	<p>
+	hsplib35～フォルダ内のソースには、各プロジェクトから共有されるHSP3Dishランタイムのソースが含まれます。
+	ユーザーが独自にソースを変更することもできますが、HSP3Dish helperのアップデート等でソースが上書き更新されてしまうことがありますので、注意してください。
+	</p>
+
+
+	<h2 id="DHPROJ">プロジェクトのビルド</h2>
+	<p>
+	HSP3Dish Helper(hsp3dh.exe)を起動して、中央下にある「android」ボタンを押して、androidビルドのモードにします。
+	<br>
+	</p>
+	<ul><img src="hsp3dish/s_and7.jpg"><br></ul>
+	<br>
+	<p>
+	上のようなプロジェクトビルドのダイアログが表示されます。(ビルドになっていない場合は、「既存プロジェクト」のボタンを押して下さい)
+	<br>
+	プロジェクトのビルドを行なうことで、指定されたHSPスクリプト及びデータファイルをandroidで実行できる形式(apkファイル)として出力されます。
+	android用アプリの開発では、実行のためのプログラムとデータをすべてまとめたapkファイルが最終的な出力結果となります。
+	<br>
+	ダイアログで設定する項目は、以下の通りです。
+	</p>
+	<ul>
+	<li>ソーススクリプト</li><br><p>
+	通常は、この項目は空欄のままで、プロジェクトが使用するHSPスクリプト(.hsp)は、プロジェクトフォルダ以下の「hsp」フォルダ内に配置してください。
+	(HSPスクリプトが複数ある場合は、「main.hsp」という名前のファイルが優先されます。)
+	「hsp」フォルダを使わずに、直接スクリプトファイルを指定する場合は、ソーススクリプト項目の「参照」ボタンを押して、ファイルを選択することができます。<br>
+	いずれの場合も、HSPスクリプト(.hsp)は、必ずHSP3Dish用に記述されたスクリプトでなければなりません。
+	対象となるスクリプトが存在しない場合は、ソーススクリプトの変換は行なわれません。
+	</p>
+	<li>データファイル(dpm)</li><br><p>
+	スクリプトから参照されるデータが格納されているdpmファイルを指定します。dpmファイルは、HSPで使用している形式で、複数のファイルが1つのdpmファイルにパックされています。(「作成...」ボタンを押すことで、指定したフォルダ内にあるすべてのファイルをdata.dpmというファイルにパックして、そのファイルを指定することができます。)
+	データファイルの指定が空欄の場合は、dpmファイルの参照はされません。
+	詳しくは、<a href="#DATAFILE">データファイルの準備</a>を参照してください。
+	</p>
+	<li>プロジェクト名</li><br><p>
+	ビルドの対象となるプロジェクトを選択します。プロジェクトのフォルダが作成されて、ビルドの準備が整っているものの中から、1つを選択することができます。
+	(「更新」ボタンを押すことで、プロジェクトのフォルダが再検索されます。)
+	</p>
+	<p>
+	プロジェクト名などの項目を指定した後、「ビルド」ボタンを押すことでビルドが開始されます。HSPのソーススクリプトの変換及びNDKのコンパイルからパッケージの生成までをすべて自動で行ないます。
+	<br>
+	ビルドの結果は、consoleウィンドウに表示されます。
+	</p>
+	<ul><img src="hsp3dish/s_and9.jpg"><br></ul>
+	<p>
+	正常に終了すると、「終了しました」のメッセージが表示され、プロジェクトフォルダ以下のbinに、apkファイルが生成されています。
+	<br>
+	「クリーン」ボタンを押すことで、ビルドされたデータを破棄してプロジェクトフォルダを初期化することができます。全体を再度ビルドする場合には、一度「クリーン」によりデータを破棄しておいてください。
+	</p>
+	</ul>
+
+	<h2 id="SAMPLE">サンプルプロジェクト</h2>
+	<p>
+	<img src="hsp3dish/s_block3.jpg" style="float:right;">
+	sample/hsp3dishフォルダには、HSP3Dishを使うためのサンプルスクリプトが含まれています。
+	ブロック崩しのHSP3Dishサンプル(block3.hsp)を、ソーススクリプトに指定して、
+	データファイル(dpm)は空欄のまま、ビルドを実行することができます。
+	</p>
+	<br clear="all">
+
+	<h2 id="RUNPROJ">実機への転送と実行</h2>
+	<p>
+	プロジェクトのビルドが完了したら、androidの実機に転送して確認することが可能です。
+	(エミュレータ上での実行は現在まだサポートされていません)
+	<br>
+	androidの実機をUSBで接続し、OSから認識されている状態で「転送」ボタンを押すことで、ビルド済みのapkファイルを転送(インストール)します。
+	後はアプリケーション一覧から、転送したアプリの実行を行なってください。
+	<br>
+	android実機の接続設定については、デバイスの機種ごとに異なります。以下のサイトなどを参考にしてみてください。
+	</p><ul>
+	<li><a href="http://www.adakoda.com/android/000242.html" target="_blank">実機でデバッグするには [逆引きAndroid入門]</a>
+	</ul><p>
+	実機への転送ができない場合でも、ビルドで生成されたapkファイルをネットやUSBメモリを経由して転送してインストールを行ない実行の確認をすることも可能です。
+	<br>
+	「Logcat」ボタンを押して実行ログを表示させることが可能です。実機に転送して実行した際の、HSPからのエラーや初期化メッセージを確認することができます。
+	</p>
+
+	<h2 id="DATAFILE">データファイルの準備</h2>
+	<p>
+	スクリプトから参照されるデータファイルは2通りの方法で用意することができます。
+	1つは、「データファイル(dpm)」の項目で設定されているデータフォルダ(data.dpmを生成します)にファイルをコピーして使用する方法。基本的には、こちらの方法を使用してください。
+	ただし、サウンドファイル(wav,mp3など)は認識されないので注意してください。<br>
+	もう1つの方法は、プロジェクトディレクトリ内のassetsフォルダにファイルをコピーするというものです。サウンドのファイルは必ず、assetsフォルダに入れるようにしてください。
+	assetsフォルダには、画像ファイルを入れることも可能ですが、assetsフォルダのリソースのサイズ・個数に制限があるため、1MBを越える大きなファイルを多数使用する場合は、data.dpmのデータフォルダを使用してください。<br>
+	また、テキストファイルなどその他のデータファイルは必ず、data.dpmのデータフォルダを使用するようにしてください。
+	<br>
+	ただし、data.dpmによるファイルパックからの読み出しには、HSPのpackfile仕様と同様の制限(ファイル名の長さ12文字以内)がありますので注意してください。
+	</p>
+
+	<h2 id="SYSINFO">システム情報の取得</h2>
+	<p>
+	sysinfo関数によりOSバージョン及び、デバイス名を取得することが可能になりました。
+	sysinfo(0)で、「android 2.3.3」のような文字列を取得することができます。これにより、ソース中で現在動作しているOSやバージョンを判別可能です。<br>
+	また、sysinfo(2)で、デバイス名を取得することができます。現在、sysinfo関数の他の項目はサポートされていません。
+	</p>
+
+	<h2 id="EXECTASK">タスク(アクティビティ)呼び出し</h2>
+	<p>
+	exec命令により、他のタスク(アクティビティ)を呼び出すことが可能です。
+	</p>
+	<ul><pre>
+		exec "パッケージ名", 0, "クラス名"
+	</pre></ul>
+	<p>
+	２番目のパラメーター(実行モード)が0の場合は、「パッケージ名」「クラス名」により、
+	実行するタスクを指定します。
+	セキュリティの解除が必要な場合は、「AndroidManifest.xml」の<intent-filter>に起動するクラスを記述してください。
+	</p>
+	<p>
+	より手軽に実行する手段として、URIを指定してアプリを呼び出す方法があります。
+	</p>
+	<ul><pre>
+		exec "URI文字列", 16
+	</pre></ul>
+	<p>
+	たとえば、URIに「http://hsp.tv」を指定した場合は、規定のwebブラウザを開きURLとして表示します。
+	「tel:123456789」によりダイアラーを起動します。他にもOSがサポートする様々な呼び出し方法が存在します。
+	</p>
+
+	<h2 id="DISHINI">hsp3dish.ini設定ファイルについて</h2>
+	<p>
+	プロジェクトフォルダ内にある「hsp」フォルダ(HSPスクリプトを設置するフォルダ)に設定ファイル「hsp3dish.ini」がある場合は、その設定がビルド時に反映されます。<br>
+	「hsp3dish.ini」は、Windows上で実行する際に画面サイズなどの設定を参照するためのファイルです。詳しくは、<a href="hsp3dish_prog.htm#INIFILE">HSP3Dishプログラミングマニュアル</a>を参照してください。
+	「パラメーター名=設定値」のように記述することで、androidのビルド時に設定が反映されます。
+	</p>
+	<ul><pre>
+		パラメーター名          設定内容
+		----------------------------------------
+		wx			画面のX(横)サイズ
+		wy			画面のY(縦)サイズ
+		autoscale		自動スケーリング値
+	</pre></ul>
+	<p>
+	画面のスケーリングを自動的に調整したい場合は、「autoscale=0」のように、自動スケーリング値を設定してください。
+	描画した画面サイズを適切に拡大縮小し、現在のスクリーンに表示させることができます。<br>
+	自動スケーリング値の詳細は以下の通りです。
+	</p>
+	<ul><pre>
+		0 : 画面全体に収まる最適な大きさ(縦横比は維持)
+		1 : X方向のサイズを基準に拡大縮小(縦横比は維持)
+		2 : Y方向のサイズを基準に拡大縮小(縦横比は維持)
+		3 : 縦横比は無視して画面全体に表示
+	</pre></ul>
+	<p>
+	指定された画面サイズによって、portrait(縦画面)、landscape(横画面)の向きが自動的に設定されます。
+	<br>
+	「hsp3dish.ini」が存在しない場合や、設定が書かれていない場合は、特に変更は行なわれません。
+	「hsp3dish.ini」ファイルを使用せずに、マニュアルで設定を行なう場合は、「マニュアル設定項目について」の項目をお読み下さい。
+	</p>
+
+	<h2 id="SCALE">マニュアル設定項目について</h2>
+	<p>
+	jniフォルダ内のmain.cソースを編集することで、HSP3Dishに関する各種設定を行ないます。<br>
+	<b>通常は、「hsp」フォルダに設定ファイル「hsp3dish.ini」を用意して設定を行なってください。ここでは、ソースコードを修正して、マニュアルで設定する方法について説明しています。</b><br>
+	「static void engine_handle_cmd」で始まるソースコード(160行付近)にある以下の行を修正します。
+	</p>
+	<ul><pre>
+		//hgio_view( 480, 320 );
+		//hgio_scale( 1.0f, 1.0f );
+		//hgio_autoscale( 0 );
+	</pre></ul>
+	<p>
+	行頭が「//」になっている項目は、コメントアウトされ機能しません。
+	初期設定では、スケーリングの設定は行なっていませんので、上のようになっているはずです。<br>
+	</p>
+	<ul><pre>
+		hgio_view( 480, 320 );
+	</pre></ul>
+	<p>
+	まず、「//」を消去して、hgio_viewの行を有効にします。hgio_viewにより、もともとの画面サイズ(スクリプトが動作する解像度)を設定してください。上の例では、横サイズが480、縦サイズが320であることを示しています。
+	</p>
+	<ul><pre>
+		hgio_scale( 2.0f, 2.0f );
+	</pre></ul>
+	<p>
+	指定した倍率で表示を行ないたい場合は、hgio_scaleの行を有効にします。hgio_scaleにより、もともとの画面サイズに対して、指定した倍率で表示を行ないます。倍率を固定したい場合には、こちらを使用してください。通常は、hgio_autoscaleを使用することを推奨します。
+	</p>
+	<ul><pre>
+		hgio_autoscale( 0 );
+	</pre></ul>
+	<p>
+	画面のスケーリングを自動的に調整したい場合は、hgio_autoscaleの行を有効にします。hgio_autoscaleにより、描画した画面サイズを適切に拡大縮小し、現在のスクリーンに表示させます。<br>
+	カッコ内の数値で、スケーリングの方法をいくつか指定することができます。
+	</p>
+	<ul><pre>
+		0 : 画面全体に収まる最適な大きさ(縦横比は維持)
+		1 : X方向のサイズを基準に拡大縮小(縦横比は維持)
+		2 : Y方向のサイズを基準に拡大縮小(縦横比は維持)
+		3 : 縦横比は無視して画面全体に表示
+	</pre></ul>
+	<p>
+	スケーリングの設定は、起動時に行なわれます。スクリプト実行中に変更することはできません。
+	</p>
+	<ul><pre>
+		hgio_uvfix( 1 );
+	</pre></ul>
+	<p>
+	テクスチャを拡大した際に、隣のピクセルがブレンドされてしまう現象を補正します。
+	通常はこのオプションを指定する必要はありませんが、画面のスケーリング等で正しくテクスチャが表示されない場合に試してみてください。<br>
+	カッコ内の数値が0以外の場合は補正がONになります。0の場合は補正がOFFになります。
+	</p>
+
+	<h2 id="RELEASE">リリースビルド</h2>
+	<p>
+	HSP3Dish Helperからリリースビルドを行なうと、署名入りのapkファイルを生成することができます。これにより、Google Play(Android マーケット)に作成したアプリを登録することが可能になります。
+	公開するための、おおまかな手順は以下の通りです。
+	</p>
+	<ul>
+	<li>Googleに開発者登録を行なう(アプリを配布するためには、有償($25)の登録が必要になります)</li>
+	<li>署名のための証明書(keystore)を作成する</li>
+	<li>HSP3Dish Helperでリリースビルドを行なう</li>
+	<li>Android Developer Consoleからアップロードする</li>
+	</ul>
+	<p>
+	順を追って説明していきます。
+	</p>
+	<ul>
+	<li>Googleに開発者登録を行なう</li>
+	<pre>	<a href="http://developer.android.com/">http://developer.android.com/</a></pre>
+	<ul>
+	<p>
+	androidのデベロッパーページを開き、「公開」(publish)の詳細ページを選択します。
+	Googleアカウントでサインインを行ない、開発者情報を適切に入力して登録を行ないます。<br>
+	(電話番号の入力は、国番号を含めて行ないます。日本の場合は先頭に「81」を付け、市外局番の先頭「0」を省くのが決まりです。「03-1234-5678」の場合は、「+81-3-1234-5678」となります。)<br>
+	次に、Google Checkoutを利用して登録の決済を行ないます。クレジットカード等を使って支払いを行なうことができます。<br>
+	すべて終了すると、Android Developer Consoleのページにアクセスできるようになります。
+	有料アプリを登録する場合は、さらに銀行の口座などのアカウント情報を設定する必要があります。
+	</p>
+	</ul>
+	<li>署名のための証明書(keystore)を作成する</li>
+	<ul>
+	<br><p>
+	まず、HSP3Dish Helperを起動し、androidタブの新規プロジェクトページを開きます。
+	次に、「KEY作成」ボタンを押します。(キー名は、「hspapp」のままで問題ありません)<br>
+	コマンドプロンプトの画面が開き、以下の項目について情報を求めてくるのでキーボードから入力してください。すべて半角英文字で入力することを推奨します。
+	</p>
+	<pre>	・パスワード
+	・パスワード再入力
+	・姓名
+	・組織単位名(部門・部署名)
+	・組織名(会社・団体名)
+	・都市名または地域名(市町村名)
+	・州名または地方名(都道府県名)
+	・国番号(日本の場合は81を入力)
+	・よろしいですか?(「y」を入力)
+	・鍵パスワード(Enterを入力)</pre>
+	<p>
+	以上で、「hspapp.keystore」ファイルがプロジェクトフォルダのルートに作成されます。
+	このファイルは、アプリ署名のために必要なので、削除しないで大切に保管しておいてください。
+	</p>
+	</ul>
+	<li>HSP3Dish Helperでリリースビルドを行なう</li>
+	<br><p>
+	HSP3Dish Helperの、androidタブで既存プロジェクトページを開きます。
+	ビルドしたいプロジェクトを選択し、通常のビルドを行なって正常に動作することを確認してください。<br>
+	次に「リリース」ボタンを押してください。アプリのリリースビルドを実行し、署名を行ないます。
+	この時、コマンドプロンプトの画面が開き、パスワードを求められるので「hspapp.keystore」を作成した時に入力したパスワードを入力してください。<br>
+	以上で、プロジェクトのbinフォルダに「プロジェクト名.apk」のファイルが生成されます。
+	</p>
+	<li>Android Developer Consoleからアップロードする</li>
+	<br><p>
+	Android Developer Consoleのページで、新規のアプリを追加し、生成された「プロジェクト名.apk」のファイルをアップロードしてください。
+	(プロジェクト名-debug.apkや、プロジェクト名-release.apkのファイルは署名されていませんので、無効になります)<br>
+	Google Playに登録を行なう場合は、紹介文やスクリーンショット、サポート情報などを設定する必要があります。<br>
+	アップロードしたapkファイルをactivate(有効化)し、publish(公開)ボタンを押すことで、アプリを一般に公開します。(実際に公開されるまで、数時間の遅延があります)<br>
+	公開されている情報は、Android Developer Consoleから、いつでも修正を行なうことができます。
+	ファイルを更新する場合は、再度リリースビルドを行なって、apkファイルを差し替えた後にactivate(有効化)してください。
+	ただし、更新を行なうためには、バージョン番号を上げる必要があります。プロジェクトが使用している「AndroidManifest.xml」ファイルの、android:versionCode、android:versionName項目の数値を更新してから、リリースビルドを行なうようにしてください。
+	</p>
+	<br><p><b>
+	※androidの新しいSDKでは、署名に使用されるzipalignツールが異なるフォルダに収録されています。「リリース」ボタンを押した際に「zipalignツールがありません。」というエラーが出る場合は、SDKフォルダのbuild-tools以下にある最新の「zipalign.exe」ファイルを、SDKフォルダのtools以下にコピーしてください。
+	</b></p>
+	</ul>
+
+
+	<h2 id="HGIMG4">HGIMG4プロジェクトについて</h2>
+	<p>
+	HSP3.5β3からHGIMG4スクリプトのビルドに対応しています。<br>
+	現在はβ対応となっていて、様々な機能が制限されていますのでご了承の上、ご使用ください。
+	HGIMG4プロジェクトは、初回のビルドに非常に時間がかかります。
+	また、android端末の環境や機種によっては、動作しないことがあります。(今後、幅広い端末でのサポートを目指していきますので、今しばらくお待ちください)<br>
+	HGIMG4では、起動時に必ずresフォルダ及びシェーダー等のファイルが必要になります。
+	HSPの「sample/hgimg4」フォルダにある「resフォルダ」からandroid用のHGIMG4プロジェクトフォルダの
+	「assets」以下にコピーしてください。(「assets/res/…」というフォルダ構成になります)<br>
+	最低限必要なファイルは以下になります。
+	</p>
+	<pre>
+		res/font.gpb
+		res/shaders/colored-unlit.frag
+		res/shaders/colored-unlit.vert
+		res/shaders/colored.frag
+		res/shaders/colored.vert
+		res/shaders/font.frag
+		res/shaders/font.vert
+		res/shaders/form.frag
+		res/shaders/form.vert
+		res/shaders/lighting-directional.frag
+		res/shaders/lighting-directional.vert
+		res/shaders/lighting-point.frag
+		res/shaders/lighting-point.vert
+		res/shaders/lighting-spot.frag
+		res/shaders/lighting-spot.vert
+		res/shaders/lighting.frag
+		res/shaders/skinning-none.vert
+		res/shaders/skinning.vert
+		res/shaders/sprite.frag
+		res/shaders/sprite.vert
+		res/shaders/spritecol.frag
+		res/shaders/spritecol.vert
+		res/shaders/terrain.frag
+		res/shaders/terrain.vert
+		res/shaders/textured-bumped.frag
+		res/shaders/textured-bumped.vert
+		res/shaders/textured-unlit.frag
+		res/shaders/textured-unlit.vert
+		res/shaders/textured.frag
+		res/shaders/textured.vert
+	</pre>
+	<p>
+	以下の機能については、未対応なので注意してください。将来のバージョンで対応する予定です。
+	</p>
+	<ul>
+	<li>画面のサイズ指定、スケーリングに対応していません(hgio_view/hgio_scale等のマニュアル設定項目も機能しません)</li><br>
+	<li>AdMobの表示に非対応です</li><br>
+	</ul>
+
+	<h2 id="DEVCONTROL">デバイスコントロールについて</h2>
+	<p>
+	Androidデバイス固有の機能にdevcontrolなどの命令でアクセスすることが可能です。<br>
+	</p>
+	<pre>
+		devcontrol "コントロールコマンド",パラメーター1,パラメーター2,パラメーター3
+	</pre>
+	<p>
+	上のような書式で、デバイスコントロールを行ないます。
+	Androidデバイス上では、文字列として指定するコントロールコマンドは、以下を認識します。
+	(コントロールコマンドの文字列は、大文字小文字も含めて完全に一致する必要があります。)<br>
+	認識しないコントロールコマンドを記述した場合もエラーは発生しませんので注意してください。
+	</p>
+	<pre>
+	コントロールコマンド    内容
+	-------------------------------------------
+	vibrate			バイブ(振動)動作(パラメーター1)
+	AdMob			AdMobによる広告の表示
+	</pre>
+	<p>
+	たとえば、
+	</p>
+	<pre>
+		devcontrol "vibrate",400
+	</pre>
+	<p>
+	は、バイブ(振動)動作を行なうようデバイスに指示を出します。<br>
+	パラメーターの数値を変えることにより、振動の長さ(ミリ秒単位)を変えることができます。
+	</p>
+
+
+	<h2 id="ADMOB">AdMobによる広告配信</h2>
+	<ul>
+	<li>従来のAdMobからの更新について</li><br>
+	<p>
+	※HSP3Dish 3.4版までは、従来の(古い)AdMobライブラリを使用していましたが、
+	Googleの更新により、2014/8/1以降は、古いAdMobライブラリを使用したアプリの更新、及び新規追加はできなくなっています。(既に登録されているアプリに影響はありません。)<br>
+	HSP3Dish 3.5版では、Google Play Servicesを使用した新しいAdMobライブラリに切り替えているので、この制限はありません。
+	古いAdMobライブラリを使用するプロジェクトを更新する場合は、新規でプロジェクトを作成し直してください。
+	</p>
+	<p>
+	※最新版のGoogle Play services(Rev.29)では、API21以上のSDKが必要となります。SDKマネージャーから、API21(android 5.0.1)がインストールされているか確認してください。インストールされていない場合は、追加して「AdMobセットアップ」ボタンで再度設定を行なってください。
+	</p>
+	</ul>
+
+	<ul>
+	<li>広告配信のための準備</li><br>
+	<p>
+	HSP3DishではAdMobを使った広告配信モデルのアプリを作成することが可能です。
+	適切に設定を行なうことで、HSP3Dishのアプリから広告を配信し、収益を得ることができるようになります。
+	AdMobはGoogleが提供するモバイル広告配信の仕組みです。これをアプリに組み込むことで、無料アプリであっても広告料を得ることができます。<br>
+	AdMobを組み込むためには、以下の手順で準備を行なっておく必要があります。<br><br>
+
+	1. AdMobアカウントの作成
+<br><br>
+	アカウントを登録し、支払い情報などの必要事項を記入します。<br>
+	<a href="http://www.google.co.jp/ads/admob/" target="_blank">http://www.google.co.jp/ads/admob/</a>
+<br><br>
+	2. ユニットIDの取得
+<br><br>
+	AdMobのwebページにログインし、「新しいアプリの収益化」を行ないます。
+	(アプリがまだGoogle Playで公開されていない段階でも可能です)<br>
+	必要事項を記入することで、ユニットIDを取得することができます。
+<br><br>
+	3. Google Play Services, Android Support Libraryのダウンロード
+<br><br>
+	SDKマネージャーを起動して、Extras内にある「Google Play Services」「Android Support Library」の最新版をインストールしてください。
+	(SDKマネージャーは、HSP3Dish Helperの、「オプション」タブの「SDKマネージャー」ボタンから起動できます)
+<br><br>
+	4. AdMobのセットアップ
+<br><br>
+	HSP3Dish Helperの、「オプション」タブの「AdMobセットアップ」ボタンを押して、
+	AdMobビルドのためのファイルを準備してください。
+	この操作は、Google Play Services, Android Support Libraryのダウンロード後に1度行なえば完了します。
+<br><br>
+	5. 最新のAndroid APIライブラリの確認
+<br><br>
+	AdMob SDKをビルドするために、Android APIライブラリの最新版を使用できる状態にする必要があります。
+	"android-21"(Android 5.0.1 (API 21))が利用可能かどうかを確認しておいてください。
+<br><br>
+	HSP3Dish helperを起動して、androidタブの「新規プロジェクト」モードの「ID...」ボタンを押すと、
+	インストールされているAPIの一覧が表示されます。この中に、"android-21"が存在してれば問題ありません。
+<br><br>
+	6. AdMobを使用するプロジェクトの作成
+<br><br>
+	新規プロジェクトを作成します。その際に、必ず「AdMobを使用する」のチェックボックスをONにしておいてください。
+	それ以外の設定は、通常の新規プロジェクト作成と変わりありません。
+<br><br>
+	7. ユニットIDの登録
+<br><br>
+	プロジェクトのフォルダ以下の「src/tv/hsp/HspActivity.java」ファイルを編集します。
+	</p>
+<pre>
+		adView.setAdUnitId("ca-app-pub-???????????????????????????");
+</pre>
+	<p>
+	の行を探してください。このpublisherIDの部分を、AdMobのwebページで取得したユニットID文字列に置き換えてください。
+	このユニットIDにより、広告の配信者が特定されます。
+<br><br>
+	8. AdMob表示スクリプトの追加
+<br><br>
+	スクリプト実行時の適切なタイミングでAdMobを有効にしてください。
+	タイトル画面や、ゲームメニューなど画像や音声のリソース読み込みが落ち着いた後に有効にすることを推奨します。
+	(CPU負荷が高い時には、AdMobのタスクが遅延することがあります)<br>
+	AdMobを有効にする場合は、
+	</p>
+<pre>
+		devcontrol "AdMob"		; AdMobを有効にする
+</pre>
+	<p>
+	をスクリプトに記述してください。("AdMob"の文字列は大小文字を正確に識別します)
+	WindowsやiOSでは、この記述は無視されますが、複数機種実行時にAndroid上でのみ実行したい場合は、以下のように記述することができます。
+	</p>
+<pre>
+		getreq v_platform,SYSREQ_PLATFORM
+		if ( v_platform = PLATFORM_ANDROID ) {
+			devcontrol "AdMob"		; AdMobを有効にする
+		}
+</pre>
+	<p>
+	「devcontrol "AdMob"」は、最初の実行時にAdMob表示を開始し、それ以降は実行しても
+	無視されますので、タイトル画面表示時などに何度でも実行されても問題ありません。
+	デフォルトでは、画面下にバナーとして広告が表示されます。
+	(この時、デバイスがネット接続可能な状態であることを確認しておいてください)
+<br><br>
+	以上の準備でAdMobを使用したアプリをビルドすることが可能になります。
+	</p>
+	</ul>
+
+	<ul>
+	<li>AdMobプロジェクトのビルド</li><br>
+	<p>
+	プロジェクトの更新が完了したら、後は通常のHSP3Dishと同様に、HSP3Dish helperから
+	プロジェクトのビルドを行なうことができます。<br>
+	ビルド時にエラーが発生した場合は、エラーメッセージなどを参考にしながら、
+	プロジェクトの設定に問題がないか確認をしてください。
+<br><br>
+	ビルドが成功したら、デバイスに転送して実行を確認することができます。
+<br><br>
+	実行の確認を何度も行なう場合には、テスト用端末の登録を行なっておいてください。
+	テスト用端末の登録は、src/tv/hsp/HspActivity.javaファイルのソースで指定します。<br>
+	以下の行があることを確認してください。
+	</p>
+<pre>
+		_request.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+</pre>
+	<p>
+	この行は、エミュレーターデバイス上の動作チェック用のコードです。
+	以下のように「"」記号で囲まれた文字列を指定することで、実際のデバイスをテスト機として登録することができます。
+	</p>
+<pre>
+		_request.addTestDevice("********************************");
+</pre>
+	<p>
+	"****～"の部分に、デバイスIDを記入する必要があります。
+	デバイスIDは、AdMob表示時にデバイスモニタ内のログに、
+	</p>
+<pre>
+	「 To get test ads on this device, call adRequest.addTestDevice("********************************");」
+</pre>
+	<p>
+	というメッセージが流れますので、そこで確認することができます。
+	(広告の表示エラーや、問題に関するメッセージも表示されます)
+	デバイスモニタは、HSP3Dish Helperの、「オプション」タブの「Deviceモニター」ボタンを押して起動させることができます。
+	LogCatよりも詳細なログが表示されます。
+	</p>
+	</ul>
+
+	<ul>
+	<li>広告バナーサイズについて</li><br>
+	<p>
+	Google AdMob Adsのページで、広告バナーサイズを確認することができます。<br>
+	<a href="https://developers.google.com/mobile-ads-sdk/docs/android/intermediate?hl=ja" target="_blank">https://developers.google.com/mobile-ads-sdk/docs/android/intermediate?hl=ja</a>
+<br><br>
+	現在のコードでは、画面下に縦は75ドット、横は画面いっぱいまでバナーの領域を確保しています。
+	サイズや位置などは、src/tv/hsp/HspActivity.javaファイルのソースを変更することで調整可能です。
+	</p>
+<pre>
+		popUp.setWidth(disp_width+4);		// 横サイズ(disp_widthは画面全体)
+		popUp.setHeight(77);			// 縦サイズ
+</pre>
+	<p>
+	ここで指定したサイズはポップアップのサイズで、実際のバナー表示領域は若干少なくなるので
+	注意してください。
+	</p>
+	</ul>
+
+	<ul>
+	<li>アプリのリリース</li><br>
+	<p>
+	AdMobの表示をサポートしたアプリは、通常のHSP3Dishアプリと同様の方法でビルドし、
+	Google Playから配信することが可能です。
+	リリース時には、テスト用端末の登録コードを削除するのを忘れないようにしてください。
+	</p>
+	</ul>
+
+
+	<h2 id="FONTMES">mes,print命令について</h2>
+	<p>
+	内蔵フォントによるmes及びprint命令の文字列描画に対応しています。<br>
+	font命令で指定する、font名は無視され、フォントサイズは反映されます。また、フォントスタイルは標準(0)と太文字(1)にのみ対応しています。<br>
+	android上のフォントを取得する処理は、システムの負担が大きいため一度描画した内容(テクスチャ)はHSP3Dish側でキャッシュすることで高速化する仕組みになっています。
+	通常は、この仕組みについて意識することなく使用することができるはずです。<br>
+	キャッシュ機能のコントロールを行ないたい場合は、setreq命令により設定を記述してください。(Windows,iOS版には影響ありません)
+<pre>
+		setreq SYSREQ_MESCACHE_MAX, 64	; キャッシュの最大登録数を指定する
+</pre>
+	キャッシュの内部動作としては、一度表示したメッセージとまったく同じ内容の文字列があった場合に、
+	以前のデータを再利用して表示することになります。
+	ただし、８フレームの間表示されなかったキャッシュは破棄されます。<br>
+	保持されるキャッシュの最大登録数は、デフォルトで64になっています。
+	キャッシュの設定範囲は、0～128が目安で、数値が大きくても高速化されるとは限りません。
+	あくまでも、顕著な速度低下を抑制することが目的で、もともとメッセージ表示はコストの高い処理であることをご理解の上使用してください。<br>
+	キャッシュの最大登録数を0に設定した場合は、キャッシュによる高速化は行なわれません。
+	</p>
+
+
+	<h2 id="NOTICE">android版の注意事項、制限</h2>
+	<ul>
+	<li>入力可能な情報</li>
+	<p>
+	タップした座標がmousex,mouseyに反映されるほか、stick命令により、クリック(タップ)のON/OFFを取得可能です。
+	また、mtlist、mtinfo命令により高度なタッチ情報(マルチタッチなど)を取得することができます。
+	複数ポイントのタッチ情報(マルチタッチ)は、デバイスがサポートしている場合のみ取得可能です。
+	Androidデバイスによっては、ハードウェアがマルチタッチをサポートしていない場合がありますので、注意してください。
+	</p>
+	<li>画像フォーマットについて</li>
+	<p>
+	celload、picload命令などで読み込まれる画像は、以下のフォーマットが使用できます。
+	アルファチャンネルを使用する場合は、PNG形式が推奨されます。
+	<ul>
+	<li>JPEG baseline (プログレッシブJPEGは非サポート)</li>
+	<li>PNG (1bit、2bit、4bit、8bit、24bit、24bit+アルファチャンネル形式に対応)</li>
+	<li>TGA (サブセット)</li>
+	<li>BMP (白黒、RLE圧縮は非サポート)</li>
+	<li>PSD (RGB24bitのみ読み出し)</li>
+	<li>GIF</li>
+	<li>HDR (radiance rgbE format)</li>
+	<li>PIC (Softimage PIC)</li>
+	</ul>
+	</p>
+	<li>gmodeの制約について</li>
+	<p>
+	現在のバージョンでは、gmode 6(色減算)はサポートされていません。
+	これは、android(NDK)版のみの制約事項です。将来のバージョンでは、対応を行なっていく予定です。
+	</p>
+	<li>画像サイズについて</li>
+	<p>
+	celload、picload命令などで読み込まれる画像の縦・横サイズが、2048を越えるものについては、正しく扱えない機種もあるので、推奨されません。
+	縦・横のサイズが2^nのサイズ、つまり1,2,4,8,16,32,64,128,256,512,1024でない画像を
+	読み込む時には、内部で変換を行なうため多少のオーバーヘッドが発生します。
+	(通常はそれほど気にする必要はありません。大量の画像を読み込む場合にCPUリソースが余計に必要となります)
+	<br>
+	画像ファイルはプロジェクトディレクトリ内のassetsフォルダに入れることができます。
+	ただし、古い端末などではリソースのサイズ・個数に制限がある場合があります。
+	1つのファイルが4MBを越えるような大きなファイルを多数使用する場合は、data.dpmに含めて使用することを推奨します。
+	</p>
+	<li>再生可能なサウンドファイルについて</li>
+	<p>
+	拡張子が「.wav」「.mp3」「.ogg」「.aac」のファイルに対応しています。
+	.aacや.oggについては、すべてのフォーマットをサポートしていないので注意してください。
+	「.wav」「.mp3」については、Windows版を含めすべてのhsp3dishで幅広くサポートされている形式です。<br>
+	サウンドのファイルは必ずプロジェクトディレクトリ内のassetsフォルダに入れるようにしてください。data.dpmに含めるとOSのシステム側から読み取ることができません。
+	</p>
+	<li>画面の回転について</li>
+	<p>
+	現在のバージョンでは、実行中の画面自動回転には対応していません。必ず、縦・横画面を固定して動作する仕様で作成してください。<br>
+	hsp3dish.ini設定ファイルにより、画面サイズが指定されている場合は、自動的に縦画面・横画面の設定が行なわれます。<br>
+	マニュアルで、画面の向き(回転)を設定したい場合は、AndroidManifest.xmlを書き換えて制御することが可能です。
+	</p>
+	<pre>
+        &ltactivity android:name="android.app.NativeActivity"
+	          android:screenOrientation="portrait"
+                  android:label="@string/app_name"&gt
+	</pre>
+	<p>
+	「android:screenOrientation=」の行で指定されているパラメーターが、"portrait"の場合は縦画面。"landscape"の場合は、横画面にそれぞれ固定されます。
+	</p>
+	<li>データの保存について</li>
+	<p>
+	bsave、bload命令によってアプリケーション固有のフォルダにデータファイルの読み書きが可能です。
+	「/」を含めずファイル名(半角英文字)のみ指定された場合は、アプリケーション固有のフォルダ
+(「/data/data/<自分のパッケージ名>/files」で示される場所)がアクセス対象となります。
+	このフォルダは通常は、自分以外のアプリケーションからはアクセスできない設定になっています。
+	(ファイル名が「/」で始まった場合は、フルパス指定となります。)
+	</p>
+	</ul>
+
+	<h2 id="NEWVER">android版の更新予定</h2>
+	<p>
+	以下の機能は今後、上から順に高い優先度で追加される予定です。
+	</p>
+	<ul>
+	<li>傾きセンサーの入力情報の取得</li>
+	<li>dialog命令によるダイアログ表示サポート</li>
+	<li>各種システム情報取得</li>
+	<li>カメラ、ブラウザの呼び出しサポート</li>
+	</ul>
+	<p>
+	バージョンアップの告知は、HSPオフィシャルサイトHSPTV!にて行なわれますので、随時ご確認ください。
+	</p>
+
+	<!-- フッター -->
+	<ul id="FOOTER">
+		<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+		<li><a href="../index.htm">インデックスに戻る</a></li>
+	</ul>
+	<a href="http://www.onionsoft.net/">
+		<img src="onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+	</a>
+</div><!-- container -->
+</body>
+</html>

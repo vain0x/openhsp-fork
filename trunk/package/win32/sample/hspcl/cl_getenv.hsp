@@ -1,0 +1,8 @@
+#runtime "hsp3cl"
+#include "mod_getenv.as"
+
+mes "ŠÂ‹«•Ï”‚ğ•\¦‚µ‚Ü‚·B"
+sdim a,1024
+getenv a,"path"
+mes "PATH="+a
+stop

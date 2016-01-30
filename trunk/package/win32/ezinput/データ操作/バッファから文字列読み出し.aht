@@ -1,0 +1,15 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "getstr"
+
+#define 内容を読み出す先の変数名	""	;;str
+#define バッファを割り当てた変数名	""	;;str
+#define バッファのインデックス	"0"	;;str
+#define 区切りキャラクタのASCIIコード	"0"	;;str
+#define 読み出しを行なう最大文字数	"1024"	;;str
+
+#ahtmes "getstr "+内容を読み出す先の変数名+" , "+バッファを割り当てた変数名+" , "+バッファのインデックス+" , "+区切りキャラクタのASCIIコード+" , "+読み出しを行なう最大文字数+

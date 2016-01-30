@@ -1,0 +1,1024 @@
+
+;============================================================
+;                                                 2009/xx/xx
+;	S.Programs HDL (MAIN)
+;	Browser Application (HSP 3.0)
+;                               http://sprocket.babyblue.jp/
+;============================================================
+
+
+;============================================================
+#packopt name		"hdl"
+#packopt hide		1
+#packopt xsize		1
+#packopt ysize		1
+
+#if __hspver__ = 768
+ #runtime "hsp30hhx" ; remove this
+#endif
+
+; includes
+#define global HDL_BROWSER 1  ; HDL Browser からのインクルードであることを示す
+#include "sqlele.hsp"
+#include "hdl_db.hsp"
+#include "hdl_cgi.hsp"
+#include "hdl_lib.hsp"
+#include "hhw.hsp"
+
+/*
+	; src fils
+	hdl_browser.hsp
+		sqlele.hsp
+		hdl_lib.hsp
+		hdl_db.hsp ; --- standalone
+			*sqlele.hsp
+		hdl_cgi.hsp ; --- standalone
+			*sqlele.hsp
+		hhw.hsp ; --- standalone
+			gpm.hsp
+			*hdl_lib.hsp
+*/
+
+;============================================================
+; プロセス間 メモリ共有 モジュール
+; 仕様
+; ・保護モード 読み書き可
+; ・最大サイズ 4KB
+
+#module
+; winapi
+#uselib "kernel32"
+#cfunc	CreateFileMapping	"CreateFileMappingA" int, int, int, int, int, str
+#cfunc	GetLastError		"GetLastError"
+#cfunc	MapViewOfFile		"MapViewOfFile" int, int, int, int, int
+#func	UnmapViewOfFile		"UnmapViewOfFile" sptr
+#func	CloseHandle		"CloseHandle" int
+;--------------------------------------------------
+#deffunc filemap_create str inp
+	hMapobj = CreateFileMapping(-1, 0, 4, 0,4096, inp)
+	lasterr = GetLastError()
+	mapptr = MapViewOfFile(hMapobj, 2, 0, 0, 0)
+	return
+;--------------------------------------------------
+#deffunc filemap_close
+	UnmapViewOfFile mapptr
+	CloseHandle hMapobj
+	return
+;--------------------------------------------------
+#defcfunc filemap_viewptr
+	return mapptr
+;--------------------------------------------------
+#defcfunc filemap_already_exists
+	; ERROR_ALREADY_EXISTS 183
+	return (lasterr = 183)
+#global
+
+
+
+;============================================================
+; IEC module
+/*
+IE コンポーネント制御
+
+ファンクション
+・IEC_construct
+・IEC_destruct
+・IEC_navigate_to "url", "frame"
+・IEC_focus
+・IEC_hwnd()
+
+内外共有変数
+・ieBrowser
+・ieEvent
+
+内部ラベル
+・iec_onkey
+・iec_event
+
+外部ラベル
+・iec_event
+
+アプリ寄りの細かい制御は外部で行う
+*/
+;------------------------------------------------------------
+; モジュール内に書くと 3.0 ではエラーが出る
+#usecom IAxWinAmbientDispatch "{B6EA2051-048A-11D1-82B9-00C04FB9942E}"
+#usecom IOleInPlaceActiveObject "{00000117-0000-0000-C000-000000000046}"
+#comfunc OIPAO_TranslateAccelerator 5 var
+
+;------------------------------------------------------------
+#module
+
+; global var
+#define global ieEvent		ieEvent@iec
+#define global ieBrowser	ieBrowser@iec
+
+; atl apis
+#uselib "atl.dll"
+#func AtlAxWinInit "AtlAxWinInit"
+#func AtlAxGetHost "AtlAxGetHost" int, var ; input hwnd, output IUnknown
+
+; ie event
+#define DIID_DWebBrowserEvents2     "{34A715A0-6587-11D0-924A-0020AFC7AC4D}"
+; exdispid.h
+#define global DISPID_STATUSTEXTCHANGE     102
+#define global DISPID_TITLECHANGE          113   // sent when the document title changes
+#define global DISPID_BEFORENAVIGATE2      250   // hyperlink clicked on
+#define global DISPID_NEWWINDOW2           251
+#define global DISPID_NAVIGATECOMPLETE2    252   // UIActivate new document
+#define global DISPID_DOCUMENTCOMPLETE     259   // new document goes ReadyState_Complete
+#define global DISPID_FILEDOWNLOAD         270   // Fired to indicate the File Download dialog is opening
+#define global DISPID_NAVIGATEERROR        271   // Fired to indicate the a binding error has occured
+
+; DocHostFlags
+#define	DOCHOSTUIFLAG_DIALOG	0x1
+#define	DOCHOSTUIFLAG_DISABLE_HELP_MENU	0x2
+#define	DOCHOSTUIFLAG_NO3DBORDER	0x4
+#define	DOCHOSTUIFLAG_SCROLL_NO	0x8
+#define	DOCHOSTUIFLAG_DISABLE_SCRIPT_INACTIVE	0x10
+#define	DOCHOSTUIFLAG_OPENNEWWIN	0x20
+#define	DOCHOSTUIFLAG_DISABLE_OFFSCREEN	0x40
+#define	DOCHOSTUIFLAG_FLAT_SCROLLBAR	0x80
+#define	DOCHOSTUIFLAG_DIV_BLOCKDEFAULT	0x100
+#define	DOCHOSTUIFLAG_ACTIVATE_CLIENTHIT_ONLY	0x200
+#define	DOCHOSTUIFLAG_OVERRIDEBEHAVIORFACTORY	0x400
+#define	DOCHOSTUIFLAG_CODEPAGELINKEDFONTS	0x800
+#define	DOCHOSTUIFLAG_URL_ENCODING_DISABLE_UTF8	0x1000
+#define	DOCHOSTUIFLAG_URL_ENCODING_ENABLE_UTF8	0x2000
+#define	DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE	0x4000
+#define	DOCHOSTUIFLAG_ENABLE_INPLACE_NAVIGATION	0x10000
+#define	DOCHOSTUIFLAG_IME_ENABLE_RECONVERSION	0x20000
+#define	DOCHOSTUIFLAG_THEME	0x40000
+#define	DOCHOSTUIFLAG_NOTHEME	0x80000
+#define	DOCHOSTUIFLAG_NOPICS	0x100000
+#define	DOCHOSTUIFLAG_NO3DOUTERBORDER	0x200000
+#define	DOCHOSTUIFLAG_DELEGATESIDOFDISPATCH	0x400000
+
+; apis
+#uselib "user32"
+#cfunc	FindWindowEx	"FindWindowExA" int, int, sptr, sptr
+#func	SetFocus	"SetFocus" int
+
+;------------------------------------------------------------
+#deffunc IEC_construct
+	;--------------------------------------------------
+	; Trident obj
+
+	AtlAxWinInit
+
+	axobj ieBrowser, "Shell.Explorer.2", 640, 480
+	idIE = stat
+	hwndIE = objinfo(idIE, 2) ; hwnd of IE
+
+	newcom pUnk
+	AtlAxGetHost hwndIE, pUnk
+	querycom pObj, pUnk, IAxWinAmbientDispatch@ ; このインターフェイスには、ホストされるコントロールまたはコンテナの特性を指定するためのメソッドがどうたら
+
+	; DOCHOSTUIFLAG の変更 (ボーダー、オートコンプリート など)
+;	pObj("DocHostFlags") = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_FLAT_SCROLLBAR | DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE | DOCHOSTUIFLAG_THEME
+	pObj("DocHostFlags") = DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE | DOCHOSTUIFLAG_THEME
+	; [memo] コンテキストメニューの禁止
+	;pObj("AllowContextMenu") = 0 ; VARIANT_FALSE = 0, VARIANT_TRUE = 0xffff
+
+	delcom pObj
+	delcom pUnk
+
+	comevent ieEvent, ieBrowser, DIID_DWebBrowserEvents2, *iec_event ; IE のイベント取得
+	querycom ieOIPAO, ieBrowser, IOleInPlaceActiveObject@ ; キー操作用
+	onkey gosub *iec_onkey
+	return
+
+;------------------------------------------------------------
+#deffunc IEC_destruct  onexit
+	if hwndIE {
+		onkey 0
+		delcom ieOIPAO
+		delcom ieEvent
+		delcom ieBrowser
+	;	AtlAxWinTerm
+		hwndIE = 0
+	}
+	return
+
+;------------------------------------------------------------
+#deffunc IEC_navigate_to  str p2, str p3
+	if hwndIE {
+		flgDocumentComp = 0
+
+		; navigate to
+		ieBrowser->"Navigate" p2, 0, p3  ; 環境によってはここでウィンドウが強制的にアクティブ化されてしまう
+
+		; DocumentComplete するまで待つ (*iec_event 依存)
+		repeat
+			await
+			if flgDocumentComp : break
+		loop
+	}
+	return
+
+;------------------------------------------------------------
+*iec_event
+	if locked : title "iec_event locked error" : return 0 ; 再入防止
+	locked = 1
+
+	dispid = comevdisp(ieEvent)
+
+	; onDocumentComplete
+	if dispid = DISPID_DOCUMENTCOMPLETE {
+		flgDocumentComp = 1
+	}
+
+	gosub *iec_event@
+
+	locked = 0
+	return 0
+
+;------------------------------------------------------------
+*iec_onkey
+/*
+	key patch
+	9	Tab
+	27	Esc
+	46	Del
+	116	F5
+*/
+	if varuse(ieOIPAO) {
+		; ctrl と同時押しの場合、メッセージ処理
+		getkey k, 17
+		; ただし下記との組み合わせは ignore
+		if wparam = 'N' : k = 0
+		if wparam = 'O' : k = 0
+		if wparam = 'S' : k = 0
+
+		; コンテナからのアクセラレータキーメッセージ処理
+		if (wparam = 9) | (wparam = 27) | (wparam = 46) | (wparam = 116) | k {
+			a = 0, $100, wparam, lparam, 0, 0, 0
+			OIPAO_TranslateAccelerator@ ieOIPAO, a
+		}
+	}
+	return
+
+;------------------------------------------------------------
+#deffunc IEC_focus
+	if hwndIE {
+		h = FindWindowEx(hwndIE, 0, "Shell Embedding", 0)
+		if h : h = FindWindowEx(h, 0, "Shell DocObject View", 0)
+		if h : h = FindWindowEx(h, 0, "Internet Explorer_Server", 0)
+		if h : SetFocus h
+	}
+	return
+
+;------------------------------------------------------------
+#defcfunc IEC_hwnd
+	return hwndIE
+
+;------------------------------------------------------------
+#deffunc IEC_execwb  int p1, int p2, int p3
+	if varuse(ieBrowser) {
+		ieBrowser->"ExecWB" p1, 0, p2, p3
+	}
+	return
+
+#const global OLECMDID_OPEN	1
+#const global OLECMDID_NEW	2
+#const global OLECMDID_SAVE	3
+#const global OLECMDID_SAVEAS	4
+#const global OLECMDID_SAVECOPYAS	5
+#const global OLECMDID_PRINT	6
+#const global OLECMDID_PRINTPREVIEW	7
+#const global OLECMDID_PAGESETUP	8
+#const global OLECMDID_SPELL	9
+#const global OLECMDID_PROPERTIES	10
+#const global OLECMDID_CUT	11
+#const global OLECMDID_COPY	12
+#const global OLECMDID_PASTE	13
+#const global OLECMDID_PASTESPECIAL	14
+#const global OLECMDID_UNDO	15
+#const global OLECMDID_REDO	16
+#const global OLECMDID_SELECTALL	17
+#const global OLECMDID_CLEARSELECTION	18
+#const global OLECMDID_ZOOM	19
+#const global OLECMDID_GETZOOMRANGE	20
+#const global OLECMDID_UPDATECOMMANDS	21
+#const global OLECMDID_REFRESH	22
+#const global OLECMDID_STOP	23
+#const global OLECMDID_HIDETOOLBARS	24
+#const global OLECMDID_SETPROGRESSMAX	25
+#const global OLECMDID_SETPROGRESSPOS	26
+#const global OLECMDID_SETPROGRESSTEXT	27
+#const global OLECMDID_SETTITLE	28
+#const global OLECMDID_SETDOWNLOADSTATE	29
+#const global OLECMDID_STOPDOWNLOAD	30
+#const global OLECMDID_ONTOOLBARACTIVATED	31
+#const global OLECMDID_FIND	32
+#const global OLECMDID_DELETE	33
+#const global OLECMDID_HTTPEQUIV	34
+#const global OLECMDID_HTTPEQUIV_DONE	35
+#const global OLECMDID_ENABLE_INTERACTION	36
+#const global OLECMDID_ONUNLOAD	37
+#const global OLECMDID_PROPERTYBAG2	38
+#const global OLECMDID_PREREFRESH	39
+#const global OLECMDID_SHOWSCRIPTERROR	40
+#const global OLECMDID_SHOWMESSAGE	41
+#const global OLECMDID_SHOWFIND	42
+#const global OLECMDID_SHOWPAGESETUP	43
+#const global OLECMDID_SHOWPRINT	44
+#const global OLECMDID_CLOSE	45
+#const global OLECMDID_ALLOWUILESSSAVEAS	46
+#const global OLECMDID_DONTDOWNLOADCSS	47
+#const global OLECMDID_UPDATEPAGESTATUS	48
+#const global OLECMDID_PRINT2	49
+#const global OLECMDID_PRINTPREVIEW2	50
+#const global OLECMDID_SETPRINTTEMPLATE	51
+#const global OLECMDID_GETPRINTTEMPLATE	52
+#const global OLECMDID_PAGEACTIONBLOCKED	55
+#const global OLECMDID_PAGEACTIONUIQUERY	56
+#const global OLECMDID_FOCUSVIEWCONTROLS	57
+#const global OLECMDID_FOCUSVIEWCONTROLSQUERY	58
+#const global OLECMDID_SHOWPAGEACTIONMENU	59
+#const global OLECMDID_ADDTRAVELENTRY	60
+#const global OLECMDID_UPDATETRAVELENTRY	61
+#const global OLECMDID_UPDATEBACKFORWARDSTATE	62
+#const global OLECMDID_OPTICAL_ZOOM	63
+#const global OLECMDID_OPTICAL_GETZOOMRANGE	64
+#const global OLECMDID_WINDOWSTATECHANGED	65
+#global
+
+
+
+;============================================================
+; const, winapi GLOBAL
+
+;------------------------------------------------------------
+; wm Application
+
+#define global WM_APP_ACTIVATE	0x8001
+#define global WM_APP_SEARCH	0x8002
+#define global WM_APP_REBUILD	0x8003
+#define global WM_APP_CALLQUERY	0x8004
+
+#const CMD_HO  111
+#const CMD_BK  222
+#const CMD_FW  333
+#const CMD_AOT 444
+#const CMD_FZ  888
+#const CMD_OZ  999
+
+
+;------------------------------------------------------------
+; misc
+
+#uselib "kernel32"
+#func GetModuleFileName		"GetModuleFileNameA" int, var, int
+#func GetTempPath		"GetTempPathA" sptr, var
+
+#uselib "user32"
+#cfunc	MoveWindow	"MoveWindow" sptr, sptr, sptr, sptr, sptr, sptr
+#func	CharLower	"CharLowerA" var
+#func	PostMessage	"PostMessageA" int, int, int, int
+#func	SendMessage	"SendMessageA" int, int, int, int
+; (menu api)
+#func CreateMenu	"CreateMenu"
+#cfunc CreatePopupMenu	"CreatePopupMenu"
+#func AppendMenu	"AppendMenuA"     int,int,int,sptr
+#func SetMenu		"SetMenu"         int,int
+#func DrawMenuBar	"DrawMenuBar"     int
+#func CheckMenuItem	"CheckMenuItem"   int, int, int
+
+
+
+;============================================================
+; 起動時分岐
+
+	appname	= "HSP Document Library"
+	appver	= "1.32"
+	appsig	= "S.Programs 2007-2009"
+	sig_css	= "/* HDL CSS Format 1.32 */"
+
+
+#ifdef _DEBUG
+	ModuleFileName = dir_cur + "\\hdl.exe" ; test 用
+#else
+	sdim ModuleFileName, 1000
+	GetModuleFileName 0, ModuleFileName, 999
+#endif
+
+	randomize
+
+
+	;----------------------------------------
+	; パラメータ
+	; ・"/openfile:hoge" ファイルを開く
+	; ・"/hsedit:hoge"   hs エディタ起動
+	; HDL インスタンスがすでにある {
+	;  ・""          アクティブ化
+	;  ・"hoge"      検索
+	;  ・"/rebuild:" リビルド・検索
+	; }
+	astr = dir_cmdline
+
+
+	;----------------------------------------
+	; ファイルを開く (/openfile:hoge.htm)
+
+	if instr(astr,,"/openfile:") = 0 {
+		onerror goto *endpp
+		exec strmid(astr, 10, 999), 16
+		end
+
+		*endpp
+		dialog strmid(astr, 10, 999) + " を実行できませんでした。", , appname
+		end
+	}
+
+
+	;----------------------------------------
+	; HHW 起動 (/hsedit:hoge\hoge.hs>foo)
+
+	if instr(astr,,"/hsedit:") = 0 {
+		hhw_start strmid(astr, 8, 999), "Help Source Editor", "(in HDL " + appver + ")", appsig
+		end
+	}
+
+
+	;----------------------------------------
+	; 同時起動制御 (option)(/rebuild:hoge)
+
+	filemap_create "hdl_filemap"			; 共有メモリを使用
+	dupptr map_hwnd, filemap_viewptr()  , 4   , 4	; 最初に起動した HDL の hwnd
+	dupptr map_str,  filemap_viewptr()+4, 1024, 2	; 共有文字列
+
+	; すでに filemap があれば : 共有メモリにクエリ文字列を置いて hwnd にメッセージを送る
+	if filemap_already_exists() {
+		if astr = "" {
+			; アクティブ化のみ
+			PostMessage map_hwnd, WM_APP_ACTIVATE
+
+		} else:if instr(astr,,"/rebuild:") = 0 {
+
+			; リビルド・キーワード送信
+			SendMessage map_hwnd, WM_APP_REBUILD
+			map_str = strmid(astr, 9, 999)
+			PostMessage map_hwnd, WM_APP_SEARCH
+
+		} else {
+			; アクティブ化・キーワード 送信
+			SendMessage map_hwnd, WM_APP_ACTIVATE
+			map_str = astr
+			PostMessage map_hwnd, WM_APP_SEARCH
+		}
+
+		filemap_close
+		end
+	}
+
+	; HDL 非動作時の rebuild 要求は ignore
+	if instr(astr,,"/rebuild:") = 0 : end
+
+
+
+;============================================================
+; ウィンドウ作成・DB ロード・環境変数初期化
+
+	;--------------------------------------------------
+	; create window
+
+#ifdef _DEBUG
+	screen 0, 1, 1, 2
+#endif
+
+	Window_resizable ; ウィンドウサイズ可変化
+
+	status_create	; ステータスバー 作成
+
+	; メニュー 作成
+	; 文字のサイズ
+	hmenuSize = CreatePopupMenu()
+	AppendMenu hmenuSize, $00, CMD_FZ + 4, "最大"
+	AppendMenu hmenuSize, $00, CMD_FZ + 3, "大"
+	AppendMenu hmenuSize, $00, CMD_FZ + 2, "中 (標準)"
+	AppendMenu hmenuSize, $00, CMD_FZ + 1, "小"
+	AppendMenu hmenuSize, $00, CMD_FZ + 0, "最小"
+	; 拡大
+	hmenuZoom = CreatePopupMenu()
+	AppendMenu hmenuZoom, $00, CMD_OZ + 200, "200%"
+	AppendMenu hmenuZoom, $00, CMD_OZ + 150, "150%"
+	AppendMenu hmenuZoom, $00, CMD_OZ + 125, "125%"
+	AppendMenu hmenuZoom, $00, CMD_OZ + 100, "100% (標準)"
+	AppendMenu hmenuZoom, $00, CMD_OZ +  75, "75%"
+	AppendMenu hmenuZoom, $00, CMD_OZ +  50, "50%"
+	; ユーザー補助
+	hmenuAid = CreatePopupMenu()
+	AppendMenu hmenuAid, $10, hmenuSize, "文字のサイズ(&X)"
+	AppendMenu hmenuAid, $10, hmenuZoom, "拡大率 (IE7) (&Z)"
+	AppendMenu hmenuAid, $00, CMD_AOT, "常に手前に表示 (&A)"
+	; メニューバー
+	CreateMenu : hmenu = stat
+	AppendMenu hmenu, $00, CMD_HO, "ホーム(&H)"
+	AppendMenu hmenu, $00, CMD_BK, "<< 戻る(&B)"
+	AppendMenu hmenu, $00, CMD_FW, "進む >>"
+	AppendMenu hmenu, $10, hmenuAid, "ユーザー補助(&A)"
+	;
+	SetMenu hwnd, hmenu
+	DrawMenuBar hwnd
+
+	; 割り込み登録
+	oncmd gosub *event_WM_ACTIVATE, 0x0006 ; HSP 3.0 の oncmd 0 のバグのため、これを先頭に書かないと end でプロセスが終了しない。oncmd 0 で割り込み解除されるのはこのメッセージだけ
+	oncmd gosub *event_WM_SIZE, 0x0005
+	oncmd gosub *event_WM_GETMINMAXINFO, 0x0024
+	oncmd gosub *event_WM_APPCOMMAND, 0x0319
+	; WM_APP_
+	oncmd gosub *event_WM_APP_ACTIVATE, WM_APP_ACTIVATE
+	oncmd gosub *event_WM_APP_SEARCH, WM_APP_SEARCH
+	oncmd gosub *event_WM_APP_REBUILD, WM_APP_REBUILD
+	oncmd gosub *event_WM_APP_CALLQUERY, WM_APP_CALLQUERY
+	; std
+	onexit *endapp
+	oncmd gosub *event_WM_COMMAND, 0x0111
+
+	map_hwnd = hwnd	; 同時起動制御用 hwnd
+
+	IEC_construct	; IE コンポ 作成
+
+
+	;--------------------------------------------------
+	; path env
+
+	; 基本 path
+	basepath = dir_cur
+
+	; get temp\
+	sdim temppath, 1000
+	GetTempPath 990, temppath
+
+	; get temp\HDL\ (1.32)
+	subdir = "HDL"
+	chdir temppath
+	dirlist astr, subdir, 5 : if stat = 0 : mkdir subdir
+	chdir basepath
+	temppath += subdir + "\\"
+
+	; appdata path
+	get_hsp_appdata_path appdatapath
+
+
+	;--------------------------------------------------
+	; load config / restore window
+
+	Config_open "hdl_config_" + StrHash(ModuleFileName) + ".dat"
+
+	; alias
+	#define CONFIGVER	0x132
+	#define config_ver	cfgdat(11)
+	#define config_aot	cfgdat(12)
+
+	; load default
+	if config_ver ! CONFIGVER {
+		config_ver	= CONFIGVER
+		config_aot	= 0
+	}
+
+	Config_restore_window
+	await
+
+	; apply config_aot
+	gsel 0, 1 + config_aot
+	CheckMenuItem  hmenuAid, CMD_AOT, config_aot * 8
+
+
+	;--------------------------------------------------
+	; load DB
+
+	sql_open appdatapath + "\\hdl_data_" + StrHash(ModuleFileName) + ".db"
+/*
+	; 管理テーブル作成
+	sql_q "CREATE TABLE IF NOT EXISTS HDLCtrl (ID INTEGER PRIMARY KEY, Name, Value)"
+
+	; 旧バージョンデータベースなら再構築
+	sql_q "SELECT Name FROM HDLCtrl WHERE Name='dbver132'"
+	if stat = 0 {
+		sql_q "DROP TABLE IF EXISTS Files"
+		sql_q "DROP TABLE IF EXISTS Help"
+		sql_q "DROP TABLE IF EXISTS Docs"
+		sql_q "INSERT INTO HDLCtrl (Name) VALUES ('dbver132')"
+	}
+*/
+	HDL_createtable
+
+
+	;--------------------------------------------------
+	; ここを通るときに [shift] が押されてたらキャッシュ全削除
+	getkey a, 16 : if a : gosub *delete_cachefiles
+
+
+	;--------------------------------------------------
+	; .css バージョンチェック
+
+	repeat 2
+		if cnt {
+			astr = "hdlmenu.css"
+		} else {
+			astr = "hdlmain.css"
+		}
+		exist astr
+		if strsize >= 0 {
+			sdim bstr, 64
+			bload astr, bstr, strlen(sig_css)
+			if sig_css ! bstr : dialog "CSS ファイル " + astr + " は有効なバージョンではありません。", , appname
+		} else {
+			dialog astr + " が見つかりません。", , appname
+		}
+	loop
+
+
+	;--------------------------------------------------
+	goto *startup_query
+
+
+
+;============================================================
+; hdl: クエリ実行
+#deffunc ExecQuery str p1, str p2
+
+	;------------------------------------------------------------
+	; GET cmd, arg, kwd; hdl:?cmd=arg,kwd
+
+	bstr = p1
+	cmd = "" : arg = "" : kwd = ""
+	i = instr(bstr,,",") : if i > 0 : kwd = URLDec(strmid(bstr, i+1, 999)) : poke bstr, i
+	i = instr(bstr,,"=") : if i > 0 : arg = URLDec(strmid(bstr, i+1, 999)) : poke bstr, i
+	i = instr(bstr,,"?") : if i > 0 : cmd = URLDec(strmid(bstr, i+1, 999))
+
+	;------------------------------------------------------------
+	; ブラウザ側で処理する hdl: クエリ
+
+	; hs エディタで開く
+	if cmd = "hsedit" {
+		exec ModuleFileName + " /hsedit:" + arg
+		return
+	}
+
+	; ファイルを開く
+	if cmd = "openfile" {
+		exec ModuleFileName + " /openfile:" + arg
+		return
+	}
+
+	; hdls で両フレームを更新するパッチ (この動作はブラウザ側の実装)
+	if cmd = "hdls" {
+		sql_q "SELECT ID FROM Help WHERE Name=" + prm_text(arg)
+		if stat = 0 : sql_q "SELECT ID FROM Help WHERE lower(Name)=lower("+prm_text(arg)+")"
+		if stat {
+			; 一致リファレンスがある場合
+			ExecQuery "hdl:?r=" + tmparr, "hdlmain"
+		}
+	}
+
+	;------------------------------------------------------------
+	; フィルタされなかった cmd は HDL_CGI_q に要求
+	; 前にナビゲートしたファイルが残ってたら使う
+
+	bstr = ModuleFileName + appver + p1
+	fn = temppath + "HDLCACHE" + StrHash(bstr) + ".HTM"
+	exist fn
+	if strsize <= 0 {
+		status_mes 1, "生成中"
+		HDL_CGI_q p1 ; -> global var buf
+		bsave fn, buf, strlen(buf)
+		status_mes 1, ""
+	}
+	; 表示
+	IEC_navigate_to fn, p2
+
+	return
+
+
+
+;============================================================
+; スタート クエリの発行
+*startup_query
+
+	ExecQuery "hdl:?frameset", ""
+
+	astr = dir_cmdline
+	if astr = "" {
+		; 起動引数ない場合 : Home
+		ExecQuery "hdl:?home", "hdlmain"
+		ExecQuery "hdl:?hdls=", "hdlmenu"
+
+	} else {
+		; ワンキーヘルプの場合
+		sql_q "SELECT ID FROM Help WHERE lower(Name)=lower("+prm_text(astr)+")"
+		if stat = 0 {
+			; 一致キーワードがない場合
+			ExecQuery "hdl:?home", "hdlmain"
+			ExecQuery "hdl:?hdls=" + URLEnc(astr), "hdlmenu"
+		} else {
+			; 一致キーワードがある場合
+			ExecQuery "hdl:?hdls=" + URLEnc(astr), "hdlmenu"
+		}
+	}
+
+	; 更新チェック
+	gosub *hdl_reload_sub
+	if stat : goto *startup_query
+
+	HDL_createindex
+
+	; これ以降はイベントで駆動
+	stop
+
+
+
+;============================================================
+; event proc
+
+;--------------------------------------------------
+; リサイズ時の最大最小値 ( = 無制限)
+*event_WM_GETMINMAXINFO
+	return 0
+
+;--------------------------------------------------
+; IE コンポにフォーカス
+*event_WM_ACTIVATE
+	if wparam & 0xf : IEC_focus
+	return 0
+
+;--------------------------------------------------
+; resize
+*event_WM_SIZE
+	status_resize ; ステータスバー フィット
+	a = MoveWindow(IEC_hwnd(),  0, 0, ginfo_winx, ginfo_winy - status_height(),  1)
+	return
+
+;--------------------------------------------------
+; application command (マウス サイドボタン)
+*event_WM_APPCOMMAND
+	cmd = lparam >> 16 & 0x7fff ; == GET_APPCOMMAND_LPARAM(lParam)
+	if cmd = 1 {
+		ieBrowser->"GoBack"
+		return 0
+	}
+	if cmd = 2 {
+		ieBrowser->"GoForward"
+		return 0
+	}
+	return
+
+;--------------------------------------------------
+; メニュー
+*event_WM_COMMAND
+	if lparam = 0 {
+		i = wparam & 0xffff ; CMD ID
+		if i >= CMD_OZ {
+			IEC_execwb  OLECMDID_OPTICAL_ZOOM, i - CMD_OZ
+		} else:if i >= CMD_FZ {
+			IEC_execwb  OLECMDID_ZOOM, i - CMD_FZ
+		} else:if i = CMD_HO {
+*menu_cmd_ho
+			ExecQuery "hdl:?frameset", ""
+			ExecQuery "hdl:?home", "hdlmain"
+			ExecQuery "hdl:?hdls=", "hdlmenu"
+
+			gosub *hdl_reload_sub
+			if stat : goto *menu_cmd_ho
+
+		} else:if i = CMD_BK {
+			ieBrowser->"GoBack"
+		} else:if i = CMD_FW {
+			ieBrowser->"GoForward"
+		} else:if i = CMD_AOT {
+			config_aot ^= 1
+			gsel 0, 1 + config_aot
+			CheckMenuItem  hmenuAid, CMD_AOT, config_aot * 8
+		}
+		return 0
+	}
+	return
+
+;--------------------------------------------------
+; ie event
+*iec_event
+	dispid = comevdisp(ieEvent)
+
+	; onBeforeNavigate2
+	if dispid = DISPID_BEFORENAVIGATE2 {
+
+		; パラメータ取得
+		comevarg newurl, ieEvent, 1, 1		; URL
+		comevarg TargetFrameName, ieEvent, 3	; TargetFrameName
+		comevarg Cancel, ieEvent, 6, 2		; Cancel (Variant)
+
+		; file:///X:/～/hoge.txt , D:\～\hoge.txt -> hdl:?f=x 変換 (1.32)
+		if instr(newurl,,"hdl:") ! 0 {
+			sql_q "SELECT ID FROM Docs WHERE (Type='hsp' OR Type='txt') AND replace(" + prm_text(newurl) + ",'/','\\') LIKE '%'||Path", astr
+			if stat = 1 {
+				newurl = "hdl:?f=" + astr
+			}
+		}
+
+		; URL フィルタ
+		if instr(newurl,,"hdl:") = 0 {
+
+			; hdl: クエリの処理
+			Cancel("val") = 1
+		;×	ExecQuery newurl, TargetFrameName
+			PostMessage map_hwnd, WM_APP_CALLQUERY ; 再入防止 (1.31)
+
+		} else:if (instr(newurl,,"http:")=0) | (instr(newurl,,"https:")=0) | (instr(newurl,,"ftp:")=0) {
+
+			; Web 系スキームは別アプリに丸投げ (hdl: スキームがあるため、HDL ブラウザはセキュアではない)
+			Cancel("val") = 1 ; ナビゲーションキャンセル
+			exec ModuleFileName + " /openfile:" + newurl
+
+		}
+		; フィルタされなかった URL を許可 (file: res: about: mailto: C: D: ...)
+
+		delcom Cancel
+		return
+	}
+
+	; onStatusTextChange
+	if dispid = DISPID_STATUSTEXTCHANGE {
+
+		; ステータスバー 表示内容 取得
+		comevarg strstat, ieEvent, 0, 1
+
+		;------------------------------------------------------------
+		if strstat ! strstat_dif { strstat_dif = strstat
+		;------------------------------------------------------------
+
+		; "Microsoft Web ブラウザ コントロール" (ごみメッセージ ignore)
+		if instr(strstat,,"Microsoft ") = 0 : return
+
+		; hdl: スキームのリンクの場合、内容を変換して表示
+		if instr(strstat,,"hdl:") = 0 {
+
+			; マウスオーバーした hdl: クエリに対する処理はここに追加
+		;	newurl = strstat
+
+			;------------------------------------------------------------
+			; GET cmd, arg, kwd; hdl:?cmd=arg,kwd
+
+			bstr = strstat
+			cmd = "" : arg = "" : kwd = ""
+			i = instr(bstr,,",") : if i > 0 : kwd = URLDec(strmid(bstr, i+1, 999)) : poke bstr, i
+			i = instr(bstr,,"=") : if i > 0 : arg = URLDec(strmid(bstr, i+1, 999)) : poke bstr, i
+			i = instr(bstr,,"?") : if i > 0 : cmd = URLDec(strmid(bstr, i+1, 999))
+
+			;------------------------------------------------------------
+			; クエリに応じたヘルプを出力
+
+			if cmd = "r" {
+				sql_q "SELECT Name, Prm, Summary FROM Help WHERE ID=" + int(arg)
+				if stat {
+					if sql_v("Prm") = "" {
+						strstat = sql_v("Name") ; 引数なし
+					} else:if peek( sql_v("Prm") ) = '(' {
+						strstat = "val = " + sql_v("Name") + sql_v("Prm") ; 関数型
+					} else {
+						strstat = sql_v("Name") + " " + sql_v("Prm") ; 命令型
+					}
+					strstat += " - " + sql_v("Summary")
+				}
+			} else:if cmd = "f" {
+				sql_q "SELECT Path FROM Docs WHERE ID=" + int(arg), astr
+				if stat : strstat = astr
+			} else {
+				strstat = cmd + " " + arg
+			}
+
+			; 出力
+			status_mes 0, strstat
+			status_icon 0, ModuleFileName
+		} else {
+
+			; 標準の表示
+			status_mes 0, strstat
+
+			; リンク先が Docs テーブル内のファイルならアイコンを表示 (1.32)
+			strstat = URLDec(strstat)
+			sql_q "SELECT ID FROM Docs WHERE replace(" + prm_text(strstat) + ",'/','\\') LIKE '%'||Path", astr
+			if stat = 1 {
+				status_icon 0, ModuleFileName
+			}
+		}
+
+		;------------------------------------------------------------
+		} ; strstat_dif
+		;------------------------------------------------------------
+
+		return
+	}
+
+	; OnTitleChange
+	if dispid = DISPID_TITLECHANGE {
+		; パラメータ取得
+		comevarg text, ieEvent, 0, 1	; Text
+		title text
+	}
+
+	return
+
+;--------------------------------------------------
+; exit event
+*endapp
+	gsel 0, -1
+	oncmd 0
+	IEC_destruct
+	filemap_close
+	Config_close
+
+	if rnd(100) = 42 : sql_q "VACUUM"
+	sql_close
+
+	wait 20
+
+	; ここを通るときに [shift] が押されてたらキャッシュ全削除
+	getkey a, 16 : if a : gosub *delete_cachefiles
+
+	; キャッシュ縮小 (1.32)
+	gosub *limit_cachefiles
+
+	end	; <- HSP 3.0 oncmd 0 のバグのため、これまでのコードによってはプロセスが終了しない
+	end
+
+;-------------------------------------------------- WM_APP_ACTIVATE
+; 他プロセスからのアクティブ化指令
+*event_WM_APP_ACTIVATE
+	Window_top
+	await
+	return 0
+
+;-------------------------------------------------- WM_APP_SEARCH
+; 他プロセスからのクエリ WM_APP_SEARCH
+*event_WM_APP_SEARCH
+	ExecQuery "hdl:?hdls=" + URLEnc(map_str), "hdlmenu"
+	return 0
+
+;-------------------------------------------------- WM_APP_REBUILD
+; 他プロセスからのクエリ WM_APP_REBUILD
+*event_WM_APP_REBUILD
+	gosub *hdl_reload_sub
+	return 0
+
+;--------------------------------------------------
+; 自プロセスより call query
+*event_WM_APP_CALLQUERY
+	ExecQuery newurl, TargetFrameName
+	return 0
+
+
+;============================================================
+; subroutines
+
+;--------------------------------------------------
+; 更新チェック
+*hdl_reload_sub
+
+	status_mes 2, "データ更新中"
+	HDL_reload
+	a = stat
+	if a : gosub *delete_cachefiles
+	status_mes 2, ""
+
+	return a
+
+;--------------------------------------------------
+; キャッシュを全削除
+*delete_cachefiles
+
+	chdir temppath
+	dirlist buf, "HDLCACHE*.HTM", 3
+	notesel buf
+	repeat stat
+		noteget fn, cnt
+		delete fn
+	loop
+	noteunsel
+	chdir basepath
+
+	return
+
+;--------------------------------------------------
+; キャッシュファイル数を制限 (1.32)
+#define MAX_CACHE_FILES 99
+
+*limit_cachefiles
+
+	chdir temppath
+	dirlist buf, "HDLCACHE*.HTM", 3
+	notesel buf
+
+	repeat limit(stat - MAX_CACHE_FILES, 0, 9999), rnd(MAX_CACHE_FILES + 1)
+		noteget fn, cnt
+		delete fn
+	loop
+
+	noteunsel
+	chdir basepath
+
+	return
+
+
+

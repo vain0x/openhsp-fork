@@ -1,0 +1,64 @@
+	;
+	;	ブロック崩し(2)
+	;	(ボールとバーを表示します)
+	;
+
+	x1=0:y1=0		; 画面左上の座標
+	x2=480:y2=640		; 画面右下の座標
+
+	blsize=16		; ボールのサイズ
+	blspd=12			; ボールのスピード
+	blx=240:bly=400		; ボールの座標
+	bpx=4:bpy=4		; XY方向のボール座標加算値
+
+	barsize=64		; バーのサイズ
+	barx=240:bary=540	; バーの座標
+
+	barhalf=barsize/2
+	blhalf=blsize/2
+
+	screen 0,x2,y2
+
+*main
+	redraw 0
+	gradf 0,0,x2,y2,1,0,128	; 画面クリア
+
+	; バー : マウス座標から位置を決定
+	barx=mousex-barsize/2
+	color 255,255,255
+	boxf barx,bary,barx+barsize,bary+16
+
+	; ボール : X方向の移動
+	blx=blx+bpx
+	if blx<=x1 : blx=x1 : bpx=-bpx
+	if blx>=(x2-blsize) : blx=x2-blsize : bpx=-bpx
+
+	; ボール : Y方向の移動
+	bly=bly+bpy
+	if bly<=y1 : bly=y1 : bpy=-bpy
+	if bly>=(y2-blsize) : bly=y2-blsize : bpy=-bpy
+
+	; ボールとバーがぶつかったかどうか調べます
+	coly=bly+blsize
+	if (coly>=bary)&(bly<(bary+16)) {	; ボールY座標のチェック
+		; ボールX座標のチェック
+		colx=blx+blhalf
+		x=barx+barhalf
+		if abs(colx-x)<(barhalf+blhalf) {
+			bly=bary-blsize : bpy=-blspd
+			i=(colx-x)/4
+			if i!=0 : bpx=i
+		}
+	}
+
+	; ボールを表示
+	pos blx,bly:color 255,255,255
+	font msgothic,blsize
+	mes "●"
+
+	redraw 1
+	await 16
+	goto *main
+
+
+

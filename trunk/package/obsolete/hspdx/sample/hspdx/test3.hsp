@@ -1,0 +1,82 @@
+
+#include "hspdx.as"
+#include "hsp3util.as"
+
+	;
+	;	HSPDX.DLL sample3
+	;		フルサイズの画像をフェードイン表示。
+	;		[SPACE]キーでホワイトアウト
+	;		[ESC]キーで終了
+	;
+
+	;------------------------------------------------------------------
+
+	es_ini					; system初期化
+	es_screen 640,480,32,,1,1		; スクリーン初期化
+	if stat=1 : goto *dderr1
+	if stat=2 : goto *dderr2
+
+	goto *start				; 正常に完了
+
+*dderr1
+	dialog {"DirectXの初期化に失敗しました。
+
+"},1
+	end
+*dderr2
+	dialog {"スクリーンの初期化に失敗しました。
+"},1
+	end
+*dderr3
+	es_bye
+	wait 100
+	dialog {"VRAMの容量が不足しています。
+"},1
+	end
+
+	;------------------------------------------------------------------
+
+*start
+	demo=0
+
+	buffer 3,,,1
+	bmppalette "hspdx.bmp"
+	picload "hspdx.bmp"
+	es_buffer 0
+	if stat : goto *dderr3
+
+	gsel 0,1
+	color 0,0,0
+	es_cls
+	es_sync
+	wait 100
+
+	es_palfade -256
+	es_palfade 0,1
+*sudden
+	stick b,15				; カーソルキーの情報を取得
+	if b&16 : goto *sayo
+	if b : goto *owari
+
+	es_cls
+	gmode 0,640,480:pos 0,0:es_copy 0,0,0
+
+	es_sync 12: await 0
+
+	goto *sudden
+
+*sayo
+	es_palfade 256,1
+	repeat 256
+	es_cls
+	gmode 0,640,480:pos 0,0:es_copy 0,0,0
+	es_sync 12: await 0
+	loop
+
+*owari
+	color 0,0,0
+	es_cls
+	es_sync
+	es_bye
+	end
+

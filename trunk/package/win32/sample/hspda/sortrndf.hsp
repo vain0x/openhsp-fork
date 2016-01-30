@@ -1,0 +1,25 @@
+
+	#include "hspda.as"
+
+	;	実数配列変数のソート
+	;
+	kaz=20
+	ddim n,kaz
+
+	pos 0,0
+	repeat kaz
+	rndf_get dval	; MTで乱数を発生させる
+	n.cnt = dval
+	mes "N["+cnt+"]="+n.cnt
+	loop
+
+	sortval n,0
+
+	pos 320,0
+	repeat kaz
+	sortget a,cnt
+	mes "sort N["+cnt+"]="+n.cnt+"("+a+")"
+	loop
+
+	stop
+

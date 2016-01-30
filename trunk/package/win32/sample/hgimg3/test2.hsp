@@ -1,0 +1,46 @@
+#include "hgimg3.as"
+
+	;	ダイレクト描画サンプル
+	;
+
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,0
+	cls 4
+
+	;	初期設定
+	;
+	hgini
+
+	;	テクスチャの準備
+	;
+	texload "q.bmp"
+	mest = stat
+	rot = 0.0
+
+	;	背景色の設定
+	;
+	clscolor $40
+
+*main
+	;	描画メイン
+	;
+	hgdraw				; 描画処理
+
+	;	テクスチャの描画
+	;
+	gmode 0,128,128			; 元画像のサイズ指定
+	pos 320,240			; 中心座標
+	hgrotate mest,0,0,rot,256,256	; ２倍に拡大して表示
+	rot+=0.01
+
+	hgsync 10			; 時間待ち
+
+	stick k,127
+	if k&128 : goto *owari		; [ESC]で終了
+
+	goto *main
+
+*owari
+	end
+

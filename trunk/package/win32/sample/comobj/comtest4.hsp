@@ -1,0 +1,50 @@
+
+	;	XMLパーサー(MSXML)を使用してRSSを読み込む
+	;
+	url="http://hotwired.goo.ne.jp/news/index.rdf"
+	;
+	newcom oDom,"Microsoft.XMLDOM"
+	oDom("async")="FALSE"		; 同期読み込みを行う
+	;oDom->"load" "test.xml"	; ファイルを指定する時
+	oDom->"load" url		; URLを指定する時
+	oRoot = oDom("documentElement")
+	if varuse(oRoot)=0 : dialog "取得に失敗しました。" : end
+	if oRoot("tagName")!="rdf:RDF" : dialog "RSSではありません。" : end
+
+	mes "RSSの内容を表示します。"
+	mes url
+
+	comres elm_ch
+	oDom->"getElementsByTagName" "title"
+
+	comres elm_link
+	oDom->"getElementsByTagName" "link"
+
+	node = elm_ch("item",0)
+	node2 = node("firstChild")
+	mes "タイトル:"+node2("nodeValue")
+
+	node = elm_link("item",0)
+	node2 = node("firstChild")
+	link = node2("nodeValue")
+	mes link
+
+	mes "----------------------------------------------------------------"
+
+	max=elm_ch("length")
+	if max>11 : max=11
+
+	repeat max-1
+	i=cnt+1
+	node = elm_ch("item",i)
+	node2 = node("firstChild")
+	mes ""+i+":"+node2("nodeValue")
+
+	node = elm_link("item",i)
+	node2 = node("firstChild")
+	link = node2("nodeValue")
+	mes link
+
+	loop
+
+	stop

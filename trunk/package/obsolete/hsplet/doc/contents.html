@@ -1,0 +1,1003 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="ja">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta content="Copyright (C) 2004 Yuki. All rights are reserved." name="copyright">
+<meta content="text/css" http-equiv="Content-Style-Type">
+<meta content="text/javascript" http-equiv="Content-Script-Type">
+<title>目次 - HSPLet リファレンス</title>
+<link href="common.css" type="text/css" rel="stylesheet">
+<link href="contents.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+<h1>目次</h1>
+<ul class="contents">
+<li>
+<a href="../readme.txt" target="right">README</a>
+</li>
+<li>
+<a href="../history.txt" target="right">更新履歴</a>
+</li>
+<li>
+<a href="sample.html" target="right">サンプル</a>
+</li>
+<li>
+<a href="introduction.html" target="right">HSPLet の導入</a>
+</li>
+<li>
+<a href="compiler.html" target="right">コンパイラの使い方</a>
+</li>
+<li>
+<a href="faq.html" target="right">よくある質問(FAQ)</a>
+</li>
+<li>
+<a href="http://www.group-finity.com/LetGallery/" target="right">ギャラリ</a>
+</li>
+<li>
+<a href="http://www.group-finity.com/HSP/HSPLet/" target="right">最新版のダウンロード</a>
+</li>
+</ul>
+<ul class="contents">
+<li>
+<a href="#library1">HSP 基本命令</a>
+<ul class="contents">
+<li>
+<a href="#library1category1">プリプロセッサ命令</a>
+</li>
+<li>
+<a href="#library1category2">特殊代入命令</a>
+</li>
+<li>
+<a href="#library1category3">プログラム制御命令</a>
+</li>
+<li>
+<a href="#library1category4">プログラム制御マクロ</a>
+</li>
+<li>
+<a href="#library1category5">基本入出力制御命令</a>
+</li>
+<li>
+<a href="#library1category6">オブジェクト制御命令</a>
+</li>
+<li>
+<a href="#library1category7">画面制御命令</a>
+</li>
+<li>
+<a href="#library1category8">文字列操作命令</a>
+</li>
+<li>
+<a href="#library1category9">メモリ管理命令</a>
+</li>
+<li>
+<a href="#library1category10">マルチメディア制御命令</a>
+</li>
+<li>
+<a href="#library1category11">ファイル操作命令</a>
+</li>
+<li>
+<a href="#library1category12">HSPシステム制御命令</a>
+</li>
+<li>
+<a href="#library1category13">基本関数</a>
+</li>
+<li>
+<a href="#library1category14">文字列関数</a>
+</li>
+<li>
+<a href="#library1category15">数学関数</a>
+</li>
+<li>
+<a href="#library1category16">GUI関数</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library2">hspsock</a>
+<ul class="contents">
+<li>
+<a href="#library2category1">ソケット通信命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library3">hspsockA</a>
+<ul class="contents">
+<li>
+<a href="#library3category1">ソケット通信命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library4">hspini</a>
+<ul class="contents">
+<li>
+<a href="#library4category1">iniファイル操作命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library5">winmm</a>
+<ul class="contents">
+<li>
+<a href="#library5category1">マルチメディアタイマー</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library6">user32</a>
+<ul class="contents">
+<li>
+<a href="#library6category1">メニュー操作命令</a>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="library1">
+<a href="functions.html#library1" target="right">HSP 基本命令</a>
+</h2>
+<h3 id="library1category1">
+<a href="functions.html#library1category1" target="right">プリプロセッサ命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="別ファイルを結合">#addition</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="外部DLL呼び出し関数登録" href="functions.html#function_#cfunc" target="right">#cfunc</a>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="拡張キーワードの登録">#cmd</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="外部COM呼び出し命令登録">#comfunc</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロ名の定数定義">#const</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="新規関数を登録する" href="functions.html#function_#defcfunc" target="right">#defcfunc</a>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="新規命令を登録する" href="functions.html#function_#deffunc" target="right">#deffunc</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="新規マクロを登録する">#define</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="コンパイル制御を反転">#else</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="コンパイル制御ブロック終了">#endif</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロ名の定数を列挙">#enum</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="PACKFILE追加ファイル指定">#epack</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="外部DLL呼び出し命令登録" href="functions.html#function_#func" target="right">#func</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="モジュールの終了">#global</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="数値からコンパイル制御">#if</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロ定義からコンパイル制御">#ifdef</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロ定義からコンパイル制御">#ifndef</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="別ファイルを結合">#include</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="新規命令を割り当てる">#modfunc</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="モジュール初期化処理の登録">#modinit</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="モジュール解放処理の登録">#modterm</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="モジュールの開始">#module</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="PACKFILE追加ファイル指定">#pack</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="自動作成オプション指定">#packopt</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="拡張プラグインの登録">#regcmd</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ランタイムファイルの設定">#runtime</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロ名の取り消し">#undef</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="外部COMの指定">#usecom</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="外部DLLの指定" href="functions.html#function_#uselib" target="right">#uselib</a>
+</li>
+</ul>
+<h3 id="library1category2">
+<a href="functions.html#library1category2" target="right">特殊代入命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="変数のクローンを作成">dup</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ポインタからクローン変数を作成">dupptr</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="特殊なメモリを変数に割り当てる" href="functions.html#function_mref" target="right">mref</a>
+</li>
+</ul>
+<h3 id="library1category3">
+<a href="functions.html#library1category3" target="right">プログラム制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="一定時間待つ(ACTIVE)">await</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ループから抜ける">break</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ループをやり直す">continue</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="プログラム終了">end</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="Windowsのファイルを実行する" href="functions.html#function_exec" target="right">exec</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定ラベルに条件ジャンプ">exgoto</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="変数の要素数だけ繰り返す">foreach</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定ラベルにサブルーチンジャンプ">gosub</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定ラベルにジャンプ">goto</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="条件を満たしていればその行の命令を実行">if</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ループの始まりに戻る">loop</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="数値による分岐">on</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="クリック割り込み実行指定">onclick</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="Windowsメッセージ割り込み実行指定">oncmd</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="エラー発生時にジャンプ">onerror</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="終了時にジャンプ">onexit</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="キー割り込み実行指定">onkey</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ループの始まりの場所を示す">repeat</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="サブルーチンから復帰">return</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定したファイルに制御を移す">run</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="プログラム中断">stop</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="一定時間待つ">wait</span>
+</li>
+</ul>
+<h3 id="library1category4">
+<a href="functions.html#library1category4" target="right">プログラム制御マクロ</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="マクロループを脱出する">_break</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="マクロループをやり直す">_continue</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="デフォルト比較指定">case</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="デフォルト比較指定">default</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="条件付き繰り返し開始">do</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定回数繰り返し開始">for</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定回数繰り返し終了">next</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="比較実行脱出指定">swbreak</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="比較ブロック終了">swend</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="比較ブロック開始">switch</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="条件付き繰り返し終了">until</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="条件付き繰り返し終了">wend</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="条件付き繰り返し開始">while</span>
+</li>
+</ul>
+<h3 id="library1category5">
+<a href="functions.html#library1category5" target="right">基本入出力制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="キー入力チェック">getkey</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="メソッドの呼び出し">mcall</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="マウスカーソル座標設定">mouse</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="乱数発生の初期化">randomize</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="キー入力情報取得">stick</span>
+</li>
+</ul>
+<h3 id="library1category6">
+<a href="functions.html#library1category6" target="right">オブジェクト制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="ボタン表示">button</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="チェックボックス表示">chkbox</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="オブジェクトをクリア">clrobj</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="コンボボックス表示">combox</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="入力ボックス表示">input</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="リストボックス表示">listbox</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メッセージボックス表示">mesbox</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="オブジェクトモード設定">objmode</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="オブジェクトの内容を変更">objprm</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="オブジェクトに入力フォーカスを設定">objsel</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="オブジェクトにメッセージを送る">objsend</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="オブジェクトサイズ設定">objsize</span>
+</li>
+</ul>
+<h3 id="library1category7">
+<a href="functions.html#library1category7" target="right">画面制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportNo">&times;</span><span title="ActiveXコントロールの配置">axobj</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="ウィンドウIDを初期化" href="functions.html#function_bgscr" target="right">bgscr</a>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="画面イメージセーブ">bmpsave</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="矩形を塗りつぶす">boxf</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="ウィンドウIDを初期化" href="functions.html#function_buffer" target="right">buffer</a>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="画像解像度を変更する">chgdisp</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="円を描画する">circle</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="画面クリア">cls</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="カラー設定">color</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ダイアログを開く">dialog</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="フォント設定" href="functions.html#function_font" target="right">font</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="画面コピー">gcopy</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="画面コピーモード設定" href="functions.html#function_gmode" target="right">gmode</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="回転する矩形で塗りつぶす">grect</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ウィンドウの描画基点を設定">groll</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="矩形画像を回転してコピー">grotate</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="描画先指定、ウィンドウ最前面、非表示設定" href="functions.html#function_gsel" target="right">gsel</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="任意の四角形画像をコピー">gsquare</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="変倍して画面コピー">gzoom</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="HSV形式でカラーを設定する">hsvcolor</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="直線を描画">line</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メッセージ表示">mes</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="描画パレット設定">palcolor</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="パレット設定">palette</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="1dotの点を取得">pget</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="画像ファイルをロード" href="functions.html#function_picload" target="right">picload</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="カレントポジション設定">pos</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メッセージ表示">print</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="1dotの点を表示">pset</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="再描画の設定">redraw</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="ウィンドウIDを初期化" href="functions.html#function_screen" target="right">screen</a>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="ウィンドウメッセージの送信" href="functions.html#function_sendmsg" target="right">sendmsg</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="システムカラーを設定する">syscolor</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="システムフォント選択">sysfont</span>
+</li>
+<li>
+<span class="supportNote">！</span><a title="タイトルバー設定" href="functions.html#function_title" target="right">title</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ウィンドウサイズ設定">width</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ウィンドウオブジェクトの配置">winobj</span>
+</li>
+</ul>
+<h3 id="library1category8">
+<a href="functions.html#library1category8" target="right">文字列操作命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportNo">&times;</span><span title="通常文字列をunicodeに変換">cnvstow</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファから文字列読み出し">getstr</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定行の追加・変更">noteadd</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="行の削除">notedel</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定行を読み込み">noteget</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="対象バッファ読み込み">noteload</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="対象バッファ保存">notesave</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="対象バッファ指定">notesel</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="対象バッファの復帰">noteunsel</span>
+</li>
+</ul>
+<h3 id="library1category9">
+<a href="functions.html#library1category9" target="right">メモリ管理命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="バッファを確保">alloc</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="メソッド返値代入変数を設定する">comres</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="実数型配列変数を作成">ddim</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="モジュール型変数の要素削除">delmod</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="配列変数を作成">dim</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="指定タイプの配列変数を作成">dimtype</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファに4byte書き込み">lpoke</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メモリブロックのコピー">memcpy</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="メモリブロックの再確保">memexpand</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メモリブロックのクリア">memset</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="モジュール型変数の作成">newmod</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファに1byte書き込み">poke</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="文字列型配列変数を作成">sdim</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="モジュール型変数の再設定">setmod</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファに2byte書き込み">wpoke</span>
+</li>
+</ul>
+<h3 id="library1category10">
+<a href="functions.html#library1category10" target="right">マルチメディア制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportPartial">△</span><a title="MCIにコマンドを送る" href="functions.html#function_mci" target="right">mci</a>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="サウンドファイル読み込み" href="functions.html#function_mmload" target="right">mmload</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="サウンド再生">mmplay</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="サウンド停止">mmstop</span>
+</li>
+</ul>
+<h3 id="library1category11">
+<a href="functions.html#library1category11" target="right">ファイル操作命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportNo">&times;</span><span title="ファイルのコピー">bcopy</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファにファイルをロード">bload</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="バッファをファイルにセーブ">bsave</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="ディレクトリ移動" href="functions.html#function_chdir" target="right">chdir</a>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="DPMファイル設定">chdpm</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ファイル削除">delete</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ディレクトリ一覧を取得">dirlist</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ファイルのサイズ取得">exist</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="メモリストリーム設定">memfile</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ディレクトリ作成">mkdir</span>
+</li>
+</ul>
+<h3 id="library1category12">
+<a href="functions.html#library1category12" target="right">HSPシステム制御命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportNo">&times;</span><span title="デバッグウィンドウ表示">assert</span>
+</li>
+<li>
+<span class="supportYes">○</span><a title="デバッグメッセージ送信" href="functions.html#function_logmes" target="right">logmes</a>
+</li>
+</ul>
+<h3 id="library1category13">
+<a href="functions.html#library1category13" target="right">基本関数</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="">int</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">rnd</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">strlen</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">length</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">length2</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">length3</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">length4</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">vartype</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">gettime</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">peek</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">wpeek</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">lpeek</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="">varptr</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="">varuse</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">noteinfo</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">instr</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">abs</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">limit</span>
+</li>
+</ul>
+<h3 id="library1category14">
+<a href="functions.html#library1category14" target="right">文字列関数</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="">str</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">strmid</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">strf</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">getpath</span>
+</li>
+</ul>
+<h3 id="library1category15">
+<a href="functions.html#library1category15" target="right">数学関数</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="">sin</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">cos</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">tan</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">atan</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">sqrt</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">double_</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">absf</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">expf</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">logf</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">limitf</span>
+</li>
+</ul>
+<h3 id="library1category16">
+<a href="functions.html#library1category16" target="right">GUI関数</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="">mousex</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">mousey</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="">mousew</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">hwnd</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="">hinstance</span>
+</li>
+<li>
+<span class="supportNote">！</span><span title="">hdc</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="" href="functions.html#function_ginfo" target="right">ginfo</a>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="" href="functions.html#function_objinfo" target="right">objinfo</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="">dirinfo</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="システム情報の取得" href="functions.html#function_sysinfo" target="right">sysinfo</a>
+</li>
+</ul>
+<h2 id="library2">
+<a href="functions.html#library2" target="right">hspsock</a>
+</h2>
+<h3 id="library2category1">
+<a href="functions.html#library2category1" target="right">ソケット通信命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="ソケットを初期化して接続">sockopen</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ソケットを切断">sockclose</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データを送信">sockput</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データを1byte送信">sockputc</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファのデータを送信">sockputb</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データを受信">sockget</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データを1byte受信">sockgetc</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バッファにデータを受信">sockgetb</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="ソケットをサーバーとして初期化">sockmake</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="クライアントの着信を待つ">sockwait</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データ到着を調べる">sockcheck</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ホストのIPアドレスを取得">ipget</span>
+</li>
+</ul>
+<h2 id="library3">
+<a href="functions.html#library3" target="right">hspsockA</a>
+</h2>
+<h3 id="library3category1">
+<a href="functions.html#library3category1" target="right">ソケット通信命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="プラグインを初期化する">sockinit</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ホストに接続する">sockopen</span>
+</li>
+<li>
+<span class="supportNo">&times;</span><span title="クライアントからの接続を待機する">sockmake</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="接続処理の状態を取得する">sockwait</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データ送信の終了を通知する">sockshut</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ソケットを閉じる">sockclose</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="文字列を受信する">sockget</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="1バイト受信する">sockgetc</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="2バイト受信する">sockgetw</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="4バイト受信する">sockgetd</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バイナリデータを受信する">sockgetb</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="文字列を送信する">sockput</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="1バイト送信する">sockputc</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="2バイト送信する">sockputw</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="4バイト送信する">sockputd</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="バイナリデータを送信する">sockputb</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ソケットの通信状態を取得する">sockcheck</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="受信バッファにあるデータのサイズを取得する">sockcount</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ソケットエラーコードを取得する">sockerror</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="自分のIPアドレスを取得する">ipget</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="プラグインのリソースを解放する">sockbye</span>
+</li>
+</ul>
+<h2 id="library4">
+<a href="functions.html#library4" target="right">hspini</a>
+</h2>
+<h3 id="library4category1">
+<a href="functions.html#library4category1" target="right">iniファイル操作命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportNote">！</span><a title="使うiniファイルを設定します" href="functions.html#function_iniset" target="right">iniset</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="数値データ読みこみ">iniget</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="文字列形データ読みこみ">inigets</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="データ書き込み">iniput</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="キーを削除">inidel</span>
+</li>
+</ul>
+<h2 id="library5">
+<a href="functions.html#library5" target="right">winmm</a>
+</h2>
+<h3 id="library5category1">
+<a href="functions.html#library5category1" target="right">マルチメディアタイマー</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><a title="ミリ秒単位の時間を取得" href="functions.html#function_timeGetTime" target="right">timeGetTime</a>
+</li>
+</ul>
+<h2 id="library6">
+<a href="functions.html#library6" target="right">user32</a>
+</h2>
+<h3 id="library6category1">
+<a href="functions.html#library6category1" target="right">メニュー操作命令</a>
+</h3>
+<ul class="links">
+<li>
+<span class="supportYes">○</span><span title="メニュー作成">CreateMenu</span>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ポップアップメニュー作成">CreatePopupMenu</span>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="メニュー項目登録" href="functions.html#function_AppendMenuA" target="right">AppendMenuA</a>
+</li>
+<li>
+<span class="supportYes">○</span><span title="ウィンドウにメニューを設定">SetMenu</span>
+</li>
+<li>
+<span class="supportYes">○</span><a title="メニューバー再描画" href="functions.html#function_DrawMenuBar" target="right">DrawMenuBar</a>
+</li>
+<li>
+<span class="supportPartial">△</span><a title="メニュー削除" href="functions.html#function_DestroyMenu" target="right">DestroyMenu</a>
+</li>
+</ul>
+</body>
+</html>

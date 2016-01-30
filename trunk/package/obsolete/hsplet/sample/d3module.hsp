@@ -1,0 +1,91 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: d3module
+                                             Copyright (C) 2005.12.27 山田雄己
+*******************************************************************************/
+
+#include "d3m.hsp"
+
+	mes "sprocket 氏の作成された d3module を使ってみるサンプルです。"
+	wait 100
+	mes "赤い球を青い球が追いかけます。"
+	wait 100
+	mes "ax ファイルを作成するために d3m.hsp が必要です。"
+	wait 100
+	mes "d3module の d3timer 関数は拡張ライブラリを使用しているので、"
+	mes "d3timer を使用するときはコンパイラの winmm にチェックを入れてください。"
+	wait 200
+
+	cls
+
+	phase = 0.0
+	tphase = 0.0
+
+	d3mkparticle 0, 255, 244, 244
+	d3mkparticle 1, 255, 32, 32
+	d3mkparticle 2, 244, 244, 255
+	d3mkparticle 3, 32, 32, 255
+	
+*l_MainLoop
+	frame++
+
+	await 50
+	
+
+	phase += 0.01
+
+	tphase += cos( phase )*0.02+0.03
+
+	targetx = sin(tphase)*100
+	targety = cos(tphase*0.9)*100
+	targetz = sin( tphase*1.5+0.2 )*100
+
+	if frame\10=0 {
+		dx = rnd(20)-10
+		dt = rnd(20)-10
+		dz = rnd(20)-10
+	}
+	
+
+	lockx = (targetx-lockx+dx)*0.5+lockx
+	locky = (targety-locky+dy)*0.5+locky
+	lockz = (targetz-lockz+dx)*0.5+lockz
+
+	myx = (lockx-myx)*0.1+myx
+	myy = (locky-myy)*0.1+myy
+	myz = (lockz-myz)*0.1+myz
+
+	redraw 0
+		color: boxf
+		gmode 0
+
+		d3setcam cos( phase*2 )*150, sin( phase*2 )*150, sin( phase*1.5 )*150
+
+		color 64, 64, 64
+		repeat 101, -50
+			d3line -1000, cnt*20, 0, 1000, cnt*20, 0
+			d3line cnt*20, -1000, 0, cnt*20, 1000, 0
+		loop
+		
+		color 192, 192, 192
+		d3line -1000, 0, 0, 1000, 0, 0
+		d3line 0, -1000, 0, 0, 1000, 0
+		d3line 0, 0, -1000, 0, 0, 1000
+
+		gmode 5, 0, 0, 192
+		color 255, 0, 0
+		d3particle 0, targetx, targety, targetz, 10.0
+		gmode 5, 0, 0, 255
+		d3particlem 1, 4.0
+		color 255, 0, 0
+		d3particle 2, myx, myy, myz, 10.0
+		gmode 5, 0, 0, 255
+		d3particlem 3, 4.0
+
+		color 255, 255, 255
+		d3circle lockx, locky, lockz, 10.0
+		d3arrow lockx, locky, lockz, myx, myy, myz
+		
+	redraw 1
+
+	goto *l_MainLoop

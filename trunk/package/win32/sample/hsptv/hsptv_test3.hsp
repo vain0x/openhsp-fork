@@ -1,0 +1,77 @@
+#include "hsptv.as"
+
+#module
+#deffunc fbase int _p1
+
+	ofs=_p1
+	return
+
+#deffunc fprt str _p1
+	;	fprt "message"
+	;	(画像を使用したフォント表示を行ないます)
+	;	"message" : 表示するメッセージ
+	;	表示座標は、posで指定した位置から
+	;
+	i=0:st=_p1
+
+	repeat
+	a1=peek(st,i):i++:if a1=0 : break
+	if a1=13 {
+		a1=peek(st,i)
+		if a1=10 : i++
+		continue	; 改行
+	} else {
+		celput 1,a1+ofs
+	}
+	loop
+	return
+
+#global
+
+	title "HSPTV Test3"
+
+	;	HSPTVブラウザ用・標準イメージを読み込む
+	celload dir_exe+"\\hsptv\\hsptv_img.bmp",1
+
+	cls 4			; 画面をクリア
+
+	;	終了ボタン配置
+	;
+	pos 540,450
+	objsize 100,24
+	button "END",*owari
+
+	bg=0
+*main
+	redraw 0
+	stick key
+	if key&128 : goto *owari		; ESCキー
+	if key&1 : bg=limit(bg-1,0,47)		; [←]キー
+	if key&4 : bg=limit(bg+1,0,47)		; [→]キー
+
+	celdiv 1,64,64,0,0	; タイル用のドット分割指定
+	gmode 0
+	repeat 8
+		y=cnt*64
+		repeat 10
+			x=cnt*64
+			pos x,y:celput 1,16+bg
+		loop
+	loop
+
+	fbase 0			; フォントの起点を設定(0=通常フォント)
+	celdiv 1,16,16,0,0	; フォント用のドット分割指定
+
+	gmode 2				; 黒は透過
+	pos 150,100
+	fprt "HSPTV Common Graphics"	; フォントを描画
+	pos 200,130:color 255,255,255
+	mes "左右のキーでタイルが変わります"
+
+	redraw 1
+	await 16			; 時間待ち
+	goto *main
+
+*owari
+	end
+

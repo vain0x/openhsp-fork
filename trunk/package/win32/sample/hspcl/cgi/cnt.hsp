@@ -1,0 +1,17 @@
+; カウンタCGI
+;
+; URLリクエストの例
+; http://localhost/cgi-bin/cnt.exe
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+
+	sdim s,64				; 文字変数sを64バイトで用意
+	fnm="cnt.txt"				; カウンタファイル名を変数fnmに入れる
+	bload fnm,s				; 文字変数sにカウンタファイルの内容を読み込む
+	s=int(s)				; 文字変数sを数値変数にする
+	s+					; 数値変数sに1加算
+	s=strf("%08d",s)			; 数値変数sを8桁の文字変数にする
+	bsave fnm,s,8				; カウンタファイルに上書き保存
+
+	mes "Content-type: text/html\n\n"	; 出力先をHTMLページに指定
+	mes s					; カウンタ値を表示

@@ -1,0 +1,11 @@
+
+	;	WSHを使う
+	;
+	newcom wshSHell, "WScript.Shell"
+	comres res
+	mcall wshSHell, "Popup", "メッセージです", 5, "テスト", 3|48
+	if stat : dialog "COM呼び出しのエラーです。" : end
+
+	dialog "押されたボタンの番号は" +res +"です"
+	stop
+

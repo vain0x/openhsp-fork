@@ -1,0 +1,47 @@
+#include "mod_usbio.as"
+//#include "hspusbio.as"
+
+*start
+	title "USB-IO test"
+	screen 0,320,400
+
+	;USB-IO‰Šú‰»
+	mes "USB-IO‚ğÚ‘±‚µ‚Ä‚­‚¾‚³‚¢"
+	repeat
+		uio_find
+		if stat==0 :break
+		wait 10
+	loop
+	cls
+
+	s=""
+	port=0
+
+	pos 4,4:mes "Port:"
+	pos 104,4:input port
+
+	pos 4,30:mes "Data(0`ff):"
+	pos 104,30:input s
+
+	pos 80,60:button "Read",*read
+	pos 144,60:button "Write",*write
+	pos 0
+stop
+
+*read
+	tmp=0
+	uio_inp tmp,port
+	;if stat :goto *start
+	mes "IN:"+tmp +"(stat="+stat+")"
+	tmp=strf("%02x",tmp) // HSP3
+	objprm 1,tmp
+stop
+
+*write
+	tmp="$"+s
+	tmp=int(tmp) // HSP3
+	uio_out port,tmp
+	;if stat :goto *start
+	mes "OUT:"+tmp +"(stat="+stat+")"
+stop
+

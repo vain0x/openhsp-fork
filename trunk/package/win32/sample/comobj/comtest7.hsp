@@ -1,0 +1,68 @@
+
+	;	IEコンポーネントを使う
+	;
+#define DIID_DWebBrowserEvents2     "{34A715A0-6587-11D0-924A-0020AFC7AC4D}"
+
+#define DISPID_COMMANDSTATECHANGE   105
+#define DISPID_BEFORENAVIGATE2      250
+#define DISPID_NAVIGATECOMPLETE2    252
+#define DISPID_ONQUIT               253
+#define DISPID_ONMENUBAR            256
+#define DISPID_ONSTATUSBAR          257
+#define DISPID_ONFULLSCREEN         258
+#define DISPID_WINDOWSETLEFT        264
+#define DISPID_WINDOWSETTOP         265
+#define DISPID_WINDOWSETWIDTH       266
+#define DISPID_WINDOWSETHEIGHT      267
+#define DISPID_ONTHEATERMODE        260
+
+
+	cls 1
+	sdim url,512
+	url="http://www.onionsoft.net"
+	objsize 600,24
+	pos 0,2:mes "URL:"
+	pos 0,26:mes "WEB Browser Sample"
+	pos 40,0:input url
+	objsize 120,24
+	pos 520,24:button "移動",*wow
+	pos 400,24:button "進む",*go_f
+	pos 280,24:button "戻る",*go_b
+	pos 0,48
+	axobj ie, "Shell.Explorer.2",640,480-48
+	num=stat
+	comevent ie_event, ie, DIID_DWebBrowserEvents2,*event
+	ie->"Navigate" url
+
+*main
+	stop
+		
+*event
+	;	COMイベント処理
+	dispid = comevdisp(ie_event)
+	if dispid = DISPID_BEFORENAVIGATE2 : gosub *OnBeforeNavigate
+	if dispid = DISPID_NAVIGATECOMPLETE2 : gosub *OnNavigateComplete2
+	return
+
+*OnBeforeNavigate
+	comevarg name,ie_event,1
+	objprm 0,name
+	return
+
+*OnNavigateComplete2
+	pDoc = ie("Document")
+	name = pDoc("Title")
+	title name
+	delcom pDoc
+	return
+
+*wow
+	ie->"Navigate" url
+	goto *main
+*go_f
+	ie->"GoForward"
+	goto *main
+*go_b
+	ie->"GoBack"
+	goto *main
+

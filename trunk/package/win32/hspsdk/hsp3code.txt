@@ -1,0 +1,695 @@
+------------------------------------------------------------------------------
+HSP3データフォーマット資料 v0.2                     HSP : Hot Soup Processor  
+ホットスーププロセッサ                     copyright 2011 (c) onion software  
+------------------------------------------------------------------------------
+
+・はじめに
+
+	この資料は、Hot Soup Processor ver3.0以降のファイル仕様、内部動作に
+	ついて記述しています。
+
+	HSP3データフォーマット資料は、OpenHSPの一部として公開されており、
+	OpenHSPと同様のライセンスが適用されています。
+
+	資料およびソースコードは、個人の利用、研究用として自由に改編して
+	お使い下さい。改編したものをネット上で公開する場合や、商利用を行なう
+	など不特定多数に公開するものを作成する場合は、事前に作者までメールにて
+	ご連絡頂けると嬉しいです(義務ではありません)。
+	HSP2、HSP3を含むHot Soup Processor(ホットスーププロセッサー)の
+	言語仕様は、Onion Software/onitamaが中心となって保守管理を行なって
+	います。
+	現状のユーザーの利便性を優先し、混乱しない形で、HSPの仕様管理を
+	継続して行なうためにご協力頂ければ嬉しいです。
+
+	資料をもとに作成されたドキュメントやTIPSは、またはツールに関しては、
+	自由に公開していただいて構いません。
+
+	HSP3データフォーマット資料は、BSDライセンスを基本として自由に改編、
+	複製、公開、配布することができます。
+	派生物を公開する場合には、以下の著作権表示を明示するように
+	してください。
+	また、必要であれば、改編者の著作権表示も付加するようにしてください。
+
+OpenHSP
+Copyright (C) 1997-2011, Onion Software/onitama.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. 
+Neither the name of the Onion Software nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. 
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+・hsp3コード出力
+
+	HSP3コードジェネレーター(hspcmp.dll)は、テキスト形式のHSP3ソース
+	コードを、ax形式ファイル(HSPオブジェクトファイル)に変換します。
+	その際に、ソースコードをhsp3中間コードに置き換えます。
+	プリプロセッサ命令やマクロ定義命令、ラベルや外部参照情報などは
+	変換時に解決され、適切な形式に変換されます。
+	HSPランタイム(hsp3.exe等)は、ax形式ファイルを読み込み、
+	hsp3中間コードを逐次読み出しながら実行を行ないます。
+
+		HSP3ソースコード(.hsp)
+			↓
+		プリプロセス処理後に中間コード置き換え
+			↓
+		ax形式ファイル(.ax)
+
+
+・axファイルフォーマット
+
+	ax形式ファイル(HSPオブジェクトファイル)には、以下のようなデータが格納
+	されています。それぞれのブロックは、AXヘッダ情報からオフセット参照
+	する形でファイル上の位置を特定することができます。
+
+		┌───────────┐
+		│     AXヘッダ情報     │
+		├───────────┤
+		│ Option Info(OPTBUF)  │
+		├───────────┤
+		│   Code Segment(CS)   │
+		├───────────┤
+		│   Data Segment(DS)   │
+		├───────────┤
+		│    Object Temp(OT)   │
+		├───────────┤
+		│  Debug Info(DINFO)   │
+		├───────────┤
+		│    Lib Info(LINFO)   │
+		├───────────┤
+		│   Func Info(FINFO)   │
+		├───────────┤
+		│  Module Info(MINFO)  │
+		├───────────┤
+		│  Func Info2(FINFO2)  │
+		├───────────┤
+		│    HPI Info(HPIBUF)  │
+		└───────────┘
+
+	それぞれのデータ構造の内容は、以下の通りです。
+
+	・AXヘッダ情報
+
+	AXヘッダ情報の詳細は、以下の構造体を参照してください。
+	(hsp3struct.hで定義)
+
+	typedef struct HSPHED
+	{
+	//		HSP3.0 header structure
+	//
+
+	char	h1;					// magic code1
+	char	h2;					// magic code2
+	char	h3;					// magic code3
+	char	h4;					// magic code4
+	int		version;			// version number info
+	int		max_val;			// max count of VAL Object
+	int		allsize;			// total file size
+
+	int		pt_cs;				// ptr to Code Segment
+	int		max_cs;				// size of CS
+	int		pt_ds;				// ptr to Data Segment
+	int		max_ds;				// size of DS
+
+	int		pt_ot;				// ptr to Object Temp
+	int		max_ot;				// size of OT
+	int		pt_dinfo;			// ptr to Debug Info
+	int		max_dinfo;			// size of DI
+
+	int		pt_linfo;			// ptr to LibInfo(2.3)
+	int		max_linfo;			// size of LibInfo(2.3)
+	int		pt_finfo;			// ptr to FuncInfo(2.3)
+	int		max_finfo;			// size of FuncInfo(2.3)
+
+	int		pt_minfo;			// ptr to ModInfo(2.5)
+	int		max_minfo;			// size of ModInfo(2.5)
+	int		pt_finfo2;			// ptr to FuncInfo2(2.5)
+	int		max_finfo2;			// size of FuncInfo2(2.5)
+
+	int		pt_hpidat;			// ptr to HPIDAT(3.0)
+	short		max_hpi;			// size of HPIDAT(3.0)
+	short		max_varhpi;			// Num of Vartype Plugins(3.0)
+	int		bootoption;			// bootup options
+	int		runtime;			// ptr to runtime name
+
+	} HSPHED;
+
+	「ptr to～」が示しているのは、実際にデータが存在するファイル先頭からの
+	オフセット値です。
+	「size of～」が示しているのは、データブロックのサイズです。
+
+	magic code1～4は、「HSP3」の文字列コードが入ります。
+	versionは、コードジェネレーターのバージョンが入ります。
+	(3.1の場合は、0x0301となります。)
+
+	bootoptionは、以下のフラグが格納されます。
+
+	#define HSPHED_BOOTOPT_DEBUGWIN 1	// 起動時デバッグウインドゥ表示
+	#define HSPHED_BOOTOPT_RUNTIME 0x1000	// 動的ランタイムを有効にする
+
+	動的ランタイム指定時は、runtimeにランタイム名(ファイル名)のデータ
+	ブロックの位置(ファイル先頭からのオフセット)が格納されます。
+
+
+	・Code Segment(CS)
+
+		ソースを展開したHSP中間コードフォーマットの情報が格納されています。
+		ソーススクリプトの先頭から順次、中間コードに置き換えられて格納されます。
+		コードの詳細は、「hsp3中間コードフォーマット」の項目を参照してください。
+
+	・Data Segment(DS)
+
+		文字列などの固定データが格納されています。
+		サイズは不定で、文字列や実数データなどが順次格納されます。
+		以降、この項目を参照する場合、「DSオフセット値」と呼びます。
+
+	・Object Temp(OT)
+
+		ラベルIDに対応したCS上のオフセット値が格納されています。
+
+	・Debug Info(DINFO)
+
+		行番号に対応するCSの位置情報が格納されています。
+		詳しくは、「Debug Info(DINFO)詳細」を参照してください。
+
+	・Lib Info(LINFO)
+
+		外部呼び出し(DLL等)の情報が格納されています。
+
+	・Func Info(FINFO)
+	・Func Info2(FINFO2)
+
+		モジュールやDLL定義等の構造に関する情報が格納されています。
+
+	・Mod Info(MINFO)
+
+		モジュールに関する情報が格納されています。
+
+	・HPI Info(HPIBUF)
+
+		HSP3拡張プラグインに関する情報が格納されています。
+		情報は、HPIDAT構造体(hsp3struct.hで定義)の配列として書き込まれます。
+
+		typedef struct HPIDAT {
+			short	flag;		// flag info
+			short	option;
+			int	libname;	// lib name index (DS)
+			int	funcname;	// function name index (DS)
+			void	*libptr;	// lib handle
+		} HPIDAT;
+
+		libnameとfuncnameは、DLL名、初期化関数名を示すDSオフセット値になります。
+		libptrは、ランタイム実行時に書き込むための予約領域です。
+		HPIDAT構造体は、あくまでもHSP3拡張プラグインのための情報で、
+		HSP2.x互換のプラグインは外部DLL呼び出し扱いとなり、ここには
+		含まれていません。
+
+	・Option Info(OPTBUF)
+
+		コンパイル時に指定されたランタイムなどのオプション情報が格納されています。
+
+
+・hsp3中間コードフォーマット
+
+	HSPは、ソーススクリプトを中間コードに変換した後に実行を行なうインタプリタです。
+	スクリプトに含まれるキーワード、文字列、数値などを中間コードに変換しています。
+	hsp3中間コードフォーマットは、hsp2で使用されていたフォーマットに近い形で
+	作成されています。
+
+	中間コードには、取り扱う値の範囲に合わせた2種類の形式が存在します。
+
+
+	[32bit code]
+		MSB                          LSB
+		┌─┬──┬──┬──┬──────┐
+		│ 0│ Ex2│ Ex1│ Ex0│    Type    │
+		└─┴──┴──┴──┴──────┘
+		                   +
+		┌─────────────────┐
+		│           　Code(16bit)    　  　│
+		└─────────────────┘
+
+	[48bit code]
+		MSB                          LSB
+		┌─┬──┬──┬──┬──────┐
+		│ 1│ Ex2│ Ex1│ Ex0│    Type    │
+		└─┴──┴──┴──┴──────┘
+		                   +
+		┌─────────────────┐
+		│           　Code(32bit)    　  　│
+		└─────────────────┘
+
+	基本は16bit(short)値が１つの単位となります。
+	Type値は、bit0～bit11 (0～0xfff)。(CSTYPEマクロでマスク値を定義)
+	Ex0値は、bit12 (0x1000)。(EXFLG_0マクロで値を定義)
+	Ex1値は、bit13 (0x2000)。(EXFLG_1マクロで値を定義)
+	Ex2値は、bit14 (0x4000)。(EXFLG_2マクロで値を定義)
+	Code値が、0x0000～0xffff(符号なし)までの場合は、サイズ削減のために
+	32bitcode形式で格納されます。
+	Code値が、0x10000以上の場合は、48bit形式で32bitフルに格納されます。
+	48bit形式の場合は、最初の16bitにあるbit15(0x8000)がONになります。
+
+	Type値は、格納されるコードの種類を特定します。
+
+	   Type  | マクロ         | 種類
+	-----------------------------------------------------------
+	      0  | TYPE_MARK      | 記号(code=文字コード)
+	      1  | TYPE_VAR       | ユーザー定義変数(code=変数ID)
+	      2  | TYPE_STRING    | 文字列(code=DSオフセット)
+	      3  | TYPE_DNUM      | 実数値(code=DSオフセット)
+	      4  | TYPE_INUM      | 整数値(code=値)
+	      5  | TYPE_STRUCT    | モジュール変数・構造体(code=minfoID)
+	      6  | TYPE_XLABEL    | 未使用
+	      7  | TYPE_LABEL     | ラベル名(code=OTオフセット)
+	      8  | TYPE_INTCMD    | HSP内部(コア)命令(code=コマンドID)
+	      9  | TYPE_EXTCMD    | HSP拡張(機種依存)命令(code=コマンドID)
+	     10  | TYPE_EXTSYSVAR | HSP拡張(機種依存)システム変数(code=コマンドID)
+	     11  | TYPE_CMPCMD    | 比較命令(code=コマンドID)
+	     12  | TYPE_MODCMD    | ユーザー拡張命令・関数(code=コマンドID)
+	     13  | TYPE_INTFUNC   | HSP内部(コア)関数(code=コマンドID)
+	     14  | TYPE_SYSVAR    | HSP内部(コア)システム変数(code=コマンドID)
+	     15  | TYPE_PROGCMD   | プログラム制御命令(code=コマンドID)
+	     16  | TYPE_DLLFUNC   | 外部DLL拡張命令・関数(code=コマンドID)
+	     17  | TYPE_DLLCTRL   | 拡張DLLコントロールコマンド(code=コマンドID)
+	     18  | TYPE_USERDEF   | HSP3拡張プラグインコマンド(code=コマンドID)
+
+
+	Ex1値は、行頭であることを示すフラグ(1ならば行頭となる)、
+	Ex2値は、パラメーターの区切りであることを示すフラグ(1ならば区切り)
+	となっています。
+	Ex0値は、パラメーターが演算や変数を含まない単一の値であることを示す
+	フラグとして使用されます(HSP3.3以降で追加)。
+
+	TYPE_USERDEFタイプ以降は、プラグインによって拡張された命令などで使用
+	されていきます。(タイプ値の最大は、0x1fffになります)
+
+	HSPに標準で設定されている予約キーワードのtypeとコードは以下の通りです。
+	(コードジェネレーターのhspcmd.cppから抜粋)
+
+	char 	s_rec[1]= "", *hsp_prestr[] =
+	{
+	//
+	//	label check
+	//	  | opt value
+	//	  | |
+	//	  | | type
+	//	  | | | keyword
+	//	  | | |  |
+	//	  | | |  |
+	//	"$000 8 goto",
+	//
+	s_rec,
+
+	//	program control commands (ver3.0)
+
+	"$000 15 goto",
+	"$001 15 gosub",
+	"$002 15 return",
+	"$003 15 break",
+	"$004 15 repeat",
+	"$005 15 loop",
+	"$006 15 continue",
+	"$007 15 wait",
+	"$008 15 await",
+
+	"$009 15 dim",
+	"$00a 15 sdim",
+//	"$00d 15 skiperr",				// delete
+	"$00b 15 foreach",				// (ver3.0)
+//	"$00c 15 eachchk",				// (ver3.0) hidden
+	"$00d 15 dimtype",				// (ver3.0)
+	"$00e 15 dup",
+	"$00f 15 dupptr",				// (ver3.0)
+
+	"$010 15 end",
+	"$011 15 stop",
+	"$012 15 newmod",				// (ver3.0)
+//	"$013 15 setmod",				// (ver3.0)
+	"$014 15 delmod",				// (ver3.0)
+//	"$015 15 alloc",				// (changed 3.0)
+	"$016 15 mref",					// (ver2.5)
+	"$017 15 run",
+	"$018 15 exgoto",				// ver2.6
+	"$019 15 on",					// ver2.6
+	"$01a 15 mcall",				// (ver3.0)
+	"$01b 15 assert",				// (ver3.0)
+	"$01c 15 logmes",				// (ver3.0)
+	"$01d 15 newlab",				// (ver3.2)
+	"$01e 15 resume",				// (ver3.2)
+	"$01f 15 yield",				// (ver3.2)
+
+//	"$015 15 logmode",				// (ver2.55)
+//	"$016 15 logmes",				// (ver2.55)
+
+	//	enhanced command (ver2.6)
+
+	"$10000 8 onexit",
+	"$10001 8 onerror",
+	"$10002 8 onkey",
+	"$10003 8 onclick",
+	"$10004 8 oncmd",
+
+	"$011 8 exist",
+	"$012 8 delete",
+	"$013 8 mkdir",
+	"$014 8 chdir",
+
+	"$015 8 dirlist",
+	"$016 8 bload",
+	"$017 8 bsave",
+	"$018 8 bcopy",
+	"$019 8 memfile",				// (changed on ver2.6*)
+
+	//	no macro command (ver2.61)
+	//
+	"$000 11 if",
+	"$001 11 else",
+
+	//	normal commands
+
+	"$01a 8 poke",
+	"$01b 8 wpoke",
+	"$01c 8 lpoke",
+	"$01d 8 getstr",
+	"$01e 8 chdpm",					// (3.0)
+	"$01f 8 memexpand",				// (3.0)
+	"$020 8 memcpy",				// (ver2.55)
+	"$021 8 memset",				// (ver2.55)
+
+	"$022 8 notesel",				// (changed on ver2.55)
+	"$023 8 noteadd",				// (changed on ver2.55)
+	"$024 8 notedel",				// (changed on ver2.55)
+	"$025 8 noteload",				// (changed on ver2.6*)
+	"$026 8 notesave",				// (changed on ver2.6*)
+	"$027 8 randomize",				// (changed on ver3.0)
+	"$028 8 noteunsel",				// (changed on ver3.0)
+	"$029 8 noteget",				// (changed on ver2.55)
+	"$02a 8 split",					// (ver3.2)
+
+	//	enhanced command (ver2.2)
+
+	"$10000 9 button",
+
+	"$001 9 chgdisp",
+	"$002 9 exec",
+	"$003 9 dialog",
+
+//	"$007 9 palfade",				// delete
+//	"$009 9 palcopy",				// delete
+
+	"$008 9 mmload",
+	"$009 9 mmplay",
+	"$00a 9 mmstop",
+	"$00b 9 mci",
+
+	"$00c 9 pset",
+	"$00d 9 pget",
+	"$00e 9 syscolor",				// (ver3.0)
+
+	"$00f 9 mes",
+	"$00f 9 print",
+	"$010 9 title",
+	"$011 9 pos",
+	"$012 9 circle",				// (ver3.0)
+	"$013 9 cls",
+	"$014 9 font",
+	"$015 9 sysfont",
+	"$016 9 objsize",
+	"$017 9 picload",
+	"$018 9 color",
+	"$019 9 palcolor",
+	"$01a 9 palette",
+	"$01b 9 redraw",
+	"$01c 9 width",
+	"$01d 9 gsel",
+	"$01e 9 gcopy",
+	"$01f 9 gzoom",
+	"$020 9 gmode",
+	"$021 9 bmpsave",
+
+//	"$022 9 text",					// delete
+
+	"$022 9 hsvcolor",				// (ver3.0)
+	"$023 9 getkey",
+
+	"$024 9 listbox",
+	"$025 9 chkbox",
+	"$026 9 combox",
+
+	"$027 9 input",
+	"$028 9 mesbox",
+	"$029 9 buffer",
+	"$02a 9 screen",
+	"$02b 9 bgscr",
+
+	"$02c 9 mouse",
+	"$02d 9 objsel",
+	"$02e 9 groll",
+	"$02f 9 line",
+
+	"$030 9 clrobj",
+	"$031 9 boxf",
+
+	//	enhanced command (ver2.3)
+
+	"$032 9 objprm",
+	"$033 9 objmode",
+	"$034 9 stick",
+//	"$041 9 objsend",				// delete
+	"$035 9 grect",					// (ver3.0)
+	"$036 9 grotate",				// (ver3.0)
+	"$037 9 gsquare",				// (ver3.0)
+	"$038 9 gradf",					// (ver3.2)
+	"$039 9 objimage",				// (ver3.2)
+	"$03a 9 objskip",				// (ver3.2)
+	"$03b 9 objenable",				// (ver3.2)
+	"$03c 9 celload",				// (ver3.2)
+	"$03d 9 celdiv",				// (ver3.2)
+	"$03e 9 celput",				// (ver3.2)
+
+	//	enhanced command (ver3.0)
+
+	"$000 17 newcom",
+	"$001 17 querycom",
+	"$002 17 delcom",
+	"$003 17 cnvstow",
+	"$004 17 comres",
+	"$005 17 axobj",
+	"$006 17 winobj",
+	"$007 17 sendmsg",
+	"$008 17 comevent",
+	"$009 17 comevarg",
+	"$00a 17 sarrayconv",
+	//"$00b 17 variantref",
+
+	"$100 17 callfunc",
+	"$101 17 cnvwtos",
+	"$102 17 comevdisp",
+	"$103 17 libptr",
+
+	//	3.0 system vals
+
+	"$000 14 system",
+	"$001 14 hspstat",
+	"$002 14 hspver",
+	"$003 14 stat",
+	"$004 14 cnt",
+	"$005 14 err",
+	"$006 14 strsize",
+	"$007 14 looplev",					// (ver2.55)
+	"$008 14 sublev",					// (ver2.55)
+	"$009 14 iparam",					// (ver2.55)
+	"$00a 14 wparam",					// (ver2.55)
+	"$00b 14 lparam",					// (ver2.55)
+	"$00c 14 refstr",
+	"$00d 14 refdval",					// (3.0)
+
+	//	3.0 internal function
+	"$000 13 int",
+	"$001 13 rnd",
+	"$002 13 strlen",
+	"$003 13 length",					// (3.0)
+	"$004 13 length2",					// (3.0)
+	"$005 13 length3",					// (3.0)
+	"$006 13 length4",					// (3.0)
+	"$007 13 vartype",					// (3.0)
+	"$008 13 gettime",
+	"$009 13 peek",
+	"$00a 13 wpeek",
+	"$00b 13 lpeek",
+	"$00c 13 varptr",					// (3.0)
+	"$00d 13 varuse",					// (3.0)
+	"$00e 13 noteinfo",					// (3.0)
+	"$00f 13 instr",
+	"$010 13 abs",						// (3.0)
+	"$011 13 limit",					// (3.0)
+
+	//	3.0 string function
+	"$100 13 str",
+	"$101 13 strmid",
+	"$103 13 strf",
+	"$104 13 getpath",
+	"$105 13 strtrim",					// (3.2)
+
+	//	3.0 math function
+	"$180 13 sin",
+	"$181 13 cos",
+	"$182 13 tan",
+	"$183 13 atan",
+	"$184 13 sqrt",
+	"$185 13 double",
+	"$186 13 absf",
+	"$187 13 expf",
+	"$188 13 logf",
+	"$189 13 limitf",
+	"$18a 13 powf",						// (3.3)
+
+	//	3.0 external sysvar,function
+
+	"$000 10 mousex",
+	"$001 10 mousey",
+	"$002 10 mousew",					// (3.0)
+	"$003 10 hwnd",						// (3.0)
+	"$004 10 hinstance",				// (3.0)
+	"$005 10 hdc",						// (3.0)
+
+	"$100 10 ginfo",
+	"$101 10 objinfo",
+	"$102 10 dirinfo",
+	"$103 10 sysinfo",
+
+	"$ffffffff 5 thismod",
+
+	"*"
+	};
+
+
+・hsp3中間コード展開(パラメーター)
+
+	hsp3中間コードでは、命令に続いてパラメーターの記述が行なわれます。
+	パラメーターは、逆ポーランド法によりスタックとの演算が行なわれます。
+
+	ランタイムが実際のパラメーター演算時に行なう手順は以下の通りです。
+
+	パラメーターが、変数や固定値だった場合(TYPE_VAR、TYPE_INUM等)は、
+	その値をスタックに積みます。
+	パラメーターが演算子を示すものであった場合(TYPE_MARK)は、
+	スタックに積まれている２要素の演算を行ない、結果をスタックに積みます。
+	演算子として解釈されるCode値は、以下の通りです。
+
+	 Code値     マクロ名        内容
+	--------------------------------------------------------------
+	      0     CALCCODE_ADD    加算(+)
+	      1     CALCCODE_SUB    減算(-)
+	      2     CALCCODE_MUL    積算(*)
+	      3     CALCCODE_DIV    除算(/)
+	      4     CALCCODE_MOD    余剰(\)
+	      5     CALCCODE_AND    論理積(&)
+	      6     CALCCODE_OR     論理和(|)
+	      7     CALCCODE_XOR    排他的論理和(^)
+	      8     CALCCODE_EQ     同一比較(=)
+	      9     CALCCODE_NE     非同一比較(!)
+	     10     CALCCODE_GT     より大きい(<)
+	     11     CALCCODE_LT     より小さい(>)
+	     12     CALCCODE_GTEQ   以上(<=)
+	     13     CALCCODE_LTEQ   以下(>=)
+	     14     CALCCODE_RR     ビットシフト右(>>)
+	     15     CALCCODE_LR     ビットシフト左(<<)
+
+	特殊なCode値として、0x3f(63)が使用されることがあります。
+	これは、パラメーターの省略を行なった場合に、ダミーのコードとして
+	挿入されるものです。
+	(「1,,2」のような省略を含むパラメーターの指定時には、
+	「1」「ダミー」「2」のような形でダミーが挿入されます。)
+
+
+・hsp3中間コード展開(変数)
+
+	中間コードで、TYPE_VARのタイプを持つパラメーターは、変数の指定を
+	示しています。このタイプのCode値は、変数IDを示します。
+
+	変数IDは、ランタイムが持つコンテキスト(HSPCTX構造体)内の、
+	mem_varメンバが保持する変数情報配列の要素になります。
+	つまり、hspctx->mem_var[0]がID0の変数になります。
+
+	また、配列の指定が行なわれている場合には、直後に
+	TYPE_MARKタイプで'('のCodeを持つ中間コードが続きます。
+	その後、配列要素がパラメーターと同様に展開され、
+	最後にTYPE_MARKタイプで')'のCodeを持つ中間コードが現われます。
+
+	行頭(最初の中間コード)に、TYPE_VARのタイプを持つコードが
+	ある場合は、変数代入を示します。
+	変数に続いて、代入演算子がTYPE_VARのタイプを持つパラメーターとして
+	指定されます。代入演算子のコードは、パラメーターと同様のマクロ
+	(CALCCODE_*)を利用することが可能です。
+
+
+・hsp3中間コード展開(比較)
+
+	中間コードで、TYPE_CMPCMDのタイプを持つコードは、比較命令を
+	示しています。
+	このタイプのCode値は、0の場合if命令を、1の場合else命令を示します。
+
+	比較命令の場合に限り、中間コードの直後に16bit長のオフセット値が
+	埋め込まれています。
+	オフセット値は、比較命令が正しくなかった時(if命令以降をスキップする
+	場合)のCS内ジャンプ先が相対値として記録されています。
+
+
+・Debug Info(DINFO)詳細
+
+	Debug Info(DINFO)セグメントには、スクリプトのデバッグに関する情報が
+	格納されています。主に、ランタイム上でエラーの表示や、デバッグ
+	ウィンドウ上での表示補助に利用されます。
+	(DINFOのデータは、HSP2.xのデバッグデータの上位互換になっています。)
+	Debug Info(DINFO)は、リリース時(exeファイル作成時)のオブジェクトには
+	含まれない。
+
+	DINFOのデータは、符号なし8bitデータの列が続いています。
+
+	 値      内容
+	--------------------------------------------------------------
+	 255     データ列の終端
+	 254     ソースファイル指定(*1)
+	 253     変数名データ指定(*2)
+	 252     次の16bit値が、次行までのCSオフセット
+	 その他  次行までのCSオフセット値
+
+	*1
+	  次の24bit値がソースファイル名を示すDSオフセット値となる。
+	  さらに続く16bit値が参照される行番号の値となる。
+	  DSオフセット値が0の場合は行番号のみの指定となる。
+	*2
+	  次の24bit値が変数名へのDSオフセット値となる。
+	  さらに続く16bit値はダミー値として0が格納されている。
+	  このデータは、変数IDの順にDebug Info(DINFO)セグメント内に
+	  連続して設定されている。
+
+
+・更新履歴
+
+	2011/05/12 ver0.2
+
+		HSP3.3に合わせて一部改訂。
+
+	2007/11/01 ver0.1
+
+		最初のバージョン。
+
+
+・連絡先
+
+OpenHSPに関するお問い合わせ、感想、ご意見などは以下のメールアドレスまでお寄せ下さい。
+メールの返信につきましては、時間がかかる場合がありますので予めご了承下さい。
+
+        Homepage: http://www.onionsoft.net/openhsp/
+                  http://hsp.tv/
+        e-mail  : onitama@onionsoft.net
+
+-------------------------------------------------------------------------------
+                                                HSP users manual / end of file 
+-------------------------------------------------------------------------------

@@ -1,0 +1,30 @@
+; COM経由でiTunesを使うサンプル
+;
+;appleが配布しているiTunesと連携して動作するものです。
+;再生と停止、再生中の曲情報などを取得できます。
+;チャレンジしたい人は下の資料で調べてみるといいでしょう
+;	http://developer.apple.com/sdk/itunescomsdk.html
+;
+
+	title "iTunes monitor"
+	screen 0,320,60:sysfont 17:objsize 120,20:pos 188,10
+	newcom iTunes, "iTunes.Application"
+	if varuse(iTunes)=0 {
+		dialog "iTunesが見つかりません" : end
+	}
+
+	button gosub "play",*i_play
+	button gosub "pause",*i_pause
+*main
+	track = iTunes("CurrentTrack")
+	redraw 0:syscolor 15:boxf
+	color 0,0,0:pos 8,8
+	mes "Now Playing :"
+	mes ""+track("Name")+"\n("+track("Artist")+")"
+	redraw 1:wait 300:delcom track:goto *main
+*i_play
+	iTunes->"Play"
+	return
+*i_pause
+	iTunes->"Pause"
+	return

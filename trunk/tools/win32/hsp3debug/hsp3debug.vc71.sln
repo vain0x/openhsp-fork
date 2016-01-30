@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hsp3debug", "hsp3debug.vc71.vcproj", "{08B5A2A3-7CE3-4D17-9AAA-F18A5F82F1AC}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{08B5A2A3-7CE3-4D17-9AAA-F18A5F82F1AC}.Debug.ActiveCfg = Debug|Win32
+		{08B5A2A3-7CE3-4D17-9AAA-F18A5F82F1AC}.Debug.Build.0 = Debug|Win32
+		{08B5A2A3-7CE3-4D17-9AAA-F18A5F82F1AC}.Release.ActiveCfg = Release|Win32
+		{08B5A2A3-7CE3-4D17-9AAA-F18A5F82F1AC}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

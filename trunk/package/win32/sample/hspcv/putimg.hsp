@@ -1,0 +1,21 @@
+#include "hspcv.as"
+
+sname="savetest.jpg"	; 保存するファイル名
+
+randomize
+screen 0,640,480
+cls 4
+repeat 500
+hsvcolor rnd(191),128,255
+pos rnd(640),rnd(480)
+mes "★"
+loop
+
+cvbuffer 0,640,480	; 空のCVバッファを作成
+cvputimg 0		; HSPの画面をバッファに転送
+cvsave sname,0		; CVバッファの内容を保存
+
+dialog "HSPの画面をファイル["+sname+"]にセーブしました。"
+
+stop
+

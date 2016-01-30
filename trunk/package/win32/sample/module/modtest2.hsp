@@ -1,0 +1,41 @@
+
+	;
+	;	HSPモジュール・サンプル(modtest1から呼び出されます)
+	;	( このファイルをincludeすることで命令が追加されます)
+	;
+	;	txtload命令は、テキストファイルを指定した変数に読み込む
+	;	ためのユーザー拡張命令です。
+	;	「#include "modtest2.as"」を入れることで使用できます。
+	;	通常のbload命令では、テキストを読み込んだ場合、以前に
+	;	ロードされたテキストの一部が残ってしまう現象が起こる
+	;	ことがありましたが、txtload命令はロードしたテキストの
+	;	最後に文字列の終了コード(0)を自動的に入れるので、
+	;	そうした問題がなくなります。
+	;
+
+; モジュール名"test"
+#module "test"
+
+#deffunc txtload str fname,var buf
+
+	;	txtload "filename",変数   命令追加
+	;
+	res=0
+	exist fname
+	if strsize<0 : dialog "ファイルがありません" : goto *errend
+	if strsize>32000 : dialog "テキストが大きすぎます" : goto *errend
+
+	poke buf,strsize,0			; テキストの終了マークを書きこむ
+	res=strsize				; システム変数statにサイズを代入
+
+	bload fname,buf				; ファイルをロード
+	return res
+
+*errend
+	return -1				; システム変数statを1に
+
+
+#global						; 最後にglobalに戻すこと
+
+
+

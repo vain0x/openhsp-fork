@@ -1,0 +1,588 @@
+
+;============================================================
+;                                                 2008/--/--
+;	Artlet2D demo
+;	AlphaPaint
+;
+;============================================================
+;
+; サンプルペイントソフトです。
+;
+;============================================================
+
+#include "a2d.hsp"
+
+
+;-----------------------------------------------------------
+; config
+
+#define IMG_CANVAS	0
+#define IMG_BUFS	5	; canvas + undo buffers
+#define IMG_CONS	100
+#define IMG_CMARK	110
+#define IMG_RMARK	120
+#define IMG_AMARK	130
+#define IMG_PMARK	140
+#define IMG_TEX		200
+
+	frmx = 640
+	frmy = 480
+	mgn = 8
+
+	winx = frmx + 100
+	winy = frmy + 75
+
+	sizex = 512
+	sizey = 384
+
+
+;-----------------------------------------------------------
+; startup
+
+	screen 0, winx, winy
+	title "AlphaPaint"
+	redraw 0
+
+	; Create Image
+	repeat IMG_BUFS
+		alCreateImage cnt, frmx, frmy
+		if stat = -1 {
+			dialog "GDI+ を初期化できませんでした。"
+			end
+		}
+	loop
+
+	; Create Console Image
+	alCreateImage IMG_CONS, winx, winy
+	; frame
+	alSyscolor 15 : alFillRect
+	alSyscolor 20 : alFillRect 0, 0, frmx+1, frmy+1
+	alSyscolor 12 : alFillRect 0, 0, frmx, frmy
+	; Logo
+	alFont "Arial", 35, 3
+	stri = "AlphaPaint"
+	alTransModeOffsetRotateZoom 5, frmy, 8, 1.2, 1
+	alColor 255, 255, 255, 128				: alDrawText stri, 0, 0
+	alColor 0, 0, 0, 100					: alDrawText stri, 2, 2
+	alGradientColor 0, 0, 0, 50, 0xffffffff, 0xffaaaaaa	: alDrawText stri, 1, 1
+	alResetTransMode
+	; alpha bar
+	alpha_x = frmx + 12
+	alpha_y = 340
+	alpha_w = 32
+	alpha_h = 128
+	alGradientColor 0, alpha_y, 0, alpha_y+alpha_h, 0xff000000, 0x00000000
+	alFillRect alpha_x+alpha_w/2-4, alpha_y, 8, alpha_h
+	; pen-size bar
+	psize_x = frmx + 56
+	psize_y = alpha_y
+	psize_w = alpha_w
+	psize_h = alpha_h
+	alColor 0, 0, 128, 96
+	p = psize_x+psize_w/2-10, psize_y,  psize_x+psize_w/2+10, psize_y,  psize_x+psize_w/2, psize_y+psize_h
+	alFillPoly p, 3
+	; print
+	alFont "MS UI Gothic", 14
+	alColor 0, 0, 0
+	alTransModeOffsetRotateZoom frmx+10, alpha_y - 40
+	alDrawText "ペン設定", 0, 0, 80, 20, 1, 1
+	alDrawText "濃度", 0, 20, 40, 20, 1, 1
+	alDrawText "太さ", 40, 20, 40, 20, 1, 1
+	alResetTransMode
+	; color bar
+	color_w = 192 / 2 * 4
+	color_h = winy - frmy - mgn * 2
+	color_x = frmx - color_w
+	color_y = frmy + mgn
+	alColor 128, 128, 128	: alFillRect color_x-1, color_y-1, color_w+1, color_h+1
+	alColor 255, 255, 255	: alFillRect color_x, color_y, color_w+1, color_h+1
+	repeat color_w
+		x = cnt
+		h = cnt * 2
+		vf = limit((x-96) * 255 / 192, 0, 255)
+		repeat color_h
+			y = cnt
+			s = (color_h-1-y) * 255 / (color_h-1)
+			v = y * vf / (color_h-1)  +  (color_h-1-y) * 255 / (color_h-1)
+			hsvcolor h, s, v
+			alSetPixel color_x + x, color_y + y, RGBA(ginfo_r, ginfo_g, ginfo_b)
+		loop
+	loop
+
+	; Color Marker
+	alCreateImage IMG_CMARK, 32, 32
+
+	; ReSize Marker
+	alCreateImage IMG_RMARK, 40, 40
+
+	; Alpha Marker
+	alCreateImage IMG_AMARK, 32, 32
+
+	; PSize Marker
+	alCreateImage IMG_PMARK, 32, 32
+
+	; Create Background (HSP buffer 1)
+	buffer 1, frmx, frmy
+	color 222, 222, 222
+	div = 8
+	repeat frmy / div + 1
+		y = cnt
+		repeat frmx / 2 / div + 1
+			boxf cnt*div*2 + (y&1)*div, y*div, cnt*div*2 + (y&1)*div + div-1, y*div + div-1
+		loop
+	loop
+
+	; Window Objects
+	gsel 0
+	objsize winx - frmx - mgn * 2, 21
+	pos frmx + mgn, mgn	: button gosub "● 丸ブラシ", *select_stamp	: btnx.stat = ginfo_cx : btny.stat = ginfo_cy
+	pos , ginfo_cy + 3	: button gosub "■ 角ブラシ", *select_stamp	: btnx.stat = ginfo_cx : btny.stat = ginfo_cy
+	pos , ginfo_cy + 3	: button gosub "○ 消しゴム", *select_stamp	: btnx.stat = ginfo_cx : btny.stat = ginfo_cy
+	pos , ginfo_cy + 3	: button gosub "┼ スポイト", *select_stamp	: btnx.stat = ginfo_cx : btny.stat = ginfo_cy
+	pos , ginfo_cy + 13	: button gosub "全消去", *image_reset
+	pos , ginfo_cy + 3	: button gosub "選択色消去", *image_colorkey
+	pos , ginfo_cy + 13	: button gosub "元に戻す", *undo_pop
+	pos , ginfo_cy + 13	: button gosub "テクスチャ読込", *texture_load
+	pos , ginfo_cy + 13	: button gosub "ファイル読込", *image_load
+	pos , ginfo_cy + 3	: button gosub "αpng 保存", *image_save
+
+
+;-----------------------------------------------------------
+; init
+
+	stamp_r = 8
+	cur_a = 85
+	cur_r = 0
+	cur_g = 0
+	cur_b = 0
+	cur_t = 0
+
+	cur_x = 0
+	cur_y = -100
+
+	gosub *update_cons
+	gosub *update_cmark
+	gosub *update_rmark
+	gosub *update_amark
+	gosub *update_pmark
+	gosub *update_screen
+
+
+;-----------------------------------------------------------
+; mainloop
+
+#uselib "user32"
+#func ScreenToClient "ScreenToClient" int, int
+
+#define STAMP_MAX	24
+
+#define DM_VOID		-1
+#define DM_DRAW		1
+#define DM_RESIZE	3
+#define DM_COLOR	2
+#define DM_PIPET	4
+#define DM_ALPHA	5
+#define DM_PSIZE	6
+
+	repeat
+		bk = moux^mouy
+		if drawmode {
+			await
+		} else {
+			wait 1
+		}
+
+		; get mouse status
+		getkey k, 1	: k *= (ginfo_act = 0)
+		p = ginfo_mx, ginfo_my
+		ScreenToClient hwnd, varptr(p)
+		moux = p.0
+		mouy = p.1
+
+		; set drawmode
+		if k * (drawmode = 0) {
+			if (moux >= color_x) & (mouy >= color_y) & (moux < color_x+color_w) & (mouy < color_y+color_h) {
+				; 色選択領域
+				drawmode = DM_COLOR
+			}
+			else:if sqrt((sizex-moux)*(sizex-moux)+(sizey-mouy)*(sizey-mouy)) <= 16 {
+				; リサイズ
+				drawmode = DM_RESIZE
+			}
+			else:if (moux >= alpha_x) & (mouy >= alpha_y-10) & (moux < alpha_x+alpha_w) & (mouy < alpha_y+alpha_h+10) {
+				; アルファ選択
+				drawmode = DM_ALPHA
+			}
+			else:if (moux >= psize_x) & (mouy >= psize_y-10) & (moux < psize_x+psize_w) & (mouy < psize_y+psize_h+10) {
+				; ペンサイズ選択
+				drawmode = DM_PSIZE
+			}
+			else:if (moux < sizex) & (mouy < sizey) {
+				if type_stamp = 3 {
+					; スポイト
+					drawmode = DM_PIPET
+				} else {
+					; 描画
+					drawmode = DM_DRAW
+
+					gosub *undo_push
+					alSelectImage IMG_CANVAS
+
+					if type_stamp = 2 {
+						alEraserBrush
+					} else {
+						if cur_t {
+							alTextureImage IMG_TEX
+						} else {
+							alColor cur_r, cur_g, cur_b, cur_a*2/3
+						}
+					}
+				}
+			}
+			else {
+				; 無効ドラッグモード
+				drawmode = DM_VOID
+			}
+
+			; スポイトモード 解除
+			if (drawmode ! DM_PIPET) & (drawmode ! DM_VOID) : gosub *pipet_off
+
+			bk = 0
+		}
+
+		; reset drawmode
+		if (k = 0) * drawmode {
+			drawmode = 0
+			gosub *update_screen
+		}
+
+		; mousemove :
+		if moux^mouy^bk {
+			; color
+			if drawmode = DM_COLOR {
+				cur_x = limit(moux, color_x, color_x+color_w-1)
+				cur_y = limit(mouy, color_y, color_y+color_h-1)
+				cur_t = 0	; テクスチャタイプ -> 0 (solid)
+
+				alSelectImage IMG_CONS
+				cur_r = ARGB_R( alGetPixel(cur_x, cur_y) )
+				cur_g = ARGB_G( alGetPixel(cur_x, cur_y) )
+				cur_b = ARGB_B( alGetPixel(cur_x, cur_y) )
+
+				gosub *update_cons
+				gosub *update_cmark
+				gosub *update_screen
+			}
+
+			; resize
+			if drawmode = DM_RESIZE {
+				sizex = limit(moux, 16, frmx) & 0xfffe
+				sizey = limit(mouy, 16, frmy) & 0xfffe
+				gosub *update_rmark
+				gosub *update_screen
+			}
+
+			; alpha
+			if drawmode = DM_ALPHA {
+				cur_a = limit((alpha_y+alpha_h-mouy) * 255 / alpha_h, 0, 255)
+				gosub *update_amark
+				gosub *update_screen
+			}
+
+			; psize
+			if drawmode = DM_PSIZE {
+				stamp_r = limit((psize_y+psize_h-mouy) * STAMP_MAX / psize_h, 0, STAMP_MAX)
+				gosub *update_pmark
+				gosub *update_screen
+			}
+
+			; pipet
+			if drawmode = DM_PIPET {
+				cur_x = limit(moux, 0, sizex-1)
+				cur_y = limit(mouy, 0, sizey-1)
+				cur_t = 0	; テクスチャタイプ -> 0 (solid)
+
+				alSelectImage IMG_CANVAS
+				cur_a = ARGB_A( alGetPixel(cur_x, cur_y) )
+				cur_r = ARGB_R( alGetPixel(cur_x, cur_y) )
+				cur_g = ARGB_G( alGetPixel(cur_x, cur_y) )
+				cur_b = ARGB_B( alGetPixel(cur_x, cur_y) )
+
+				gosub *update_cons
+				gosub *update_cmark
+				gosub *update_amark
+				gosub *update_screen
+			}
+
+			; draw
+			if drawmode = DM_DRAW {
+				x = moux - stamp_r
+				y = mouy - stamp_r
+				w = stamp_r * 2
+				h = stamp_r * 2
+
+				if type_stamp = 0 {
+					repeat stamp_r
+						alFillEllip x+cnt, y+cnt, w-cnt*2, h-cnt*2
+					loop
+				} else:if type_stamp = 1 {
+					repeat stamp_r
+						alFillRect x+cnt, y+cnt, w-cnt*2, h-cnt*2
+					loop
+				} else:if type_stamp = 2 {
+					alFillEllip  x, y, w, h ; 消しゴム
+				}
+				gosub *update_canvas_xywh
+			}
+		}
+	loop
+
+
+;-----------------------------------------------------------
+; subroutines
+
+*update_screen
+	; HSP screen 0 へ各 Image, buffer の画像を合成
+	redraw 0
+	; BG Console
+	alCopyImageToScreen IMG_CONS, 0
+	; Canvas
+	pos 0, 0 : gcopy 1, 0, 0, sizex, sizey
+	alCopyImageToScreen IMG_CANVAS, 0, 0, 0, sizex, sizey
+	; ReSize Marker
+	alCopyImageToScreen IMG_RMARK, 0, sizex-20, sizey-20, 40, 40
+	; PSize Marker
+	alCopyImageToScreen IMG_PMARK, 0, psize_x+psize_w/2-16, psize_y+psize_h-(stamp_r * psize_h / STAMP_MAX)-16
+	; Alpha Marker
+	if cur_t = 0 : alCopyImageToScreen IMG_AMARK, 0, alpha_x+alpha_w/2-16, alpha_y+alpha_h-(cur_a * alpha_h / 255)-16
+	; Color Marker
+	alCopyImageToScreen IMG_CMARK, 0, cur_x-16, cur_y-16, 32, 32
+	redraw 1
+	return
+
+*update_canvas_xywh
+	; キャンバスのみ更新 (高速)
+	; 変数 x, y, w, h の矩形領域 をアップデート
+	redraw 0
+	pos x, y : gcopy 1, x, y, limit(w, 0, limit(sizex-x, 0, 9999)), limit(h, 0, limit(sizey-y, 0, 9999))
+	alCopyImageToScreen IMG_CANVAS, 0, x, y, limit(w, 0, limit(sizex-x, 0, 9999)), limit(h, 0, limit(sizey-y, 0, 9999)), x, y
+	redraw 1, x, y, w, h
+	return
+
+*update_cons
+	; コンソールイメージ更新
+	alSelectImage IMG_CONS
+	alSyscolor 15
+	alFillRect frmx+1, 0, 999, 200
+	alFillRect frmx+1, frmy+1
+	alColor 255, 255, 255	: alFillRect btnx.type_stamp-0, btny.type_stamp-21, 86, 23
+	alColor 128, 128, 128	: alFillRect btnx.type_stamp-2, btny.type_stamp-23, 86, 23
+	alColor 255, 0, 0, 96	: alFillRect btnx.type_stamp-1, btny.type_stamp-22, 86, 23
+	x1 = frmx + mgn
+	y1 = frmy + mgn
+	w1 = winx - frmx - mgn * 2
+	h1 = winy - frmy - mgn * 2
+	if type_stamp = 0 | type_stamp = 3 {
+		alColor 128, 128, 128	: alFillEllip x1-1, y1-1, w1, h1
+		alColor 255, 255, 255	: alFillEllip x1+1, y1+1, w1, h1
+		if cur_t {
+			alTextureImage IMG_TEX
+		} else {
+			alColor cur_r, cur_g, cur_b
+		}
+		alFillEllip x1, y1, w1, h1
+	}
+	if type_stamp = 1 {
+		alColor 128, 128, 128	: alFillRect x1-1, y1-1, w1, h1
+		alColor 255, 255, 255	: alFillRect x1+1, y1+1, w1, h1
+		if cur_t {
+			alTextureImage IMG_TEX
+		} else {
+			alColor cur_r, cur_g, cur_b
+		}
+		alFillRect x1, y1, w1, h1
+	}
+	return
+
+*update_cmark
+	; カラーマーカーイメージ更新
+	alSelectImage IMG_CMARK
+	alErase
+	alPenWidth 4
+	alColor 0, 0, 0, 128
+	alDrawEllip 4, 4, 26, 26
+	alColor 255, 255, 255, 128
+	alDrawEllip 2, 2, 26, 26
+	alColor cur_r, cur_g, cur_b
+	alDrawEllip 3, 3, 26, 26
+	return
+
+*update_rmark
+	; size マーカーイメージ更新
+	alSelectImage IMG_RMARK
+	alErase
+	alTransModeOffsetRotateZoom 20, 20, -45, 0.9, 1.2
+	alColor 255, 255, 128, limit(128+sizey-frmy, 32, 255)
+	alFillRect -25, -5, 50, 10
+	alColor 0, 0, 255, 192
+	alFont "Arial", 9
+	alDrawText ""+sizex+"      "+sizey, -30, -4, 60, 10, 1, 1
+	alResetTransMode
+	alEraserBrush
+	alFillRect 1, 1, 20, 20
+	alFillRect 19, 19, 20, 20
+	alColor 0, 0, 255, 128
+	alFillRect 19, 10, 2, 20
+	alFillRect 10, 19, 20, 2
+	return
+
+*update_amark
+	if cur_a < 5 : cur_a = 5 ; lower limit
+
+	; Alpha マーカーイメージ更新
+	alSelectImage IMG_AMARK
+	gosub *nyoro
+	alFont "Arial", 10 + cur_a*5/255
+	alDrawText ""+cur_a, 0, 1, 32, 32, 1, 1
+	return
+
+*update_pmark
+	; Pen-size  マーカーイメージ更新
+	alSelectImage IMG_PMARK
+	gosub *nyoro
+	alFont "Arial", 10 + stamp_r*5/STAMP_MAX
+	alDrawText ""+stamp_r, 0, 1, 32, 32, 1, 1
+	return
+
+*nyoro
+	alErase
+	alGradientColor 0, 24, 0, 28, 0x44000000, 0x00000000
+	alFillRect 0, 24, 32, 4
+	alColor 128, 128, 128	: alFillRect 0, 8, 32, 16
+	alColor 255, 255, 255	: alFillRect 0, 8, 31, 15
+	alSyscolor 15		: alFillRect 1, 9, 30, 14
+	alGradientColor 0, 8, 0, 24, 0x11000000, 0x77ffffff
+	alFillRect 1, 9, 30, 14
+	alColor 0, 0, 0
+	return
+
+
+;-----------------------------------------------------------
+*pipet_off
+	; スポイトモード off
+	if type_stamp = 3 {
+		type_stamp = 0
+		cur_x = 0
+		cur_y = -100
+		gosub *update_cons
+	}
+	return
+
+*select_stamp
+	st = stat
+	gosub *pipet_off
+
+	; スタンプタイプ 変更
+	type_stamp = st
+	gosub *update_cons
+	gosub *update_screen
+	return
+
+*texture_load
+	gosub *pipet_off
+
+	dialog "bmp;*.png;*.jpg;*.jpeg;*.tif;*.tiff;*.ico;*.gif", 16, "Image"
+	if stat {
+		alCreateImageByFile IMG_TEX, refstr
+		if stat = -1 {
+			dialog "読み込み失敗"
+		} else {
+			cur_t = 1	; テクスチャタイプ -> 1 (texture)
+		}
+	}
+	gosub *update_cons
+	gosub *update_screen
+	wait 10 ; ミスクリック対策
+	return
+
+
+;-----------------------------------------------------------
+*undo_push
+	repeat IMG_BUFS-1
+		alSelectImage IMG_BUFS-cnt-1
+		alErase
+		alCopyImageToImage (IMG_BUFS-cnt-2), (IMG_BUFS-cnt-1)
+	loop
+	return
+
+*undo_pop
+	repeat IMG_BUFS-1
+		alSelectImage cnt
+		alErase
+		alCopyImageToImage (cnt+1), (cnt)
+	loop
+	gosub *update_screen
+	return
+
+
+;-----------------------------------------------------------
+*image_reset
+	gosub *undo_push
+	alSelectImage
+	alErase
+	gosub *update_screen
+	return
+
+*image_colorkey ; 選択色を透明化
+	gosub *undo_push
+	alSelectImage
+	alErase
+	s = 16
+	alCopyModeColorKey RGBA(limit(cur_r-s,0,255), limit(cur_g-s,0,255), limit(cur_b-s,0,255)), RGBA(limit(cur_r+s,0,255), limit(cur_g+s,0,255), limit(cur_b+s,0,255))
+	alCopyImageToImage 1, 0
+	alResetCopyMode
+	gosub *update_screen
+	return
+
+*image_load
+	dialog "bmp;*.png;*.jpg;*.jpeg;*.tif;*.tiff;*.ico;*.gif", 16, "Image"
+	if stat {
+		alGetFileWidth refstr, sizex, sizey
+		if stat = -1 {
+			dialog "読み込み失敗"
+		} else {
+			if type_stamp = 3 {	; スポイトモード patch
+				cur_x = 0
+				cur_y = -100
+			}
+
+			sizex = limit(sizex, 1, frmx)
+			sizey = limit(sizey, 1, frmy)
+			gosub *update_rmark
+
+			gosub *undo_push
+			alSelectImage IMG_CANVAS
+			alErase
+			alLoadFile refstr
+			gosub *update_screen
+		}
+	}
+	wait 10 ; ミスクリック対策
+	return
+
+*image_save
+	dialog "png", 17, "png Image"
+	if stat {
+		astr = refstr
+		if strmid(astr, strlen(astr)-4, 4) != ".png" : astr += ".png"
+
+		alSelectImage IMG_CANVAS
+		alSaveFile astr, "image/png", 0, 0, sizex, sizey
+		if stat : dialog "保存失敗"
+	}
+	wait 10 ; ミスクリック対策
+	return
+
+
+
+

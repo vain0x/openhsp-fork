@@ -1,0 +1,29 @@
+
+	;	マウスカーソルの座標を調べて表示します。
+	;	ボタンを押すとマウスカーソル表示ON/OFF、ランダムジャンプが可能です。
+	;
+	mes "MOUSE CURSOR TEST"
+	x=0:y=0
+	pos 0,100:objsize 64,24
+	button "ON",*mson
+	button "OFF",*msoff
+	button "MOVE",*msmove
+	button "END",*owari
+*mloop
+	color 255,255,255:boxf 0,30,100,49
+	color 0,0,0:pos 0,30:mes "X="+x+"/Y="+y
+	await 50
+	x=mousex:y=mousey
+	goto *mloop
+*mson
+	mouse
+	goto *mloop
+*msoff
+	mouse -1
+	goto *mloop
+*msmove
+	x=rnd(ginfo_dispx):y=rnd(ginfo_dispy)
+	mouse x,y
+	goto *mloop
+*owari
+	end

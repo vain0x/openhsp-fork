@@ -1,0 +1,37 @@
+#include "hsedsdk.as"
+
+hsed_exist
+if stat == 0: mes "Script editor isn't found": stop
+
+hsed_getver ret, HGV_PUBLICVER
+if stat{
+	mes "Public version: Error(Error code:"+stat+")"
+} else {
+	hsed_cnvverstr ret
+	mes "Public version: " + refstr
+}
+
+hsed_getver ret, HGV_PRIVATEVER
+if stat{
+	mes "Private version: Error(Error code:"+stat+")"
+} else {
+	hsed_cnvverstr ret
+	mes "Private version: " + refstr
+}
+
+hsed_getver ret, HGV_HSPCMPVER
+if stat: mes "Compiler version: Error(Error code:"+stat+")": else: mes "Compiler version: " + ret
+
+hsed_getver ret, HGV_FOOTYVER
+if stat: mes "Footy version: Error(Error code:"+stat+")": else: mes "Footy version: " + strf("%.2f", double(ret) / 100)
+
+hsed_getver ret, HGV_FOOTYBETAVER
+if stat{
+	mes "Footy version: Error(Error code:"+stat+")"
+} else {
+	if ret == 0{
+		mes "Footy beta version: ベータ版ではありません。"
+	} else {
+		mes "Footy beta version: " + ret
+	}
+}

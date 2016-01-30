@@ -1,0 +1,51 @@
+	;
+	;	モジュール変数のテスト(2)
+	;
+#cmpopt ppout 1
+
+
+#module ball x,y
+
+#modinit int a
+	x=rnd(a):y=rnd(a)
+	return
+#modterm
+	mes "BYEBYE!("+x+","+y+")"
+	return
+
+#modfunc putprm
+	mes "X="+x+"/Y="+y
+	return
+
+#modfunc putprm2
+	putprm thismod
+	mes "X="+x+"/Y="+y
+	return
+
+#modcfunc getprmx
+	return x
+
+#modcfunc getprmy
+	return y
+
+#global
+	mes "INIT"
+
+	repeat 10
+	newmod a,ball,10
+	loop
+
+	foreach a:mes "#"+cnt
+	putprm a.cnt
+	loop
+
+	;mes "OK"
+	;putprm thismod
+	putprm2 a.0
+
+	mes "X="+getprmx(a)
+	mes "Y="+getprmy(a)
+
+	delmod a.0
+
+	stop

@@ -1,0 +1,32 @@
+
+	;	split命令サンプル
+	;
+
+	buf = "tarou,18,male"
+	mes "もとの文字列["+buf+"]"
+
+	split buf, ",", name, age, sex
+	mes "名前:"+name
+	mes "年齢:"+age+"才"
+	mes "性別:"+sex
+
+	mes "---------------------------------------------------"
+
+	buf = "よそはよそ、うちはうち。そよそよ。ご飯をよそいなさい。"
+	split buf, "よそ"
+	num = stat-1
+	
+	mes buf
+	mes "上の文章に「よそ」は何個あるかな？"
+	mes "答えは"+num+"個"
+
+	mes "---------------------------------------------------"
+
+	buf = "apple:orange:grape:banana"
+	mes "もとの文字列["+buf+"]"
+	split buf, ":", results
+	repeat stat
+		mes "配列("+cnt+")="+results(cnt)
+	loop
+
+	stop

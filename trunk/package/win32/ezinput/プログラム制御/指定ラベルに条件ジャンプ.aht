@@ -1,0 +1,14 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "exgoto"
+
+#define 比較に使用される変数	""	;;str
+#define 比較フラグ	""	;;str
+#define 比較値	""	;;str
+#define ラベル名	""	;;str
+
+#ahtmes "exgoto "+比較に使用される変数+" , "+比較フラグ+" , "+比較値+" , "+ラベル名+

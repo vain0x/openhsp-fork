@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+	<meta http-equiv="Content-Language" content="ja">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta name="author" content="OpenHSP3 Project（http://dev.onionsoft.net/trac/wiki）">
+	<meta name="keywords" content="HSP3,HotSoupProcessor3,HSP3Dish,android,ndk,google">
+	<meta name="description" content="HSP3Dish android(NDK)版に関する情報を掲載">
+	<link href="../main.css" rel="stylesheet" type="text/css" media="all">
+	<title>HSP3Dish android(NDK)版 eclipse設定ガイド</title>
+</head>
+<body>
+	<div id="CONTAINER">
+	<!-- ヘッダー -->
+	<p id="COPY">HSP : HSP3Dish / onion software 2014(c)</p>
+	<img src="hsp3dish.jpg" width="640" height="200" alt="タイトル">
+	<h1>HSP3Dish android(NDK)版 eclipse設定ガイド</h1>
+
+	<!-- 目次 -->
+	<ol>
+		<li><a href="#ABOUT">はじめに</a></li>
+		<li><a href="#PREPARE">環境の準備</a></li>
+		<li><a href="#SAMPLE">サンプルプロジェクト</a></li>
+		<li><a href="#COMP">ソースのコンパイル</a></li>
+		<li><a href="#RUNPROJ">HSP3Dishの実行と設定</a></li>
+		<li><a href="#MAKECPP">スクリプトの準備</a></li>
+		<li><a href="#DATAFILE">データファイルの埋め込み</a></li>
+		<li><a href="#ERROR">エラー発生時の対処</a></li>
+	</ol>
+
+	<h2 id="ABOUT">はじめに</h2>
+	<p>
+	このマニュアルでは、android版のHSP3Dishをビルドするために、統合開発環境eclipseを使用するための手順を説明しています。
+	<br>
+	eclipseを使用したことのない人や、初めて使う方には、より簡易的なビルドを行なうためのツール、<a href="hsp3dish_helper.html">HSP3Dish Helper</a>が用意されていますので、そちらをお使い頂くことを推奨しています。
+	<br>
+	</p>
+
+	<h2 id="PREPARE">環境の準備</h2>
+	<p>
+	androidの実機上で動作させるためには、以下が必要となります。
+	<ul>
+	<li>統合開発環境Eclipse
+	<li>android開発環境(SDK)
+	<li>JDK(Java Development Kit)
+	<li>Android NDK（Native Development Kit）開発環境
+	<li>Cygwin (Windows環境のみ)
+	</ul>
+	開発環境はMac OS、Windowsの両方で用意されており、すべて無料で入手することができます。
+	ここまでに必要なプロセスは、通常のandroid/NDK開発と変わりません。詳しくは、ホームページ上の各種資料を参照してください。
+	</p>
+	<pre>
+	参考:
+	Android開発環境の設定 - 次世代創造機構.jp
+	<a href="http://www.xn--rhq6sw9f0w7aevaf9ak89m.jp/android/androidLecture/install/install.html">http://www.xn--rhq6sw9f0w7aevaf9ak89m.jp/android/androidLecture/install/install.html</a>
+	Android NDK開発環境の設定 - 次世代創造機構.jp
+	<a href="http://www.xn--rhq6sw9f0w7aevaf9ak89m.jp/android/androidLecture/NdkInstall/NdkInstall.html">http://www.xn--rhq6sw9f0w7aevaf9ak89m.jp/android/androidLecture/NdkInstall/NdkInstall.html</a>
+	</pre>
+	<p>
+	このドキュメントでは、これらの環境が実際に動作し、android実機にプログラムが転送できることを前提として、HSP3Dishの導入方法を解説します。
+	それまでの準備については、既存のマニュアル等をご覧ください。
+	<br>
+	使用する環境及びバージョンは以下を使用しています。
+	<ul>
+	<li><a href="http://mergedoc.sourceforge.jp/">日本語 Eclipse / Pleiades All in One 日本語ディストリビューション( Eclipse 3.7 Indigo )</a>
+	<li><a href="http://developer.android.com/sdk/index.html">Android SDK tools r15</a>
+	<li><a href="http://developer.android.com/sdk/ndk/index.html">Android NDK r6b</a>
+	<li><a href="http://www.cygwin.com/">Cygwin 1.7.10</a>
+	<li><a href="http://java.sun.com/javase/ja/6/download.html">JDK 6</a>
+	</ul>
+	</p>
+	<p>
+	android開発環境のインストールは、多くの手順と設定が必要になり簡単ではありません。
+	HSP3Dishを手軽に使用するまでにはハードルが高いため、今後より詳しい解説を用意していきたいと考えています。
+	</p>
+
+	<h2 id="SAMPLE">サンプルプロジェクト</h2>
+	<p>
+	<img src="hsp3dish/s_block3.jpg" style="float:right;">
+	androidフォルダには、HSP3Dishを使うための基礎となるhspprojプロジェクトが含まれています。
+	これは、HSP3.3フルセットに含まれているブロック崩しのHSP3Dishサンプル(block3.hsp)を、
+	android上で動作させるプロジェクトとなっています。
+	</p>
+	<br clear="all">
+	<p>
+	サンプルを閲覧する場合は、まずワークスペースにプロジェクトを追加します。<br>
+	Eclipseを起動後、ファイル→インポートメニューを選択してください。
+	</p>
+	<img src="hsp3dish/s_eclipse1.jpg"><br>
+	<p>
+	「一般→既存プロジェクトをワークスペースへ」を選択します。
+	</p>
+	<img src="hsp3dish/s_eclipse2.jpg"><br>
+	<p>
+	hspprojフォルダの場所を指定します。
+	</p>
+	<img src="hsp3dish/s_eclipse3.jpg"><br>
+	<p>
+	パッケージエクスプローラーにプロジェクトが表示されていれば成功です。
+	</p>
+	<img src="hsp3dish/s_eclipse4.jpg"><br>
+
+
+	<h2 id="COMP">ソースのコンパイル</h2>
+	<p>
+	プロジェクトのビルドを行なう際には、最初にNDK環境のコードをコンパイルする必要があります。
+	念のために、Eclipse上でプロジェクトのクリーン(初期化)を行なって、以前のビルド結果を破棄しておいてください。
+	</p>
+	<img src="hsp3dish/s_clean.jpg"><br>
+	<p>
+	Cソースコードのコンパイルは、Cygwin上で行ないます。(MacOSの場合は、ターミナル上)<br>
+	Cygwinを起動して、プロジェクトのあるフォルダをカレントに設定し、ndk-buildコマンドを実行します。
+	</p>
+	<pre>
+		(例: C:\android\hspproj がある場合)
+		cd c:/
+		cd android/hspproj
+		ndk-build
+	</pre>
+	<p>
+	NDKが正しくインストールされ、Cygwinのパス設定なども正常な場合は、「jni/Android.mk」の設定に従ってコンパイルが行なわれます。
+	以下のように、hsptest1モジュールが生成されれば成功です。「libs/armeabi/libhsptest1.so」ファイルが生成されているはずです。
+	</p>
+	<img src="hsp3dish/s_cygwin.jpg"><br>
+	<p>
+	以上で、Cソースコードのコンパイルは完了となります。
+	</p>
+
+
+	<h2 id="RUNPROJ">HSP3Dishの実行と設定</h2>
+	<p>
+	プロジェクトの実行を行なうことで、HSP3Dishランタイム上での動作を確認することができます。
+	通常のEclipseプロジェクトと同様に、実行環境を設定し、実行させることができます。
+	あらかじめ、Cソースコードをコンパイルして「libs/armeabi/libhsptest1.so」ファイルが生成されていることを確認してからビルドを行なってください。
+	(「自動的にビルド」のスイッチは切っておいた方が混乱がないでしょう)
+	<br>
+	まず、「実行」メニューの「実行構成」を選択し、設定ウィンドウを開きます。
+	次に、Androidアプリケーションの項目で、現在のプロジェクトを選択してください。
+	「ターゲット」タブで実行先の環境を選択することができます。手操作(Manual)にしておけば、最初の実行時に環境を確認することができます。
+	</p>
+	<img src="hsp3dish/s_execset.jpg"><br>
+	<br>
+	<p>
+	適切に設定を行なった上で、実行メニューの「実行」(またはツールバーのボタン)でビルド実行を行なってください。
+	最初の実行時は、デバイスの選択ウィンドウが表示されます。
+	</p>
+	<img src="hsp3dish/s_devchoose.jpg"><br>
+	<p>
+	上のリストに表示されているのは、接続されているAndroidデバイスを示しています。実機に転送する場合は、こちらを選択してください。
+	下に表示されているのは、Virtual Device(エミュレーター)です。エミュレーター上で実行する場合は、こちらを選択してください。
+	「Use same device for future launches」にチェックを入れておけば、次回以降は同じ設定で実行が行なわれます。
+	</p>
+	<img src="hsp3dish/s_android.jpg"><br>
+
+
+	<h2 id="MAKECPP">スクリプトの準備</h2>
+	<p>
+	自分で作成したスクリプトを動作させる場合には、最初にWindows上でスクリプトをCソースコードに変換します。
+	HSP3.3同梱のスクリプトエディタで、「ツール」メニューから「指定ファイルをCソースに変換」メニューを選択してください。
+	ツールの画面が起動するので、任意のスクリプトを指定して「変換」ボタンを押してください。
+	この時、「出力ソースをUTF-8に変換」のチェックをONにしておくのを忘れないでください。
+	<br>
+	<b>※HSP3.3フォルダにある、hsp3cnv.exe(HSP3ソースコンバーター)を最新版にするのを忘れないでください。最新版はHSP3Dish(このアーカイブ)に同梱されています。</b>
+	</p>
+	<img src="hsp3dish/s_cnvsrc.jpg"><br>
+	<p>
+	正常に終了するとスクリプトと同じフォルダに拡張子が.cppのCソースファイルが作成されます。
+	これでスクリプトの準備は完了です。<br>
+	</p>
+	<pre>
+		hspproj/jni/hsp3embed/hspsource.cpp
+	</pre>
+	<p>
+	上のファイルが、HSPスクリプト変換後の内容を保持しています。
+	この内容を置き換えることで、任意のスクリプトを実行させることができます。
+	</p>
+	<pre>
+		hspproj/jni/hsp3/ndk/hgiox.cpp
+	</pre>
+	<p>
+	また、上のファイルの、344,345行目の設定により、画面の表示サイズを調整することができます。
+	</p>
+	<pre>
+		_scaleX = 0.5f;
+		_scaleY = 0.5f;
+	</pre>
+	<p>
+	現状では、HSP3Dishの標準解像度(320x480)に合わせて、縦横2倍のサイズで表示される設定になっています。_scaleX、_scaleYの値を変更することで、画面に表示されるサイズを調整することができます。
+	</p>
+
+
+	<h2 id="DATAFILE">データファイルの埋め込み</h2>
+	<p>
+	スクリプトから読み込まれる画像などのデータファイルは、あらかじめWindows上でdpm形式のファイルとしてパックしたものを用意する必要があります。
+	dpm形式は、HSPが標準で使用するパッケージファイルです。
+	HSPサンプルフォルダ(hsp33/sample/misc/)にある、mkpack.hspスクリプトを使用することでdpmファイルを作成可能です。<br>
+	現在のバージョンでは暗号化には対応していません、標準のdpmファイル(data.dpmというファイル名でHSPから認識されるもの)としてデータの作成を行なってください。
+	</p>
+	<ul>
+	<li>作成されたdpmファイル名をlibhsp3dish.soにリネーム
+	<li>libhsp3dish.soファイルを、Cソースコードのコンパイル完了後にlibs/armeabiフォルダにコピー
+	<li>Eclipse上でビルド実行を行なう
+	</ul>
+	<p>
+	以上の手順により、最終的に生成されるパッケージ(apk)にデータファイル一式が組み込まれ、スクリプトから認識可能となります。
+	(Windows版のHSPで、dpmファイル内のファイルにアクセスする場合と同様です)
+	</p>
+	<p>
+	パッケージ名を変更した場合には、libhsp3dish.soが保存されるパスが変わるため
+	hsp3r.cppソース内にある以下の行のパッケージ名(com.example.hsptest1)も合わせて変更するようにしてください。
+	<pre>
+	dpm_ini( "/data/data/com.example.hsptest1/lib/libhsp3dish.so",0,-1,-1 );
+	</pre>
+	</p>
+
+
+	<h2 id="ERROR">エラー発生時の対処</h2>
+	<p>
+	スクリプト実行時にファイルが見つからない場合や、エラーが発生するとコンソールにメッセージが出力されます。正しく認識していない場合は、LogCat等で確認してみてください。
+	</p>
+	<img src="hsp3dish/s_logcat.jpg"><br>
+	<p>
+	ビルド時にエラーが出て実行ができない場合は、様々な要因が考えられます。
+	インストールがうまくいっていないか、設定が正しくないか、正しく反映されていないなどの可能性があります。
+	設定上で注意する点として、まずターゲットのバージョン設定と、それに対応したSDKがインストールされているかを確認するようにしてください。
+	この設定は、プロジェクトのプロパティーメニューを選択して現われる設定ダイアログの、Android項目に出てきます。
+	</p>
+	<img src="hsp3dish/s_androidapi.jpg"><br>
+	<p>
+	また、同様にビルドパスの項目にある、バージョン設定も正しいチェックされているかを確認してください。
+	(チェックを一度外してから、クリーンを行なって再度設定し直すことで正しく反映される場合があります)
+	</p>
+	<img src="hsp3dish/s_buildpath.jpg"><br>
+
+	<!-- フッター -->
+	<ul id="FOOTER">
+		<li><a href="#CONTAINER">このページの1番上に戻る</a></li>
+		<li><a href="../index.htm">インデックスに戻る</a></li>
+	</ul>
+	<a href="http://www.onionsoft.net/">
+		<img src="onibtn.gif" width="147" height="50" alt="ONION software" id="ONIBTN">
+	</a>
+</div><!-- container -->
+</body>
+</html>

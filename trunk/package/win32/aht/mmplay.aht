@@ -1,0 +1,13 @@
+#aht name "メディア再生"
+#aht class "hsp3.std.system"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "指定したメディアを再生します。"
+#aht exp "あらかじめ、メディアリソースのパーツを登録しておく必要があります。"
+
+#const obj_id	0	;;parts,prm="hsp3.std.rsrc.media",help="再生メディア"
+#define __refmedia	;;pprop,prm="メディアID",help="メディアID",read
+
+	mmplay __refmedia
+

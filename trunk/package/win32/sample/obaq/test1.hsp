@@ -1,0 +1,20 @@
+#include "obaq.as"
+
+	;
+	;	とても単純なサンプル
+	;
+
+	screen 0,640,480	; ウィンドウ初期化
+
+	qreset			; OBAQの初期化
+	qaddpoly my, 3, 96,20,0	; 三角形を追加
+*main
+	;	メインループ
+	;
+	redraw 0		; 画面の更新を開始
+	color 0,0,0:boxf	; 画面をクリア
+	qexec			; OBAQによるオブジェクトの更新
+	qdraw			; オブジェクトの描画
+	redraw 1		; 画面の更新を終了
+	await 12		; 一定時間待つ
+	goto *main

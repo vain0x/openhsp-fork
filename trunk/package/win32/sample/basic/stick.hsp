@@ -1,0 +1,32 @@
+
+	;	stick命令によるメニュー選択サンプル
+	;
+
+	cls 4
+	color 255,255,255
+	pos 300,180:mes "SELECTION-1"
+	pos 300,200:mes "SELECTION-2"
+	pos 300,220:mes "SELECTION-3"
+	pos 300,240:mes "PROGRAM END"
+	a=0
+	x=280:y=180:sel=0:maxsel=3
+*selmain
+	color 0,0,0:boxf x,y,x+20,y+20
+	y=sel*20+180
+	color 255,255,255
+	pos x,y:mes "*"
+*selloop
+	stick a,1
+	if a&2 : a=-1:goto *selchg
+	if a&8 : a=1:goto *selchg
+	if a&$30 : goto *selok
+	await 10:goto *selloop
+*selchg
+	a=a+sel
+	if (a<0)or(a>maxsel) : a=sel
+	sel=a:goto *selmain
+*selok
+	if sel=3 : end
+	a=sel+1
+	dialog "SELECTION-"+a
+	goto *selloop

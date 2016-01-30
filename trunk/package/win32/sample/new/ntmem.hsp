@@ -1,0 +1,18 @@
+; 2GB以上のメモリ容量情報を取得する(NTカーネル専用)
+
+;sysinfo(34)で得られる物理メモリのサイズは
+;WinAPIの仕様により2GBまでとなっています。(2GB以上のメモリが搭載されている場合は、すべて2GBとなります)
+;このサンプルは、WinAPIで用意されているGlobalMemoryStatusExという関数により、
+;2GBを超えるメモリ情報を取得するものです。
+;ただし、このAPIはNTカーネル(WindowsNT,2000,XP,Vista)上でのみ動作します。
+;Windows9xではサポートされないので注意してください。
+
+#uselib "KERNEL32.DLL"
+#func GlobalMemoryStatusEx "GlobalMemoryStatusEx" var
+
+	dim buf,16
+	buf(0)=64
+	GlobalMemoryStatusEx buf
+	mes strf("メモリ容量(下位)=%x",buf(2))
+	mes strf("メモリ容量(上位)=%x",buf(3))
+

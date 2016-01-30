@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#regcmd"
+
+#define プラグイン初期化関数のエクスポート名	""	;;str
+#define プラグイン初期化関数のDLL名	""	;;str
+#define プラグインで拡張される変数型の数	""	;;str
+
+#ahtmes "#regcmd "+プラグイン初期化関数のエクスポート名+" , "+プラグイン初期化関数のDLL名+" , "+プラグインで拡張される変数型の数+

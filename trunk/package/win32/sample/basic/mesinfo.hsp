@@ -1,0 +1,27 @@
+
+	;
+	;	mes–½—ß‚Å•\Ž¦‚µ‚½•¶Žš‚Ì”ÍˆÍ‚ðŽæ“¾‚µ‚Ü‚·
+	;
+
+	title "MES–½—ß‚Ì•\Ž¦”ÍˆÍŽæ“¾"
+	screen 0,640,240
+	font msgothic,50,font_bold|font_antialias
+	a="Hot Soup Processor":gosub *test
+	a="Ver3.0 testing":gosub *test
+	stop
+*test
+	color 0,0,0
+	cx=ginfo_cx:cy=ginfo_cy
+	mes a
+	mx=ginfo_mesx:my=ginfo_mesy
+	mes "SX="+mx+"/SY="+my
+	x=cx:y=cy:x2=cx+mx:y2=cy+my
+
+	color 255,0,0
+	boxf x,y,x2,y
+	boxf x,y2,x2,y2
+	boxf x,y,x,y2
+	boxf x2,y,x2,y2
+	return
+
+

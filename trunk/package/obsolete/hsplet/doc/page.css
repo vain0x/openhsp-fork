@@ -1,0 +1,11 @@
+/*
+ * $Id: page.css,v 1.1 2006/01/09 12:07:03 Yuki Exp $
+ */
+.sample
+{
+	border: gray 1px solid;
+	padding: 1em;
+	background: silver;
+	font-weight: bold;
+	font-family: '‚l‚r ƒSƒVƒbƒN' , monospace;
+}

@@ -1,0 +1,27 @@
+#aht name "画像表示"
+#aht class "hsp3.std.draw"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 0
+#aht exp "指定した画像ファイルを画面上に表示します。"
+
+#define 画像ファイル	""	;;file,prm="bmp;*.jpg;*.gif",pure
+#define ファイルパス	""	;;str,pure
+#const モード 0	;;combox,prm="0\n1\n2\n",opt="何もしない\nフェード\n"
+#const フェード時間 20		;;help="ミリ秒"
+
+#ahtmes "	#include \"hsp3util.as\""
+
+#if モード=1
+	buffer 1
+	picload ファイルパス+画像ファイル
+	gsel 0
+	repeat 64
+	gfade2 1,cnt
+	await フェード時間
+	loop
+	gfade2 1,256
+#else
+	picload ファイルパス+画像ファイル
+#endif
+

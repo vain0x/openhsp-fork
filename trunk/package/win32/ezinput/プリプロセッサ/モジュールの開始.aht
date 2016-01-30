@@ -1,0 +1,12 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#module"
+
+#define 新規モジュール名	""	;;str
+#define 登録するモジュール変数名	""	;;str
+
+#ahtmes "#module "+新規モジュール名+" "+登録するモジュール変数名+

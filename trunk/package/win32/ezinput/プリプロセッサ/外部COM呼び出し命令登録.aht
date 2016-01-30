@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#comfunc"
+
+#define 命令として認識されるキーワード名	""	;;str
+#define メソッドindex値	""	;;str
+#define 引数のタイプ	""	;;str
+
+#ahtmes "#comfunc "+命令として認識されるキーワード名+" "+メソッドindex値+" "+引数のタイプ+

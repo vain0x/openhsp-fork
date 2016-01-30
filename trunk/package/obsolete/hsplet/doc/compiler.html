@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="ja">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta content="Copyright (C) 2005-2006 Yuki. All rights are reserved." name="copyright">
+<meta content="text/css" http-equiv="Content-Style-Type">
+<meta content="text/javascript" http-equiv="Content-Script-Type">
+<title>コンパイラの使い方 - HSPLet リファレンス</title>
+<link href="common.css" type="text/css" rel="stylesheet">
+<link href="page.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+		
+<h1>コンパイラの使い方</h1>
+	
+<h2>目次</h2>
+<ul>
+<li>
+<a href="#N1000D">画面の説明</a>
+</li>
+<li>
+<a href="#N10071">メニュー・ツールバーコマンド</a>
+</li>
+</ul>
+<hr>
+<h2 id="N1000D">画面の説明</h2>
+		
+		
+<img src="compiler_ss.jpg" alt="スクリーンショット" style="float: right; margin: 2em 4em; ">
+		
+		<dl>
+			
+<dt>タイトル</dt>
+			
+<dd>
+				生成される HTML ページのタイトルを指定します。
+			</dd>
+			
+<dt>横幅</dt>
+			
+<dd>
+				生成されるアプレットの横幅を指定します。
+			</dd>
+			
+<dt>高さ</dt>
+			
+<dd>
+				生成されるアプレットの高さを指定します。
+			</dd>
+			
+<dt>パックファイル</dt>
+			
+<dd>
+				アプレットのファイルに一緒に詰め込むファイルを指定します。
+				HSP の PACKFILE を選択することも、それ以外のファイルを自由に選ぶこともできます。<br>
+				パックファイルに選択されたファイルは、コンパイルすると出力JARの中に一緒に格納されます。<br>
+				HSPLet は JAR が置いてあるサーバーからネットワーク越しにファイルを読み込めるので、必要なファイルをすべてパックファイルに入れておく必要はありません。<br>
+				パックファイルに入れておくと、アプレット開始前に先にダウンロードされるので途中で読み込みに時間がかかるということがなくなります。
+				逆にmp3等の大きなファイルはダウンロードに時間がかかってしまうので、サーバーにおいてストリーミング再生した方が良いです。<br>
+				
+<br>
+				パックファイルに選択されたAXファイルがコンパイルの対象になります。
+				「開始ファイル」が空のときは選択したaxファイル名が自動的に補完されます。
+				普通のファイルと違って、AXファイルは必ずパックファイルに入っていないと実行できないので注意してください。
+			</dd>
+			
+<dt>開始ファイル</dt>
+			
+<dd>
+				アプレットの開始AXファイル名を指定します。
+				拡張子はつけないでください。
+				開始ファイルに指定しなかったAXファイルもrun命令で実行することができます。
+			</dd>
+			
+<dt>拡張ライブラリ</dt>
+			
+<dd>
+				追加で使用するライブラリを選択します。
+				mp3の再生、strfはファイルサイズの肥大化を防ぐために別ライブラリになっています。
+				それ以外のライブラリを使うときもここのチェックをつけてください。<br>
+				チェックをつけたライブラリはアプレットから使用するように設定され、自動的に「出力HTML」と同じフォルダにコピーされます。
+			</dd>
+			
+<dt>出力HTML</dt>
+			
+<dd>
+				生成する HTML のファイル名を指定します。
+				この名前で HTML が生成され、コンパイルによってできた JAR、hsplet.jar、および拡張ライブラリが同じフォルダにコピーされます。<br>
+				
+<br>
+				出力HTMLが指定されていないときはJARファイルだけが生成され、ファイルのコピーは行われません。
+			</dd>
+			
+<dt>出力JAR</dt>
+			
+<dd>
+				生成するJARファイル（アプレットの本体）のファイル名を指定します。
+				通常 HTML と同じ名前でかまいません。
+			</dd>
+			
+<dt>テンプレート</dt>
+			
+<dd>
+				生成する HTML のテンプレートを指定します。
+				テンプレート内の {XXXXX_YYY} のように括弧で囲まれた範囲をコンパイラによって生成された情報で置き換えることでHTMLを生成します。<br>
+				指定しなかったときは内部的に保持しているシンプルなテンプレートが使用されます。<br>
+				
+<br>
+				詳細は sample-template.html をテキストエディタで開いてください。
+			</dd>
+			
+<dt>コンパイル</dt>
+			
+<dd>
+				コンパイルを実行し、必要なファイルをコピーします。
+			</dd>
+			
+<dt>テスト実行</dt>
+			
+<dd>
+				自動的にコンパイル後、アプレットをテスト起動します。
+				テスト実行中はファイルやネットワークへの接続の制限が無いので、サーバーと通信する必要があるプログラムをサーバーにアップロードする前に動作確認したいときなどに便利です。
+			</dd>
+		
+</dl>
+		
+	
+<hr>
+<h2 id="N10071">メニュー・ツールバーコマンド</h2>
+		
+		
+<dl>
+			
+<dt>新規作成</dt>
+			
+<dd>
+				入力内容をすべて空にしてやり直します。
+			</dd>
+			
+<dt>開く</dt>
+			
+<dd>
+				前回保存しておいた設定内容を読み込みます。
+			</dd>
+			
+<dt>上書き保存</dt>
+			
+<dd>
+				設定内容を保存しておき次回から同じ設定内容のアプレットを簡単に作れるようにします。<br>
+				新規作成直後は「名前をつけて保存」の動作になります。
+			</dd>
+			
+<dt>名前をつけて保存</dt>
+			
+<dd>
+				設定内容に別名をつけて保存します。
+			</dd>
+			
+<dt>終了</dt>
+			
+<dd>コンパイラを閉じます。</dd>
+		
+</dl>
+		
+	
+<hr>
+<address>
+					HSPLet 3.0 &copy; 2005-2006 <a href="mailto:yuki@group-finity.com">Yuki</a>.<br>
+					Logo Illustration &copy; 2001-2004 chokko.<br>
+					All rights are reserved.<br>
+<a href="http://www.group-finity.com/">http://www.group-finity.com/</a>
+<br>
+</address>
+</body>
+</html>

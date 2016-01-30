@@ -1,0 +1,1014 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="ja">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<meta content="Copyright (C) 2004 Yuki. All rights are reserved." name="copyright">
+<meta content="text/css" http-equiv="Content-Style-Type">
+<meta content="text/javascript" http-equiv="Content-Script-Type">
+<title>関数リファレンス - HSPLet リファレンス</title>
+<link href="common.css" type="text/css" rel="stylesheet">
+<link href="functions.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+<h1>関数リファレンス</h1>
+<ul class="contents">
+<li>
+<a href="#library1">HSP 基本命令</a>
+<ul class="contents">
+<li>
+<a href="#library1category1">プリプロセッサ命令</a>
+</li>
+<li>
+<a href="#library1category2">特殊代入命令</a>
+</li>
+<li>
+<a href="#library1category3">プログラム制御命令</a>
+</li>
+<li>
+<a href="#library1category4">プログラム制御マクロ</a>
+</li>
+<li>
+<a href="#library1category5">基本入出力制御命令</a>
+</li>
+<li>
+<a href="#library1category6">オブジェクト制御命令</a>
+</li>
+<li>
+<a href="#library1category7">画面制御命令</a>
+</li>
+<li>
+<a href="#library1category8">文字列操作命令</a>
+</li>
+<li>
+<a href="#library1category9">メモリ管理命令</a>
+</li>
+<li>
+<a href="#library1category10">マルチメディア制御命令</a>
+</li>
+<li>
+<a href="#library1category11">ファイル操作命令</a>
+</li>
+<li>
+<a href="#library1category12">HSPシステム制御命令</a>
+</li>
+<li>
+<a href="#library1category13">基本関数</a>
+</li>
+<li>
+<a href="#library1category14">文字列関数</a>
+</li>
+<li>
+<a href="#library1category15">数学関数</a>
+</li>
+<li>
+<a href="#library1category16">GUI関数</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library2">hspsock</a>
+<ul class="contents">
+<li>
+<a href="#library2category1">ソケット通信命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library3">hspsockA</a>
+<ul class="contents">
+<li>
+<a href="#library3category1">ソケット通信命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library4">hspini</a>
+<ul class="contents">
+<li>
+<a href="#library4category1">iniファイル操作命令</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library5">winmm</a>
+<ul class="contents">
+<li>
+<a href="#library5category1">マルチメディアタイマー</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#library6">user32</a>
+<ul class="contents">
+<li>
+<a href="#library6category1">メニュー操作命令</a>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="library1">HSP 基本命令</h2>
+<summary>
+		
+<p>HSP 本体だけで使用できる基本命令です。 </p>
+	
+</summary>
+<hr>
+<h3 id="library1category1">プリプロセッサ命令</h3>
+<h5 id="function_#cfunc">#cfunc</h5>
+<p>外部DLL呼び出し関数登録</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>#cfunc</span><span class="param">name</span><span>,</span><span class="param">funcName</span><span>,</span><span class="param">types...</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">name</span>
+						-
+						HSP 内で使用するこの関数の名前</li>
+<li>
+<span class="name">funcName</span>
+						-
+						拡張ライブラリで定義されたこの関数の名前</li>
+<li>
+<span class="name">types...</span>
+						-
+						関数のタイプ</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>引数の型は無視され、実際の関数の引数が優先されます。</p>
+				
+<p> 関数と同名のメソッドが呼ばれることになります。 </p>
+				
+<p>呼び出されるメソッドの引数は
+					int、double、String、ByteString(Shift_JIS文字列)、Operand(変数)、Context(実行コンテキスト)のいずれかでなければいけません。
+					<br> Operand を引数にとったときは、必ずその次に int で配列インデックスを受け取らなければいけません。
+					（配列ではないときは 0 が渡されます。）
+					<br> Context を引数にとったときは HSPLet によって自動的に現在実行されているコンテキストが渡されます。
+					<br> 
+</p>
+				
+<p>メソッドの戻り値は void、int、double、String、ByteString、Operand
+					のいずれかでなければいけません。 </p>
+				
+<p>呼び出されるメソッドが非 static のときは、クラスはインスタンス化できなければいけません。 public
+					で引数の無いコンストラクタか、Context をひとつだけ受け取るコンストラクタが必要です。 </p>
+			
+</div>
+<hr>
+<h5 id="function_#defcfunc">#defcfunc</h5>
+<p>新規関数を登録する</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>#defcfunc</span><span class="param">name</span><span>,</span><span class="param">params...</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">name</span>
+						-
+						HSP 内で使用するこの関数の名前</li>
+<li>
+<span class="name">params...</span>
+						-
+						引数リスト</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks"> 引数の型は str/int/double/var/array のみサポートされています。 local などは指定できません。
+				</div>
+<hr>
+<h5 id="function_#deffunc">#deffunc</h5>
+<p>新規命令を登録する</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>#deffunc</span><span class="param">name</span><span>,</span><span class="param">params...</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">name</span>
+						-
+						HSP 内で使用するこの関数の名前</li>
+<li>
+<span class="name">params...</span>
+						-
+						引数リスト</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks"> 引数の型は str/int/double/var/array のみサポートされています。 local などは指定できません。
+				</div>
+<hr>
+<h5 id="function_#func">#func</h5>
+<p>外部DLL呼び出し命令登録</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>#func</span><span class="param">name</span><span>,</span><span class="param">funcName</span><span>,</span><span class="param">types...</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">name</span>
+						-
+						HSP 内で使用するこの関数の名前</li>
+<li>
+<span class="name">funcName</span>
+						-
+						拡張ライブラリで定義されたこの関数の名前</li>
+<li>
+<span class="name">types...</span>
+						-
+						関数のタイプ</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>#cfunc と同様です。</p>
+			
+</div>
+<hr>
+<h5 id="function_#uselib">#uselib</h5>
+<p>外部DLLの指定</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>#uselib</span><span class="param">name</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">name</span>
+						-
+						使用するライブラリの名前</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>指定された DLL と同名のクラスが読み込まれます。 読み込まれるクラス名は、末尾から .dll または .hpi
+					を除いたものになります。 たとえば、winmm.dll を使用すると、 winmm クラスが読み込まれます。 </p>
+				
+<p> 独自の拡張ライブラリクラスを作成したときは、JAR ファイルを lib フォルダの中においてください、
+					コンパイラが自動的に認識してコンパイル時にチェックがつけられるようになります。 </p>
+			
+</div>
+<hr>
+<h3 id="library1category2">特殊代入命令</h3>
+<h5 id="function_mref">mref</h5>
+<p>特殊なメモリを変数に割り当てる</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>mref</span><span class="param">variable</span><span>,</span><span class="param">memoryID</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">variable</span>
+						-
+						割当先の変数</li>
+<li>
+<span class="name">memoryID</span>
+						-
+						割り当てるメモリのID<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>stat/refstr のみ使用可能です。 関数の引数には使用できませんので、3.0 形式の受け取り方をしてください。 </p>
+			
+</div>
+<hr>
+<h3 id="library1category3">プログラム制御命令</h3>
+<h5 id="function_exec">exec</h5>
+<p>Windowsのファイルを実行する</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>exec</span><span class="param">fileName</span><span>,</span><span class="param">mode</span><span>,</span><span class="param">target</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">fileName</span>
+						-
+						表示するファイル名</li>
+<li>
+<span class="name">mode</span>
+						-
+						無視されます<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+<li>
+<span class="name">target</span>
+						-
+						表示するフレーム名<span class="default">
+							（省略時 = <span class="defaultValue">_blank</span>）
+							</span>
+</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>HTML ページを表示する目的で使用されます。 第3引数の意味がオリジナルの HSP
+					とは違うため、この命令を直接使用することはお勧めしません。 代わりに letutil.hsp 内に定義されている
+					showPage fileName, target 命令を使用することをお勧めします。 </p>
+			
+</div>
+<hr>
+<h3 id="library1category4">プログラム制御マクロ</h3>
+<hr>
+<h3 id="library1category5">基本入出力制御命令</h3>
+<hr>
+<h3 id="library1category6">オブジェクト制御命令</h3>
+<hr>
+<h3 id="library1category7">画面制御命令</h3>
+<h5 id="function_bgscr">bgscr</h5>
+<p>ウィンドウIDを初期化</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>bgscr</span><span class="param">windowID</span><span>,</span><span class="param">bufferWidth</span><span>,</span><span class="param">bufferHeight</span><span>,</span><span class="param">mode</span><span>,</span><span class="param">left</span><span>,</span><span class="param">top</span><span>,</span><span class="param">visibleWidth</span><span>,</span><span class="param">visibleHeight</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">windowID</span>
+						-
+						初期化するウィンドウ ID</li>
+<li>
+<span class="name">bufferWidth</span>
+						-
+						初期化するバッファの横幅<span class="default">
+							（省略時 = <span class="defaultValue">640</span>）
+							</span>
+</li>
+<li>
+<span class="name">bufferHeight</span>
+						-
+						初期化するバッファの高さ<span class="default">
+							（省略時 = <span class="defaultValue">480</span>）
+							</span>
+</li>
+<li>
+<span class="name">mode</span>
+						-
+						ウィンドウ初期化モード<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+<li>
+<span class="name">left</span>
+						-
+						ウィンドウ左端</li>
+<li>
+<span class="name">top</span>
+						-
+						ウィンドウ上端</li>
+<li>
+<span class="name">visibleWidth</span>
+						-
+						表示される横幅<span class="default">
+							（省略時 = <span class="defaultValue">bufferWidth</span>）
+							</span>
+</li>
+<li>
+<span class="name">visibleHeight</span>
+						-
+						表示される高さ<span class="default">
+							（省略時 = <span class="defaultValue">bufferHeight</span>）
+							</span>
+</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>パレットモードは使用できません。</p>
+			
+</div>
+<hr>
+<h5 id="function_buffer">buffer</h5>
+<p>ウィンドウIDを初期化</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>buffer</span><span class="param">windowID</span><span>,</span><span class="param">bufferWidth</span><span>,</span><span class="param">bufferHeight</span><span>,</span><span class="param">mode</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">windowID</span>
+						-
+						初期化するウィンドウ ID</li>
+<li>
+<span class="name">bufferWidth</span>
+						-
+						初期化するバッファの横幅<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+<li>
+<span class="name">bufferHeight</span>
+						-
+						初期化するバッファの高さ<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+<li>
+<span class="name">mode</span>
+						-
+						ウィンドウ初期化モード<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>パレットモードは使用できません。</p>
+			
+</div>
+<hr>
+<h5 id="function_font">font</h5>
+<p>フォント設定</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>font</span><span class="param">family</span><span>,</span><span class="param">size</span><span>,</span><span class="param">style</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">family</span>
+						-
+						フォントファミリ</li>
+<li>
+<span class="name">size</span>
+						-
+						フォントサイズ</li>
+<li>
+<span class="name">style</span>
+						-
+						フォントスタイル</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>アンチエリアス、下線、打ち消し線は mes 命令にのみ使用できます（オブジェクトのフォントには指定できません。）</p>
+				
+<p>環境依存を減らすために以下の特殊な定義済みフォント名が使用できます。</p>
+				
+<dl>
+					
+<dt>Serif</dt>
+					
+<dd>ＭＳ Ｐ明朝のようなひげつき書体。</dd>
+					
+<dt>SansSerif</dt>
+					
+<dd>ＭＳ Ｐゴシックのようなひげなし書体。</dd>
+					
+<dt>Monospaced</dt>
+					
+<dd>ＭＳ ゴシックのような当幅フォント</dd>
+					
+<dt>Dialog</dt>
+					
+<dd>メッセージボックスに使用されるフォント</dd>
+					
+<dt>DialogInput</dt>
+					
+<dd>入力ボックスに使用されるフォント</dd>
+				
+</dl>
+				
+<p> しかしこれらのフォントはオリジナル HSP では使用できませんので、直接使用することはお勧めしません。 代わりに
+					letutil.hsp 内に定義されている fontSerif 等の汎用的なフォント名を使用することをお勧めします。 </p>
+			
+</div>
+<hr>
+<h5 id="function_gmode">gmode</h5>
+<p>画面コピーモード設定</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>gmode</span><span class="param">mode</span><span>,</span><span class="param">width</span><span>,</span><span class="param">height</span><span>,</span><span class="param">alpha</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">mode</span>
+						-
+						コピーモード</li>
+<li>
+<span class="name">width</span>
+						-
+						コピー幅</li>
+<li>
+<span class="name">height</span>
+						-
+						コピー高さ</li>
+<li>
+<span class="name">alpha</span>
+						-
+						アルファ値</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>モード7はサポートしていません。</p>
+			
+</div>
+<hr>
+<h5 id="function_gsel">gsel</h5>
+<p>描画先指定、ウィンドウ最前面、非表示設定</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>gsel</span><span class="param">windowID</span><span>,</span><span class="param">mode</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">windowID</span>
+						-
+						描画先ウィンドウID</li>
+<li>
+<span class="name">mode</span>
+						-
+						アクティブ化モード</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>モード2はサポートされていません、またモード1で必ずアクティブになるとは限りません。</p>
+			
+</div>
+<hr>
+<h5 id="function_picload">picload</h5>
+<p>画像ファイルをロード</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>picload</span><span class="param">fileName</span><span>,</span><span class="param">mode</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">fileName</span>
+						-
+						画像ファイル名</li>
+<li>
+<span class="name">mode</span>
+						-
+						読み込みモード</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>BMP、JPEG、GIF、PNGの読み込みをサポートしています。 ICOの読み込みはサポートしていません。 </p>
+			
+</div>
+<hr>
+<h5 id="function_screen">screen</h5>
+<p>ウィンドウIDを初期化</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>screen</span><span class="param">windowID</span><span>,</span><span class="param">bufferWidth</span><span>,</span><span class="param">bufferHeight</span><span>,</span><span class="param">mode</span><span>,</span><span class="param">left</span><span>,</span><span class="param">top</span><span>,</span><span class="param">visibleWidth</span><span>,</span><span class="param">visibleHeight</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">windowID</span>
+						-
+						初期化するウィンドウ ID</li>
+<li>
+<span class="name">bufferWidth</span>
+						-
+						初期化するバッファの横幅<span class="default">
+							（省略時 = <span class="defaultValue">640</span>）
+							</span>
+</li>
+<li>
+<span class="name">bufferHeight</span>
+						-
+						初期化するバッファの高さ<span class="default">
+							（省略時 = <span class="defaultValue">480</span>）
+							</span>
+</li>
+<li>
+<span class="name">mode</span>
+						-
+						ウィンドウ初期化モード<span class="default">
+							（省略時 = <span class="defaultValue">0</span>）
+							</span>
+</li>
+<li>
+<span class="name">left</span>
+						-
+						ウィンドウ左端</li>
+<li>
+<span class="name">top</span>
+						-
+						ウィンドウ上端</li>
+<li>
+<span class="name">visibleWidth</span>
+						-
+						表示される横幅<span class="default">
+							（省略時 = <span class="defaultValue">bufferWidth</span>）
+							</span>
+</li>
+<li>
+<span class="name">visibleHeight</span>
+						-
+						表示される高さ<span class="default">
+							（省略時 = <span class="defaultValue">bufferHeight</span>）
+							</span>
+</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>パレットモード・ツールウィンドウ・深い淵のあるウィンドウは使用できません。</p>
+			
+</div>
+<hr>
+<h5 id="function_sendmsg">sendmsg</h5>
+<p>ウィンドウメッセージの送信</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>sendmsg</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				以下のメッセージが実装済みです。
+				<ul>
+					
+<li>0x00B0:EM_GETSEL</li>
+					
+<li>0x00B1:EM_SETSEL</li>
+					
+<li>0x00C6:EM_CANUNDO</li>
+					
+<li>0x00C7:EM_UNDO</li>
+					
+<li>0x00CC:EM_SETPASSWORDCHAR</li>
+					
+<li>0x0300:WM_CUT</li>
+					
+<li>0x0301:WM_COPY</li>
+					
+<li>0x0302:WM_PASTE</li>
+					
+<li>0x0303:WM_CLEAR</li>
+				
+</ul>
+			
+</div>
+<hr>
+<h5 id="function_title">title</h5>
+<p>タイトルバー設定</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>title</span><span class="param">text</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">text</span>
+						-
+						タイトルに設定するテキスト</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>アプレットの場合はステータスバーのテキストが変化します。</p>
+			
+</div>
+<hr>
+<h3 id="library1category8">文字列操作命令</h3>
+<hr>
+<h3 id="library1category9">メモリ管理命令</h3>
+<hr>
+<h3 id="library1category10">マルチメディア制御命令</h3>
+<h5 id="function_mci">mci</h5>
+<p>MCIにコマンドを送る</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>mci</span><span class="param">command</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">command</span>
+						-
+						MCIコマンド文字列</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>以下の命令のみサポートされています。</p>
+				
+<ul>
+					
+<li>open
+						<i>file</i> alias
+						<i>name</i>
+</li>
+					
+<li>play
+						<i>name</i>
+</li>
+					
+<li>seek
+						<i>name</i> to
+						<i>position</i>
+</li>
+					
+<li>status
+						<i>name</i> position</li>
+					
+<li>stop
+						<i>name</i>
+</li>
+					
+<li>close
+						<i>name</i>
+</li>
+				
+</ul>
+				
+<p>WAV/AIFF/AU/MIDI/MP3 をサポートしています。 MP3 の再生には付属の jl1.0.jar が必要です。</p>
+			
+</div>
+<hr>
+<h5 id="function_mmload">mmload</h5>
+<p>サウンドファイル読み込み</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>mmload</span><span class="param">fileName</span><span>,</span><span class="param">id</span><span>,</span><span class="param">mode</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">fileName</span>
+						-
+						読み込むファイル名</li>
+<li>
+<span class="name">id</span>
+						-
+						読み込んだサウンドにつけるID</li>
+<li>
+<span class="name">mode</span>
+						-
+						再生モード</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>WAV/AIFF/AU/MIDI/MP3 をサポートしています。 MP3 の再生には付属の jl1.0.jar が必要です。</p>
+			
+</div>
+<hr>
+<h3 id="library1category11">ファイル操作命令</h3>
+<h5 id="function_chdir">chdir</h5>
+<p>ディレクトリ移動</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>chdir</span><span class="param">dir</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">dir</span>
+						-
+						移動先ディレクトリ</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>移動先のディレクトリが存在しなくてもエラーになりません。</p>
+			
+</div>
+<hr>
+<h3 id="library1category12">HSPシステム制御命令</h3>
+<h5 id="function_logmes">logmes</h5>
+<p>デバッグメッセージ送信</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>logmes</span><span class="param">text</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">text</span>
+						-
+						出力テキスト</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p> メッセージは Java コンソールに出力されます。 </p>
+			
+</div>
+<hr>
+<h3 id="library1category13">基本関数</h3>
+<hr>
+<h3 id="library1category14">文字列関数</h3>
+<hr>
+<h3 id="library1category15">数学関数</h3>
+<hr>
+<h3 id="library1category16">GUI関数</h3>
+<h5 id="function_ginfo">ginfo</h5>
+<p></p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>ginfo</span><span class="param">type</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">type</span>
+						-
+						情報タイプ</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>タイプ 19、画面のカラーモードは常に 0 を返します。 </p>
+				
+<p>タイプ 24、oncmd の割り込みウィンドウ ID はサポートされていません。 </p>
+			
+</div>
+<hr>
+<h5 id="function_objinfo">objinfo</h5>
+<p></p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>objinfo</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>ウィンドウハンドル（type==2）のみが利用可能です。</p>
+			
+</div>
+<hr>
+<h5 id="function_sysinfo">sysinfo</h5>
+<p>システム情報の取得</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>sysinfo</span><span class="param">type</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">type</span>
+						-
+						情報タイプ</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>CPUコードは文字列で返ります。 </p>
+				
+<p>物理メモリサイズは Java ランタイムが使用できるメモリ量を返します。 この値は実行中にも変動する可能性があります。</p>
+				
+<p> スワップファイルサイズは 0 とします。 </p>
+			
+</div>
+<hr>
+<h2 id="library2">hspsock</h2>
+<summary>
+		
+<p>hspsock プラグインで使用できる拡張命令です。
+			hspsockA を実装した後に手を加えて hspsock 互換に修正したので、hspsockA の方が信頼性は高いです。
+		</p>
+	
+</summary>
+<hr>
+<h3 id="library2category1">ソケット通信命令</h3>
+<hr>
+<h2 id="library3">hspsockA</h2>
+<summary>
+		
+<p>hspsockA プラグインで使用できる拡張命令です。<br>
+			DLL 版の hspsockA は PCB さんによって開発されました。
+			<a href="http://www.pcbsoft.net/">http://www.pcbsoft.net/</a> より入手可能です。
+		</p>
+	
+</summary>
+<hr>
+<h3 id="library3category1">ソケット通信命令</h3>
+<hr>
+<h2 id="library4">hspini</h2>
+<summary>
+		
+<p>hspini プラグインで使用できる拡張命令です。<br>
+			DLL 版の hspini は K-K さんによって開発されました。
+			<a href="http://www.chichibu.ne.jp/~kawahira/">http://www.chichibu.ne.jp/~kawahira/</a> より入手可能です。
+		</p>
+	
+</summary>
+<hr>
+<h3 id="library4category1">iniファイル操作命令</h3>
+<h5 id="function_iniset">iniset</h5>
+<p>使うiniファイルを設定します</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>iniset</span><span class="param">file</span><span>,</span><span class="param">section</span>
+</div>
+<h6>パラメータ</h6>
+<ul class="params">
+<li>
+<span class="name">file</span>
+						-
+						設定を保存するファイル名</li>
+<li>
+<span class="name">section</span>
+						-
+						セクション名</li>
+</ul>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>設定情報はクッキーに保存されます。
+					ファイル名・セクション名は、クッキー名の頭にプレフィックスとして挿入することで一意性を実現します。 </p>
+				
+<p>
+					クッキーが利用できないときは stat に 1 が返ります。
+				</p>
+			
+</div>
+<hr>
+<h2 id="library5">winmm</h2>
+<summary>
+		
+<p>winmm.dll を使用した Windows API です。
+		</p>
+	
+</summary>
+<hr>
+<h3 id="library5category1">マルチメディアタイマー</h3>
+<h5 id="function_timeGetTime">timeGetTime</h5>
+<p>ミリ秒単位の時間を取得</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>timeGetTime</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>
+					HSPLet 起動時からのミリ秒単位の時刻を取得します。
+				</p>
+			
+</div>
+<hr>
+<h2 id="library6">user32</h2>
+<summary>
+		
+<p>user32.dll を使用した Windows API です。
+		</p>
+	
+</summary>
+<hr>
+<h3 id="library6category1">メニュー操作命令</h3>
+<h5 id="function_AppendMenuA">AppendMenuA</h5>
+<p>メニュー項目登録</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>AppendMenuA</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>グレイ表示しない無効項目は作成できません。<br>
+					オーナードロー・ビットマップは使用できません。
+				</p>
+			
+</div>
+<hr>
+<h5 id="function_DrawMenuBar">DrawMenuBar</h5>
+<p>メニューバー再描画</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>DrawMenuBar</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>何も行いません。</p>
+			
+</div>
+<hr>
+<h5 id="function_DestroyMenu">DestroyMenu</h5>
+<p>メニュー削除</p>
+<h6>構文</h6>
+<div class="functionCode">
+<span>DestroyMenu</span>
+</div>
+<h6>解説</h6>
+<div class="remarks">
+				
+<p>現在のバージョンでは対象のメニューだけが削除されます、サブメニューは削除されないので注意してください。</p>
+			
+</div>
+</body>
+</html>

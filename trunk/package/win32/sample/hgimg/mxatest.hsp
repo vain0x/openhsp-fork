@@ -1,0 +1,54 @@
+#include "hgimg.as"
+
+	screen 0,640,480,0
+	cls 4
+	hgini
+	dim fv,16
+
+	;	MXファイルオブジェクトを登録
+	mxload "rb_000"		; モデルファイル読み込み
+	model=stat
+	maload "wait"		; アニメーション#0読み込み
+	maload "walk"		; アニメーション#1読み込み
+	regobj mychr,model	; (変数statにモデルIDが返される)
+	shade=0
+	gsel 0
+	clsblur 32		; 残像効果を設定
+	;	カメラ位置設定
+	cammode CAM_MODE_LOOKAT		; カメラ注視モード
+	selcpos
+	objset3 0, -10, 20		; カメラ座標
+	selcint
+	objset3 0, -5, 0		; 注視先
+*main
+	;	描画メイン
+	stick k,15,1
+	if k&128 : end			; [ESC]で終了
+	if k&32 {
+		shade+
+		modelshade model,shade&1*4,1
+	}
+	gosub *keymove			; 移動処理を呼び出し
+	hgdraw				; 描画処理
+	hgsync 15			; 処理落ちしてなければ描画
+	goto *main
+*keymove
+	;	キーによる移動
+	selpos my
+	objgetv fv:x=fv.0:z=fv.2
+	if k&1 : x-: d=64: goto *mymov
+	if k&4 : x+: d=192: goto *mymov
+	if k&2 : z-: d=128: goto *mymov
+	if k&8 : z+: d=0: goto *mymov
+	a=0:gosub *setanim
+	return
+*mymov
+	selpos my
+	fv.0=x:fv.2=z:objsetv fv
+	selang my:objset1r 1,d
+	a=1:gosub *setanim
+	return
+*setanim
+	if a!=myanim : objact mychr,a
+	myanim=a
+	return

@@ -1,0 +1,14 @@
+
+	;	メモリコピーテスト
+	;
+
+	a="TEST MESSAGE"
+	b=""
+	memcpy b,a,16,0,5
+	mes "A="+a
+	mes "B="+b
+
+	memset b,'@',16,5
+	mes "B="+b
+
+	stop

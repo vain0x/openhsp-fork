@@ -1,0 +1,11 @@
+#include "hpi3type.as"
+
+a=float(123.456)
+mes "TYPE="+vartype(a)
+a+="10"
+mes "VALUE A="+a
+b=1000+a
+mes "VALUE B="+b
+mes a
+stop
+

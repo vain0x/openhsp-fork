@@ -1,0 +1,393 @@
+/*******************************************************************************
+
+                            ナノフラワー ver 1.0
+                                             Copyright (C) 2005.07.04 山田雄己
+*******************************************************************************/
+
+
+; ■カスタマイズ可能な定義
+
+#const ParticleSize 32		// 粒子の直径
+#const ParticleDensity 64	// 1024px*1024px あたりの粒子数
+#const ParticleDensityInLength 96 // 1024px あたりの粒子数、面積に比例する粒子数は、小さな画面のときに少なすぎる傾向にあるため
+
+#const FPS 15
+
+#const PreviewWindow 0
+#const ScreenWindow 2
+#const BackgroundWindow 3
+
+#const InvFPS 1000/FPS
+
+#const ParticlePositionScale 8
+
+#const ParticleSize2 ParticleSize*ParticleSize
+
+#const ParticleRadius ParticleSize/2
+#const ParticleRadius2 ParticleRadius*ParticleRadius
+
+
+#const ParticleHitRadius ParticleSize*9/8
+#const ParticleHitRadius2 ParticleHitRadius*ParticleHitRadius
+#const PushRadius ParticleSize*7/8
+#const PushRadius2 PushRadius*PushRadius
+
+#const FundamentalParticleTypeCount 3
+#const ParticleTypeCount 7
+#const ParticleDensityScale 20
+#const ParticleDensityLengthScale 10
+
+#const FundamentalParticleTypeCountTwice FundamentalParticleTypeCount*2
+
+#const ParticleInitialVelocityMax 5120
+#const ParticleInitialVelocityMaxHf ParticleInitialVelocityMax/2
+
+#const ParticleCollapseVelocityMax 32000
+#const ParticleCollapseVelocityMaxHf ParticleCollapseVelocityMax/2
+
+#const ColorMin 0
+#const ColorMax 255
+
+#const BackgroundWidth ParticleSize*ParticleTypeCount
+#const BackgroundHeight ParticleSize
+
+#const CoordinatesCount 2
+#const PositionX 0
+#const PositionY 1
+#const VelocityX 2
+#const VelocityY 3
+#const AttributeType 4
+#const AttributeUsed 5
+#const AttributeAge 6
+#const PropertyOffset 0
+#const PositionOffset 0
+#const VelocityOffset 2
+#const AttributeOffset 4
+#const PropertyCount 7
+
+#const true 1
+#const false 0
+
+	; 粒子の種類に応じて、R, G, B をそれぞれ右にシフトする量
+	; この数値が大きいほど輝度が小さくなる。
+	;                R, G, B, Y, C, M, W
+	redUnscalers   = 0, 1, 1, 0, 2, 0, 0
+	greenUnscalers = 1, 0, 1, 0, 0, 2, 0
+	blueUnscalers  = 1, 1, 0, 2, 0, 0, 0
+
+#const PullCombinationCount 9
+#const PullCollapse 256
+#const PullAge 20
+#const PullAge2 PullAge*PullAge
+#const PushAge 10
+#const PushAge2 PushAge*PushAge
+#const ParticleCollapseRadius ParticleSize*3/16
+#const ParticleCollapseRadius2 ParticleCollapseRadius*ParticleCollapseRadius
+
+#const ModePreview 'p'
+#const ModeScreen 's'
+#const ModeConfig 'c'
+
+	; お互いに引き合う粒子の色と、融合後の色
+	; 融合後の色 = PullCollapse は崩壊を意味する
+	; わざと赤と青は反応しないことにする、そのほうが分子構造を作りやすい。
+	pullColors1     = 0, 1, 2, 1, 3, 2, 4, 0,  6
+	pullColors2     = 1, 0, 1, 2, 2, 3, 0, 4, 6
+	pullColorsAfter = 3, 3, 4, 4, 6, 6, 6, 6, PullCollapse
+
+	if hspstat&2 {
+		commandLine = dir_cmdline
+		mode = peek( commandLine, 1 )
+		if mode>='A': if mode<'a': mode += 'a'-'A'
+
+		if mode!=ModePreview: if mode!=ModeScreen: dialog "利用可能な設定はありません。"
+
+	}
+
+
+
+	; まずはじめに乱数を初期化しておく
+	randomize
+
+; ■バックグラウンドの初期化
+
+	buffer BackgroundWindow, BackgroundWidth ,BackgroundHeight
+
+	ParticleVisibleSize = ParticleSize*26/32
+	if mode=ModeScreen : ParticleVisibleSize = ParticleSize
+	
+	; すべての粒子の種類について、●を描画する。
+	repeat ParticleTypeCount
+		type = cnt
+
+		repeat ParticleSize
+			x = cnt
+
+			repeat ParticleSize
+				y = cnt
+
+				; 粒子の中心からのずれ、濃度の計算に使用する。
+				dx = x-ParticleRadius
+				dy = y-ParticleRadius
+
+				; 中心に近いほど濃く、遠いほど薄くする
+				colorDepth = ( dx*dx +  dy*dy ) * -ColorMax/(ParticleVisibleSize/2*ParticleVisibleSize/2) + ColorMax
+				if colorDepth<ColorMin: colorDepth = ColorMin
+
+				; 色を描画する
+				color colorDepth>>redUnscalers.type, colorDepth>>greenUnscalers.type, colorDepth>>blueUnscalers.type
+				pset type*ParticleSize+x, y
+			loop
+		loop
+	loop
+
+
+; ■画面を表示
+
+	if mode=ModePreview {
+		gsel PreviewWindow
+	} else {
+		
+		if mode=ModeScreen {
+			bgscr ScreenWindow, ginfo_dispx, ginfo_dispy
+	
+		} else {
+			gsel 0
+		}
+	
+		
+	}
+
+	; 描画モードを加算合成に
+	gmode 5, ParticleSize, ParticleSize, ColorMax
+
+
+; ■粒子の初期化
+
+	particleCount = (ParticleDensity*ginfo_winx*ginfo_winy>>ParticleDensityScale)+(ParticleDensityInLength*ginfo_winx>>ParticleDensityLengthScale)
+	
+	if mode=ModePreview {
+		particleCount = particleCount*8
+	}
+
+	; 粒子の属性の配列
+	; particles.PositionX.particleIndex = 10 のように使用する。
+	dim particles, PropertyCount, particleCount
+
+	; 位置の最大値、CoordinatesX などで使用できるように変数に入れておく
+	displaySizes = ginfo_winx, ginfo_winy
+
+	repeat particleCount
+		particleIndex = cnt
+		dup particle, particles.PropertyOffset.particleIndex
+
+		repeat CoordinatesCount
+			positionIndex = cnt
+			velocityIndex = cnt+VelocityOffset
+
+			; 位置は乱数で決める
+			particle.positionIndex = rnd( displaySizes.positionIndex ) << ParticlePositionScale
+
+			; 速度も乱数で決める
+			particle.velocityIndex = rnd( ParticleInitialVelocityMax ) - ParticleInitialVelocityMaxHf
+
+		loop
+
+		;                         = 色                                        ,使用中,年齢
+		particle.AttributeOffset = particleIndex\FundamentalParticleTypeCount, true, 0
+	loop
+
+; ■メインループ
+
+*l_mainLoop
+
+	await InvFPS
+
+	; 再描画
+	redraw 1: redraw 0
+
+	; 画面を黒で塗りつぶす
+	color
+	boxf
+
+	; 粒子の描画と移動
+	repeat particleCount
+		particleIndex = cnt
+		dup particle, particles.PropertyOffset.particleIndex
+
+		; 粒子が使用されているなら処理を行う、さもなければスキップ
+		if particle.AttributeUsed {
+
+			; 粒子の年齢をひとつあげる
+			particle.AttributeAge++
+
+			; とりあえず先に描画
+			pos (particle.PositionX>>ParticlePositionScale)-ParticleRadius, (particle.PositionY>>ParticlePositionScale)-ParticleRadius
+			gcopy BackgroundWindow, particle.AttributeType*ParticleSize, 0
+
+			; 当たり判定
+			; 自分より前のインデックスの相手とだけ判定することで、二重衝突を防ぐ
+			repeat particleIndex
+				particleIndex2 = cnt
+				dup particle2, particles.PropertyOffset.particleIndex2
+
+				; 粒子が使用されているなら処理を行う、さもなければスキップ
+				if particle2.AttributeUsed {
+
+					; 二つの粒子の位置の差
+					dx = particle.PositionX-particle2.PositionX >>ParticlePositionScale
+					dy = particle.PositionY-particle2.PositionY >>ParticlePositionScale
+
+					; 完全に重なっていると都合が悪いので、少しずらす
+					if (dx|dy)=0: dx = 1
+
+					; 距離の二乗
+					d2 = dx*dx+dy*dy
+
+					; ぶつかる距離の中にいた時だけ、衝突処理を行う
+					if d2<ParticleHitRadius2 {
+
+						; 距離
+						d = sqrt( d2 )
+
+						; この二つの粒子が引っ張り合ったかどうか、
+						; 以降のループで判定される
+						pulled = false
+
+						; 生まれたばかり (age<PullAge) の粒子は、引っ張り合わない
+						; そうしないと、生まれた直後に対消滅を起こして延々反応し続けてしまう。
+						if particle.AttributeAge>PullAge: if particle2.AttributeAge>PullAge {
+
+							repeat PullCombinationCount
+								pullCombination = cnt
+
+								if particle.AttributeType=pullColors1.pullCombination : if particle2.AttributeType=pullColors2.pullCombination {
+
+									if d2<ParticleCollapseRadius2 {
+										; 十分に近い
+
+
+										; 融合したので、片方には消えてもらう
+										particle2.AttributeUsed = 0
+
+										if pullColorsAfter.pullCombination = PullCollapse {
+											; 崩壊する
+
+											; 崩壊するので、もう片方も消える
+											particle.AttributeUsed = 0
+
+											; 6 個の基本色に分裂する
+											repeat FundamentalParticleTypeCountTwice
+												newColor = cnt\FundamentalParticleTypeCount
+	
+												; 使用されていない粒子を探して再利用する
+												repeat particleCount
+													particleIndex3 = cnt
+													dup particle3, particles.PropertyOffset.particleIndex3
+
+													; 粒子が使用されているなら再利用する
+													if particle3.AttributeUsed=0 {
+
+														repeat CoordinatesCount
+															positionIndex = cnt
+															velocityIndex = cnt+VelocityOffset
+
+															; 速度は乱数で決める
+															dup velocity, particle3.velocityIndex
+
+															velocity = rnd( ParticleCollapseVelocityMax ) - ParticleCollapseVelocityMaxHf
+
+															; 位置は崩壊前+速度
+															particle3.positionIndex = velocity/16+particle.positionIndex
+
+														loop
+
+														particle3.AttributeOffset = newColor, true, 0
+
+														break
+													}
+	
+												loop
+											loop
+
+
+										} else {
+											; 融合する
+
+											repeat CoordinatesCount*2
+												coordinatesIndex = cnt
+
+												particle.coordinatesIndex = (particle2.coordinatesIndex+particle.coordinatesIndex)/2
+											loop
+
+											particle.AttributeOffset = pullColorsAfter.pullCombination, true, 0
+										}
+
+									} else {
+										; まだ距離がある
+
+										if d<4: d = 4
+
+										f = d*d*10240/ParticleSize2
+
+										ds = dx, dy
+										invDs = dy, -dx
+
+										repeat CoordinatesCount
+											positionIndex = cnt
+											velocityIndex = cnt+VelocityOffset
+
+											a = (invDs.positionIndex*4+ds.positionIndex*6)*f/d/10
+
+											particle.velocityIndex = ( -a+particle.velocityIndex )*85/100
+											particle2.velocityIndex = ( a+particle2.velocityIndex )*85/100
+
+										loop
+
+									}
+
+									pulled = true
+
+									break
+								}
+							loop
+						}
+
+						if pulled = false {
+							if d2<PushRadius2 {
+								if d<6: d = 6
+
+								f = 256*8*ParticleSize2/d/d
+
+								if particle.AttributeAge<PushAge: f = f*particle.AttributeAge*particle.AttributeAge/PushAge2
+								if particle2.AttributeAge<PushAge: f = f*particle2.AttributeAge*particle2.AttributeAge/PushAge2
+
+								particle.VelocityX += dx*f/d
+								particle.VelocityY += dy*f/d
+								particle2.VelocityX -= dx*f/d
+								particle2.VelocityY -= dy*f/d
+							}
+						}
+					}
+				}
+			loop
+
+			; 移動
+			repeat CoordinatesCount
+				positionIndex = cnt
+				velocityIndex = cnt+VelocityOffset
+
+				dup position, particle.positionIndex
+				dup velocity, particle.velocityIndex
+
+				position += velocity/16
+
+				if position<0: if velocity<0: velocity = -velocity/2
+				if (position>>ParticlePositionScale) >displaySizes.positionIndex: if velocity>0: velocity = -velocity/2
+			loop
+
+		}
+	loop
+
+goto *l_mainLoop
+

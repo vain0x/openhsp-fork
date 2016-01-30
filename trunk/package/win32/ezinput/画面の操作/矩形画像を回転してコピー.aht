@@ -1,0 +1,16 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "grotate"
+
+#define コピー元のウィンドウID	"0"	;;str
+#define コピー元の左上X座標	"0"	;;str
+#define コピー元の左上Y座標	"0"	;;str
+#define 回転角度	"0"	;;str
+#define Xサイズ	"0"	;;str
+#define Yサイズ	"0"	;;str
+
+#ahtmes "grotate "+コピー元のウィンドウID+" , "+コピー元の左上X座標+" , "+コピー元の左上Y座標+" , "+回転角度+" , "+Xサイズ+" , "+Yサイズ+

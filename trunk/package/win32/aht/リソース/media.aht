@@ -1,0 +1,16 @@
+#aht name "メディア"
+#aht class "hsp3.std.rsrc.media"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 9
+#aht exp "パーツに対してメディアファイルを割り当てます。"
+#aht exp "割り当てたリソースは、他のパーツから参照可能になります。"
+#aht flag 256
+
+#define ファイル名	"メディア"	;;file,prm="wav;*.mid;*.avi;*.mp3;*.wma;*.wmv;*.mpg",refname
+#define ファイルパス	""	;;str
+#define メディアID	0	;;popt,prm="glid",opt="my"
+#const 種別 0		;;combox,prm="0\n1\n2\n",opt="通常再生\n繰り返し再生\n再生終了を待つ"
+
+#ahtmes "	mmload \""+ファイルパス+ファイル名+"\","+メディアID+","+種別
+

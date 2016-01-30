@@ -1,0 +1,404 @@
+
+;============================================================
+;                                                 2008/--/--
+;	title "S.Programs Astro Balloon"
+;	version 1.0/sample_ver
+;                               http://sprocket.babyblue.jp/
+;============================================================
+/*
+サンプルゲーム  アストロ・バルーン
+
+キー操作
+[Space] … メインエンジン噴射 (加速)
+←↑↓→ … 姿勢制御 (ピッチ・ロール)
+[Esc] … ゲーム再トライ
+[Enter] … フルスクリーン切り替え
+
+ストーリー
+あなたは宇宙船競技の種目「アストロ・バルーン」に出場することに
+なりました。これは、宇宙船を手動操縦して、宙域に浮かぶ 8 つの
+バルーンすべてを体当たりで破壊するまでのタイムを競う競技です。
+競技を終える前に宇宙を漂流するようなことになれば笑い者ですよ！
+
+ルール
+・宇宙船を操縦し、すべてのバルーンを体当たりで破壊する。
+・最初にメインエンジンを噴射した時点をゲームスタートとする。
+・バルーンに体当たりすると一定の推進剤が補給される。
+
+HUD
+・機体の機首方向を示すマーカー : -ｗ-
+・機体の進行方向を示すマーカー : -○-
+・レーダー : 赤円
+
+*/
+
+#include "d3m.hsp"
+
+;============================================================
+; init
+
+	d3mkparticle 0, 255, 255, 255
+
+	; keymap
+#define	xmm	37
+#define	xpp	39
+#define	ymm	40
+#define	ypp	38
+#define	trg	32
+
+	f0 = refdval ; = 0.0
+	foname = "ＭＳ Ｐゴシック"
+
+
+;------------------------------------------------------------
+; ゲーム初期化
+*init
+
+	; 位置 (m)
+	px = f0 : py = f0 : pz = f0
+
+	; 速度 (m/s)
+	vx = f0 : vy = f0 : vz = f0
+
+	; 姿勢 matrix
+	pm00 = 1 : pm01 = 0 : pm02 = 0 ; 前方ベクトル
+	pm10 = 0 : pm11 = 1 : pm12 = 0 ; 左方ベクトル
+	pm20 = 0 : pm21 = 0 : pm22 = 1 ; 上方ベクトル
+
+	; 姿勢角速度 ロール, ピッチ のみ (rad/s)
+	vm_r = f0 : vm_p = f0
+
+
+	; 機体スペック
+#const MACHM	2000	; 機体質量 (kg)
+#const FORCE	200000	; 推力 (N)
+#const FCOST	66	; 燃費 (kg/sec)
+#const FUEL_MAX	1000	; 推進剤最大 (kg)
+
+//onst FORCE_YP	19600	; 姿勢制御用 推力 (N)
+#const FCOST_YP	5	; 姿勢制御用 燃費 (kg/sec)
+
+
+	; ゲーム設定
+#const BALLS   8
+#const BALL_R  125		; (m)
+#const FUEL_ADD  500		; バルーンが持っている推進剤 (kg)
+
+	fuelm = 250		; 初期推進剤質量 (kg)
+
+	; バルーン存在フラグ
+	ball_acts = BALLS
+	repeat BALLS
+		ball_act(cnt) = 1
+	loop
+
+	time_s = 0
+	time_e = 0
+
+
+	; effect
+	cv = 88
+
+
+;------------------------------------------------------------
+; ゲームループ
+*mainloop
+
+	await
+
+	a = sec
+	sec = 0.001 * d3timer()
+	dt = limitf(sec - a, 0, 1)
+
+
+	;------------------------------------------------------------
+	; ctrl default
+
+	am_v = 0
+	am_r = 0
+	am_p = 0
+
+
+	;------------------------------------------------------------
+	; ctrl
+
+	if ginfo_act >= 0 {
+
+		getkey k, 27
+		if k : goto *init ; [Esc] to Reset
+
+
+		;------------------------------------------------------------
+		; full-screen ctrlr (toggle : Enter)
+
+		stick ky_inp
+		if ky_inp & 32 {
+			mode_fsc ^= 1
+			chgdisp mode_fsc ; (default : 640, 480)
+			if mode_fsc {
+				bgscr 2
+				gsel 2, 2
+				mouse -1
+			} else {
+				gsel 2, -1
+				gsel
+				mouse
+			}
+		}
+
+
+		;------------------------------------------------------------
+		; ctrl
+
+		if fuelm > 0 {
+			; thrust
+			getkey am_v, trg
+
+			; roll
+			getkey am_r, xpp
+			getkey k, xmm : am_r -= k
+
+			; pitch
+			getkey am_p, ypp
+			getkey k, ymm : am_p -= k
+		}
+	}
+
+
+	;------------------------------------------------------------
+	; v-move
+
+	totalm = fuelm + MACHM  ; 全質量 totalm = 構造質量 + 推進剤質量
+
+	; 加速
+	if am_v {
+		; 加速
+		a = dt * FORCE / totalm
+		vx += pm00 * a
+		vy += pm01 * a
+		vz += pm02 * a
+
+		; game start
+		if time_s = 0 : time_s = sec
+
+		if cv < 88 : cv += dt * 100 ; effect
+	}
+
+	v_abs = sqrt(vx*vx + vy*vy + vz*vz)
+
+	; ヨー・ピッチ角加速 / エンジン振動 (慣性モーメントを考慮しない)
+	vm_r += dt * (sin(sec * 11) * 2 * am_v  +  am_r) * 2
+	vm_p += dt * (sin(sec * 25) * 2 * am_v  +  am_p) * 2
+
+	; 推進剤減少
+	fuelm = limitf(fuelm - dt * (FCOST * am_v + FCOST_YP * (am_r*am_r + am_p*am_p)), 0, FUEL_MAX)
+
+
+	;------------------------------------------------------------
+	; p-move
+
+	; roll
+	d3vrotate pm10,pm11,pm12, pm10,pm11,pm12, pm00,pm01,pm02, dt * vm_r
+	d3vrotate pm20,pm21,pm22, pm20,pm21,pm22, pm00,pm01,pm02, dt * vm_r
+
+	; pitch
+	d3vrotate pm00,pm01,pm02, pm00,pm01,pm02, pm10,pm11,pm12, dt * vm_p
+	d3vrotate pm20,pm21,pm22, pm20,pm21,pm22, pm10,pm11,pm12, dt * vm_p
+
+	; move
+	px += vx * dt
+	py += vy * dt
+	pz += vz * dt
+
+
+	;------------------------------------------------------------
+	; setcam
+
+	d3setcam  -1, 0, 0
+
+	; 機体姿勢行列の転置
+	d3setlocal -(pm00*px+pm01*py+pm02*pz),-(pm10*px+pm11*py+pm12*pz),-(pm20*px+pm21*py+pm22*pz), pm00,pm01,pm02, pm10,pm11,pm12, pm20,pm21,pm22
+
+
+	;------------------------------------------------------------
+	; static obj
+
+	redraw 0
+	randomize 1
+	font foname, 15 ; HUD 用フォント
+
+
+	; background
+	color (fuelm=0) * 64, cv, cv * cv / 48
+	cv = limitf(cv - dt * 20, 48, 255)
+	boxf
+
+
+	; Star-Ring
+	repeat 642
+		gmode 5, , , 64 + rnd(192)
+		d3particle 0, cos(cnt)*1300000, sin(cnt)*1300000, (rnd(1024)-512)*rnd(64)*rnd(64), 5000
+		gmode 5, , , 16
+		d3particlem , 20000
+	loop
+
+	gmode 5, , , 72
+	repeat 5
+		d3particlem , 50000 * cnt
+	loop
+
+
+	; balloons
+	repeat BALLS
+		if ball_act(cnt) {
+
+			; position
+			goal_x = (9 - cnt) * 5000
+			goal_y = cos(64 * cnt) * 10000
+			goal_z = sin(64 * cnt) * 5000
+			goal_d = sqrt((px-goal_x)*(px-goal_x)+(py-goal_y)*(py-goal_y)+(pz-goal_z)*(pz-goal_z))
+/*
+			x = px - goal_x
+			y = py - goal_y
+			z = pz - goal_z
+			goal_d = d3dist(x, y, z)
+			vcos = (vx*x + vy*y + vz*z) / (v_abs * goal_d)
+*/
+
+			; draw balloon
+			hsvcolor cnt * 37, 192, 192
+			d3circle goal_x, goal_y, goal_z, BALL_R, 1
+			gmode 5, , , 96
+			d3particlem , 300
+
+
+			; レーダー射程距離内なら HUD に表示
+			if goal_d <= 30000 {
+				; HUD
+				; ターゲットマーカー
+				color 222, cv
+				repeat 2
+					d3circle goal_x, goal_y, goal_z, 1000<<(cnt*2)
+				loop
+				if df@d3m {
+					if goal_d <= 13000 : line dx@d3m, dy@d3m, d3wincx, d3wincy
+					pos dx@d3m, dy@d3m-30
+					mes 0 + goal_d
+				}
+			}
+
+
+			; 当たり処理
+			if goal_d <= BALL_R {
+				; バルーン消滅
+				ball_act(cnt)-- ; = 0
+				ball_acts--
+
+				; 推進剤補給
+				fuelm += FUEL_ADD
+
+				; 運動量の減少
+				r = totalm / (totalm + FUEL_ADD)
+				vx *= r
+				vy *= r
+				vz *= r
+
+			;	vm_r *= r
+			;	vm_p *= r
+				vm_r /= 3 ; オーバーアクション分を補給
+				vm_p /= 3
+
+				; game over
+				if ball_acts = 0 : time_e = sec
+
+				cv = 116  ; up effect
+			}
+		}
+	loop
+
+
+	;------------------------------------------------------------
+	; HUD
+
+	color 222, 222
+	t = d3timer() / 250 \ 2	; 点滅信号
+
+
+	; センター (燃焼時 推進剤時計)
+	repeat 60
+		p = 0.10471975511966 * cnt
+		r0 = 160 + (am_v * ((fuelm/5)>cnt) * 60)
+		r1 = 155 - ((cnt\15=0) * 125)
+		line cos(p) * r1 + d3wincx, sin(p) * r1 + d3wincy, cos(p) * r0 + d3wincx, sin(p) * r0 + d3wincy
+	loop
+
+
+	; ウィスキーマーク
+	pos d3wincx-13, d3wincy-8
+	mes "-ｗ-"
+
+
+	; ベロシティベクトル
+	repeat 2
+		sign = 1 - cnt * 2
+		vs = sign * 10
+
+		f = v_abs * 10
+		repeat 6
+			d3circle px+vx*vs, py+vy*vs, pz+vz*vs, f
+			f = 200 << (cnt * 2)
+		loop
+		if df@d3m {
+			if sign = 1 {
+				line dx@d3m, dy@d3m, d3wincx, d3wincy
+			}
+			pos dx@d3m-14, dy@d3m-8
+			mes "-○-\n    " + (sign * v_abs) + " m/s"
+		}
+	loop
+
+
+	; 数値情報
+	pos 50, 40
+	mes "VEL.  " + (0 + v_abs) + " m/s\nFUEL " + (0 + fuelm) + " kg"
+	if (fuelm = 0) & t : mes "EMPTY  推進剤切れ"
+
+
+	; グラフ
+	; V-ROLL
+;	boxf d3wincx, 160, vm_r*30 + d3wincx-1, 163
+	; V-PITCH
+;	boxf 240, d3wincy, 243, vm_p*60 + d3wincy-1
+	; FUEL
+	boxf 160, 59, 160 + fuelm*((fuelm>=100)|t)/3, 66
+
+
+	;------------------------------------------------------------
+	; game telop
+
+	hsvcolor , , 222
+	pos 50, d3wincy + 110
+	font foname, 25 + (ball_acts=0) * 20, 1
+
+	if ball_acts {
+		mes "残りバルーン " + ball_acts + " 個"
+	} else {
+		mes "ゲーム終了!"
+	}
+
+	mes strf("タイム %.3f 秒", (sec*(time_s!0)*(time_e=0) + time_e - time_s))
+
+	font foname, 20
+	mes ""+d3getfps()+" fps"
+
+
+	;------------------------------------------------------------
+	redraw
+
+	goto *mainloop
+
+
+
+
+
+

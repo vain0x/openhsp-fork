@@ -1,0 +1,12 @@
+#aht name "ラベル"
+#aht class "hsp3.std.system.label"
+#aht author "onitama"
+#aht ver "3.1"
+#aht iconid 1
+#aht exp "パーツに対して指定したラベル名(タグ)を割り当てます。"
+#aht exp "割り当てたラベル名は、「ジャンプ」など他のパーツから参照可能になります。"
+
+#define __label	ラベル		;;help="ラベル名",refname,withid
+
+*__label
+

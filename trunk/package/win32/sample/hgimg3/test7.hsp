@@ -1,0 +1,91 @@
+#include "hgimg3.as"
+
+	;	フェードイン・アウトサンプル
+	;
+	randomize
+	screen 0,640,480,0
+	cls 4
+	hgini
+
+	;	テクスチャフォント表示の準備
+	;
+	setfont 16,16,12,1	; font Tex select(cx,cy,px,mode)
+	texload "fontchr.bmp"	; フォントテクスチャの登録
+
+	;	Xモデル登録
+	;
+	addxfile m_xmodel.0,"font_a.x"	; モデルを読み込む
+	addxfile m_xmodel.1,"font_b.x"	; モデルを読み込む
+	addxfile m_xmodel.2,"font_c.x"	; モデルを読み込む
+
+	;	イベントリストを登録
+	;
+	newevent ev1			; 新しいイベントIDを取得
+	event_setpos ev1, -20,-10,0,20,10,0	; ランダムな位置を設定
+	event_efx ev1, 80, 0		; 80フレーム後に透明度0%
+	event_addang ev1, 0, 0.1, 0	; Y角度を0.1づつ加算する
+	event_wait ev1, 80		; 80フレーム待つ
+	event_prmset ev1,PRMSET_FLAG,0	; 自分を消去する
+
+	;	表示の準備
+	;
+	clscolor $80			; 背景色の設定
+	frame=0
+	scfade=0
+	scfadev=256
+	gosub *fadein
+*main
+	gosub *alldraw
+	stick key,$3ff
+	if key&128 : goto *main2
+
+	if (frame&7)=0 {		; 8フレームごとに実行
+		regobj obj, m_xmodel.rnd(3)	; オブジェクトの登録
+		setevent obj,ev1		; イベント適用
+	}
+
+	;	カメラをカーソルキーで動かす
+	;
+	if key&4 : addpos HGOBJ_CAMERA, -0.2, 0.0
+	if key&1 : addpos HGOBJ_CAMERA, 0.2, 0.0
+	if key&2 : addpos HGOBJ_CAMERA, 0.0, 0.2
+	if key&8 : addpos HGOBJ_CAMERA, 0.0, -0.2
+
+	goto *main
+
+*main2
+	gosub *fadeout
+	repeat
+	gosub *alldraw
+	if scfadev=256 : break
+	loop
+
+*owari
+	end
+
+
+*alldraw
+	;	フレーム描画のサブルーチン
+	;
+	hgdraw				; 描画
+	fprt "Frame:"+frame,8,8
+	if scfade {			; フェード処理
+		scfadev += scfade
+		if scfadev>255 : scfadev=256
+		if scfadev<1 : scfadev=0 : scfade=0 
+		color 0,0,0:gmode 3,640,480,scfadev
+		hgrect 320,240,0
+	}
+	hgsync 15			; 時間待ち
+	frame++
+	return
+
+*fadein
+	scfade=-4
+	return
+*fadeout
+	scfade=4
+	return
+
+
+

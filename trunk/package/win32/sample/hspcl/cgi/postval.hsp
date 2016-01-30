@@ -1,0 +1,19 @@
+; 入力フォームから値を取得するCGIプログラム
+;
+; URLリクエストの例
+; http://localhost/form.html
+
+#runtime "hsp3cl"				; HSPCLランタイムを使用する
+
+#include "form_decode.as"
+
+	mes "Content-type: text/html\n"		; 出力先をHTMLページに指定
+
+	sdim ss,256				; 文字変数ssを256バイトで用意
+	sdim s,256				; 文字変数sを256バイトで用意
+
+	input s,256				; 標準入力から値を取得
+	form_decode ss,s,1			; 送信用コードを元の日本語に変換する(ついでに&を改行に変換)
+
+	mes "<b>POSTされた値:</b>"
+	mes "<pre>"+ss+"</pre>	"		; ssの内容を表示

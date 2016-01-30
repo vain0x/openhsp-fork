@@ -1,0 +1,299 @@
+#include "obaq.as"
+#include "hspda.as"
+
+#packopt name "obaqme"
+
+	;	OBAQ Model Editor
+	;	onitama 2009/12-
+	;
+	goto *boot
+
+
+#deffunc toolinit
+
+	maxdata=256
+	wx=800:wy=448+64
+	tlx=640:tly=0
+	dvx=16:dvy=16
+	bgid=4
+	toolmsg="Ready."
+
+	dim fl,maxdata
+	dim ax,maxdata
+	dim ay,maxdata
+	dim az,maxdata
+	dim acol,maxdata
+	aent=0
+	aedit=0
+
+	buffer bgid,tlx,wy
+	color 0,0,64:boxf
+	ix=tlx/dvx:iy=wy/dvy
+	repeat iy
+	if cnt&3 : color 64,64,255 : else : color 64,160,255
+	y=cnt*dvy:boxf 0,y,tlx,y
+	loop
+	repeat ix
+	if cnt&3 : color 64,64,255 : else : color 64,160,255
+	x=cnt*dvx:boxf x,0,x,wy
+	loop
+
+	centerx=20
+	centery=16
+	cenx=centerx*dvx
+	ceny=centery*dvy
+	color 255,0,0
+	circle cenx-4,ceny-4,cenx+4,ceny+4
+
+	return
+
+#deffunc tooldraw
+
+	redraw 0
+	pos 0,0:gmode 0,tlx,wy:gcopy bgid
+	syscolor 15
+	boxf tlx,tly,wx,tly+64
+	color 0,0,0:sysfont 17:pos tlx+8,tly+8
+	mes toolmsg
+
+	color 255,255,255
+	i=0:x=-1:y=-1:fx=-2:fy=-2
+	repeat
+	if i>=aent : break
+
+	xx=ax(i):yy=ay(i)
+	i++
+	if x>=0 {
+		line x,y,xx,yy
+		if (fx=xx)&(fy=yy) : xx=-1
+	} else{
+		fx=xx:fy=yy	; 始点
+	}
+	x=xx:y=yy
+
+	loop
+
+	color 255,255,255
+	if curx<tlx {
+		boxf curx-4,cury-4,curx+4,cury+4
+	}
+
+	redraw 1
+	return
+
+#deffunc toolcnv var myid
+
+	ddim mdldata,1024
+	i=0
+	repeat aent
+		mdldata(i)=(ax(cnt)-cenx)/dvx
+		i++
+		mdldata(i)=(ay(cnt)-ceny)/dvy
+		i++
+	loop
+
+	qaddmodel myid, mdldata, i, 96.0, 20.0, 0.0, 1.0, 1.0, colsw_none
+
+	return
+
+	;-----------------------------------------------------------------------
+
+#deffunc qvxcnv str _qvbfn
+
+	qvxmax=aent*2
+	dim mdldata,qvxmax
+	qvxent=0
+	repeat aent
+		mdldata(qvxent)=(ax(cnt)-cenx)/dvx
+		qvxent++
+		mdldata(qvxent)=(ay(cnt)-ceny)/dvy
+		qvxent++
+	loop
+	bsave _qvbfn,mdldata,qvxent*4
+	return
+
+	;-----------------------------------------------------------------------
+
+*boot
+	;	ウインドゥサイズの設定
+	;
+	screen 0,640,480,0
+	cls 4
+	title "Sample"
+
+	;	初期設定
+	;
+	toolinit
+	screen 1,wx,wy,0
+	title "OBAQ Model Editor ver0.1"
+	syscolor 15
+	boxf tlx,tly,wx,wy
+
+	objsize 120,24
+	pos tlx+16,tly+120
+	color 0,0,0:sysfont 17
+
+	button "TEST",*execobaq
+	button gosub "SAVE",*datasave
+	button gosub "LOAD",*dataload
+	button gosub "CONVERT",*cnvbuild
+	mes "\n※左回りで作成してください\n"
+	button "END",*owari
+
+	modflag=0
+
+*toolmain
+	if ginfo_act!=1 : goto *noact
+
+	stick key,$40
+	if invclk {			; クリック無視
+		if ( key&$300 ) {
+			tooldraw
+			goto *noact
+		}
+		invclk=0
+	}
+
+	if key&$40 {
+		if modflag=0 : gosub *chkae
+		toolmsg="Modify #"+aedit
+		if key&4 {
+			aedit++
+			if aedit>=aent : aedit--
+		}
+		if key&$1 {
+			aedit--
+			if aedit<0 : aedit=0
+		}
+		if key&$100 : gosub *editaxis
+		if key&$200 : gosub *delaxis
+		curx=ax(aedit)
+		cury=ay(aedit)
+		modflag=1
+	} else {
+		curx=mousex/dvx*dvx
+		cury=mousey/dvy*dvy
+		toolmsg="Add #"+aent
+		if key&$100 : gosub *regaxis
+		modflag=0
+	}
+
+	tooldraw
+*noact
+	await 12			; 時間待ち
+	goto *toolmain
+
+*chkae
+	x=mousex/dvx*dvx
+	y=mousey/dvy*dvy
+	i=0
+	repeat
+	if i>=aent : break
+	if (ax(i)=x)&(ay(i)=y) : aedit=i
+	i++
+	loop
+	return
+
+*regaxis
+	if curx>=tlx : return
+	ax(aent)=curx
+	ay(aent)=cury
+	az(aent)=0
+	aent++
+	return
+*editaxis
+	curx=mousex/dvx*dvx
+	cury=mousey/dvy*dvy
+	if curx>=tlx : return
+	ax(aedit)=curx
+	ay(aedit)=cury
+	az(aedit)=0
+	return
+*delaxis
+	x=mousex/dvx*dvx
+	y=mousey/dvy*dvy
+	if x!=curx|y!=cury : return
+	i=aedit
+	repeat
+	if i>=aent : break
+	ax(i)=ax(i+1)
+	ay(i)=ay(i+1)
+	az(i)=az(i+1)
+	i++
+	loop
+	aent--
+	return
+
+*cnvbuild
+	invclk=1
+	dialog "qvb",17,"QVB Data"
+	if stat=0 : return
+	fname = refstr
+	exname=getpath(fname,2)		; ファイル名の拡張子を取得
+	if exname="" : fname+=".qvb"	; 拡張子がなければ追加
+	;
+	qvxcnv fname
+	;
+	dialog "["+getpath(fname,8)+"]を保存しました"
+	;
+	return
+
+*datasave
+	invclk=1
+	dialog "qvd",17,"OBAQ Vector Data"
+	if stat=0 : return
+	fname = refstr
+	exname=getpath(fname,2)		; ファイル名の拡張子を取得
+	if exname="" : fname+=".qvd"	; 拡張子がなければ追加
+	;
+	vsave_start
+	vsave_put aent
+	vsave_put fl
+	vsave_put ax
+	vsave_put ay
+	vsave_put az
+	vsave_put acol
+	vsave_end fname
+	;
+	return
+
+*dataload
+	invclk=1
+	dialog "qvd",16,"OBAQ Vector Data"
+	if stat=0 : return
+	fname = refstr
+	;
+	vload_start fname
+	vload_get aent
+	vload_get fl
+	vload_get ax
+	vload_get ay
+	vload_get az
+	vload_get acol
+	vload_end
+	;
+	return
+
+*execobaq
+	invclk=1
+	gsel 0,1
+	qreset			; OBAQの初期化
+	rot = 0.0
+	toolcnv my
+
+*main
+	;	描画メイン
+	;
+	if ginfo_act=1 : gsel 1 : goto *toolmain
+
+	redraw 0		; 画面の更新を開始
+	color 0,0,0:boxf	; 画面をクリア
+	qexec			; OBAQによるオブジェクトの更新
+	qdraw			; オブジェクトの描画
+	redraw 1		; 画面の更新を終了
+	await 12		; 一定時間待つ
+	goto *main
+
+*owari
+	end
+

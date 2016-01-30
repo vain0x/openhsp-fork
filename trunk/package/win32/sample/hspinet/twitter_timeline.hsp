@@ -1,0 +1,97 @@
+#include "hspinet.as"
+
+	;
+	;	Twitterタイムラインの取得
+	;	(Twitter APIを使用して取得します)
+	;
+	title "Twitterタイムラインの取得"
+	;
+	netinit
+	if stat : dialog "ネット接続できません。" : end
+	user="onionsoftware"
+	page=1
+	count=20
+*start
+	cls
+	syscolor 15:boxf
+	color 0,0,0
+	sysfont 17
+	objsize 160,24
+	mes "Twitter ID"
+	input user
+	mes "取得する数"
+	input count
+	mes "ページNo."
+	input page
+
+	button "取得",*go
+	stop
+
+*go
+	;	取得開始
+	cls 1
+	mes "読み込み中..."
+
+	;	URLを指定
+	neturl "http://twitter.com/statuses/user_timeline/"
+
+	;	GET形式でCGIにパラメーターを渡す
+	netrequest_get user+".json?count="+count+"&page="+page
+
+*main
+	;	結果待ちのためのループ
+	netexec res
+	if res > 0 : goto *comp
+	if res < 0 : goto *bad
+	await 50
+	goto *main
+
+*bad
+	;	エラー
+	neterror estr
+	mes "ERROR "+estr
+	objsize 160,24
+	button "終了",*start
+	stop
+
+*comp
+	;	完了
+	cls 1
+	mes "ID:"+user+" のタイムライン"
+	pos 0,30
+
+	sdim buf,$10000
+	netgetv buf
+
+	sdim msg, 4096		; メッセージ用バッファ
+	sdim wrt,$10000		; 結果出力用バッファ
+
+	jsonnkf "Ws"	; utf8->sjisへの変換指定
+	jsonopen jroot,buf
+	jsongets erstr, "error"
+	if stat=0 : wrt="サーバーがエラーを返しました\n"+erstr : goto *compov
+
+	jsonnext cur,,2
+	repeat
+		if cur=0 : break
+
+		jsongets when, "created_at", cur	; 日付の取得
+		if stat=0 : wrt+=when+"\n"
+		jsongets msg, "text", cur	; 内容の取得
+		if stat=0 :{
+			wrt+=msg+"\n"
+		}
+		jsongets source, "source", cur	; 日付の取得
+		if stat=0 : wrt+="from "+source+"\n"
+
+		jsonnext cur,cur,0
+	loop
+
+*compov
+	jsonclose
+	mesbox wrt,640,420,1
+
+	objsize 160,24
+	button "終了",*start
+	stop
+

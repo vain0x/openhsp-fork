@@ -1,0 +1,143 @@
+
+#include "hspcmp.as"
+#packopt runtime "hsp3c.hrt"
+#packopt name "sampview"
+
+	title "HSP3 Sample Viewer 1.1"
+
+	smppath=dir_exe+"\\sample\\"
+	;smppath=dir_exe+"\\hsp3rc2\\sample\\"
+
+	dirlist smpstr,smppath+"*.*",5
+	;smpstr="NEW\nGAME\nBASIC\nCOMOBJ\nHGIMG3\nHGIMG\nHSPCL\nHSPDA\nHSPDB\nHSPDX\nHSPEXT\nHSPINET\nHSPSOCK"
+	sdim smpedit,$10000
+
+	screen 0,640,480
+	syscolor 15 : boxf
+	sysfont 17
+	objsize 200,24
+
+	color 0,0,0
+	pos 0,8:mes "サンプルのカテゴリ:"
+	pos 0,24:combox smptype,120,smpstr
+
+	pos 0,60:mes "サンプルのファイル:"
+	pos 0,76:listbox smpsel,300,""
+	id_list=stat
+
+	pos 208,8:mes "スクリプトの内容:"
+	pos 208,24:mesbox smpedit,430,448,0
+	id_edit=stat
+
+	pos 0,384
+	objsize 200,48
+	button "サンプルを実行",*gohsp3
+	objsize 200,24
+	button "サンプルを編集",*gohsed3
+	button "終了",*owari
+
+	gosub *makelist
+
+*main1
+	bak_smptype=smptype
+	bak_smpsel=smpsel
+*main2
+	if bak_smptype!=smptype {
+		bak_smptype=smptype
+		gosub *makelist
+		smpsel=-1
+		gosub *loadsamp
+		goto *main1
+	}
+	if bak_smpsel!=smpsel {
+		gosub *loadsamp
+		goto *main1
+	}
+	;
+	wait 10
+	goto *main2
+
+*owari
+	end
+
+*loadsamp
+	buf=""
+	if smpsel<0 : goto *loadsamp2
+	notesel smpstr
+	noteget s1,smptype
+	if s1="" : goto *loadsamp2
+	notesel smplist
+	noteget s2,smpsel
+	if s2="" : goto *loadsamp2
+
+	notesel buf
+	noteload smppath+s1+"\\"+s2,30000
+*loadsamp2
+	objprm id_edit,buf
+	return
+
+*makelist
+	smplist=""
+	if smptype<0 : goto *makelist2
+	notesel smpstr
+	noteget s1,smptype
+	if s1="" : goto *makelist2
+
+	dirlist smplist,smppath+s1+"\\*.hsp",1
+*makelist2
+	objprm id_list,smplist
+	return
+
+*gohsed3
+	if smpsel<0 : goto *main2
+
+	notesel smpstr
+	noteget s1,smptype
+	if s1="" : goto *main2
+	notesel smplist
+	noteget s2,smpsel
+	if s2="" : goto *main2
+
+	chdir smppath+s1
+	exec dir_exe+"\\hsed3.exe \""+smppath+s1+"\\"+s2+"\""
+	chdir dir_exe
+	goto *main2
+
+*gohsp3
+	if smpsel<0 : goto *main2
+
+	notesel smpstr
+	noteget s1,smptype
+	if s1="" : goto *main2
+	notesel smplist
+	noteget s2,smpsel
+	if s2="" : goto *main2
+
+	sdim rtname,256
+	fname = smppath+s1+"\\"+s2
+	objname="obj"			; オブジェクトファイル名
+
+	;
+	;	HSP3ソーススクリプトをコンパイルして実行する
+	;	(スクリプトエディタのコンパイル+実行と同じ動作を行ないます)
+	;
+	hsc_ini fname
+	hsc_objname objname
+	hsc_comp 0
+	res=stat:if res!=0 : dialog "エラーが発生しました。" : goto *goerror
+
+	;delete fname+".i"		; 中間ファイルを削除
+
+	hsc3_getruntime rtname, objname
+	if rtname="" : rtname="hsp3.exe"
+	debug_mode=0			; デバッグウィンドウ表示フラグ
+	;
+	bak_cur = dir_cur
+	chdir  smppath+s1
+	cmdexe = dir_exe+"\\"+rtname+" \""+dir_exe+"\\"+objname+"\""
+	hsc3_run cmdexe, debug_mode
+	;
+	chdir bak_cur
+*goerror
+	goto *main2
+

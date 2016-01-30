@@ -1,0 +1,91 @@
+/*******************************************************************************
+
+                      HSPLet Sample Program: Network
+                                             Copyright (C) 2005.12.27 山田雄己
+*******************************************************************************/
+
+#include "hspsockA.as"
+
+
+	mes "ネットワークに接続するサンプルです。"
+	wait 100
+	mes "Group Finity のウェブサイトに接続して、トップページをダウンロードします。"
+	wait 100
+	color 255, 0, 0
+	mes "注意：HSPLet は、ファイルがおいてあるサーバーとしか通信できません。"
+	wait 100
+	mes "　　　ローカルの HTML からサーバーにアクセスすることは出来ないので、"
+	wait 100
+	mes "　　　実行するにはコンパイラの「テスト実行」ボタンを押してください。"
+	wait 200
+	mes "　　　コンパイラの「テスト実行」ボタンで実行中は"
+	mes "　　　他のサーバーにもアクセスできるようになっています。"
+	wait 400
+	
+	cls
+
+	sockinit
+	if stat: goto *l_Error
+
+	sockopen 0, "group-finity.com", 80
+	if stat: goto *l_Error
+
+*l_SockWait
+	await 100
+	sockwait 0
+	if stat=0: goto *l_SockWait
+	if stat=2: goto *l_Error
+
+	sockput "GET / HTTP/1.0\nHost: group-finity.com\nUser-Agent: HSP ver2.4d\n\n"
+	if stat : goto *l_Error
+
+	sdim header, 6400
+
+	headerLength = 0
+	repeat 6400
+	
+		if cnt\10==0 {
+			await 1
+			pos 0, 0
+			mes header
+		}
+		
+		ch = 0
+		sockgetc ch, 0
+		if stat: break
+		poke header, headerLength, ch
+		headerLength++
+		if headerLength>=4 {
+			if peek( header, headerLength-4 )=13 {
+				if peek( header, headerLength-3 )=10 {
+					if peek( header, headerLength-2 )=13 {
+						if peek( header, headerLength-1 )=10 {
+							; ヘッダー終了
+							break
+						}
+					}
+				}				
+			}
+		}
+	loop
+	
+	cls
+
+	sdim data, 6400
+	mesbox data, 640, 480
+	textBox = stat
+
+	dataLength = 0
+	repeat 6400
+		await 10
+		sockgetb data, dataLength, 6400-dataLength, 0
+		if stat=0: break
+		pos 0, 0
+		objprm textBox, data
+	loop
+	
+stop
+*l_Error
+	dialog "エラーが発生したようです。", 1, "HSPLet"
+stop
+

@@ -1,0 +1,13 @@
+
+#aht class "hsp3.std"
+#aht author "onitama"
+#aht ver "1.1"
+#aht icon "deficon.bmp"
+#aht iconid 0
+#aht helpkw "#usecom"
+
+#define インターフェースを識別するキーワード	""	;;str
+#define COMのインターフェースを示すIID文字列	""	;;str
+#define COMのクラスを示すIID文字列	""	;;str
+
+#ahtmes "#usecom "+インターフェースを識別するキーワード+" "+COMのインターフェースを示すIID文字列+" "+COMのクラスを示すIID文字列+

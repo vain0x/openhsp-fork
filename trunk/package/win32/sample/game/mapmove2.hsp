@@ -1,0 +1,61 @@
+
+	;
+	;	マップ表示(2)
+	;	(test.mapを表示してカーソルキーでゆっくりスクロールさせます)
+	;	(マップデータはmapedit.hspで作成)
+	;	(ただし、マップ付加情報(.txt)は反映されません)
+	;
+	cx=64:cy=64					; パーツXYサイズ
+	celload "mapbg.bmp"				; 元画像ファイル
+	csrc=stat					; 元画像のIDを保存
+	celdiv csrc,cx,cy				; パーツのサイズ設定
+
+	mapsx=32					; マップ全体Xサイズ
+	mapsy=32					; マップ全体Yサイズ
+
+	mapvx=9:mapvy=7					; 表示XYパーツ数
+	mapx=0:mapy=0					; マップ参照位置
+	mapex=(mapsx-mapvx)*cx				; 右の限界座標
+	mapey=(mapsy-mapvy)*cy				; 下の限界座標
+
+	dim map,mapsx,mapsy				; マップ配列の初期化
+	bload "test.map",map				; マップ読み込み
+
+	screen 0,mapvx*cx,mapvy*cy			; 表示画面を初期化
+
+*main
+	redraw 0					; 描画始め
+
+	color 0,0,64
+	boxf						; 背景を消す
+
+	gmode 0
+
+	;	mapを参照しながらマップを描く
+	;	(mapx,mapyはスクロール済みのドット数を示します)
+	;
+	ix=mapx/cx:ipx=mapx\cx
+	iy=mapy/cy:ipy=mapy\cy
+	lx=mapvx:if ipx>0 : lx+ 
+	ly=mapvy:if ipy>0 : ly+ 
+	gmode 0
+	repeat ly
+	i=iy+cnt:y=cnt*cy-ipy
+	pos -ipx,y
+	repeat lx
+		celput csrc,map(ix+cnt,i)
+	loop
+	loop
+
+	redraw 1					; 描画終わり
+	await 20
+
+	stick key,15					; キー入力
+	if key&1 : mapx-=2
+	if key&4 : mapx+=2
+	if key&2 : mapy-=2
+	if key&8 : mapy+=2
+	mapx=limit(mapx,0,mapex)			; X範囲チェック
+	mapy=limit(mapy,0,mapey)			; Y範囲チェック
+
+	goto *main

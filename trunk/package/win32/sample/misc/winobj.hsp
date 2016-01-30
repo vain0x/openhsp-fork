@@ -1,0 +1,31 @@
+
+#include "hsp3util.as"
+#include "obj.as"
+
+	;
+	;	特殊な配置オブジェクトを使ったサンプル
+	;
+
+	statictext "スタティックテキストです",640,100
+
+	progbar 640,20
+	id=stat
+	progbar_set id,1
+
+	button "無効ボタン",*owari
+	objgray stat
+
+	button "終了ボタン",*owari
+	getobjsize inf,stat
+	mes "ボタン横サイズ="+inf(0)+"/ボタン縦サイズ="+inf(1)
+
+	repeat 100
+		progbar_step id
+		wait 10
+	loop
+
+	stop
+
+*owari
+	end
+

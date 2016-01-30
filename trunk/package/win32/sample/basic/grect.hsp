@@ -1,0 +1,27 @@
+	;
+	;	grect–½—ß‚É‚æ‚é‹éŒ`“h‚è‚Â‚Ô‚µƒTƒ“ƒvƒ‹
+	;
+	title "grect"
+	screen 0,640,480,0
+	cls 2
+	font "Arial",14
+	m="HSP3 Sample Image"
+
+	x=160:y=160:px=4:py=4
+	repeat
+	redraw 0
+	hsvcolor cnt/2,255,255
+	gmode 0,200,200
+	grect x,y,double(cnt)*0.07
+
+	pos 482,442:color 0,0,0:mes m
+	pos 480,440:color 255,255,255:mes m
+
+	await 12
+	redraw 1
+
+	x+=px:if (x=0)|(x=640) : px=-px
+	y+=py:if (y=0)|(y=480) : py=-py
+	loop
+
+

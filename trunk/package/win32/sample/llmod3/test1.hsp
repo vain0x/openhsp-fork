@@ -1,0 +1,32 @@
+
+	;=================================================================================
+	;
+	;llmod3を使った各moduleの使用例
+	;
+	;=================================================================================
+	#include "llmod3/llmod3.hsp"
+	#include "llmod3/msgdlg.hsp"
+	#include "llmod3/winver.hsp"
+	#include "llmod3/about.hsp"
+
+	msgdlg "今日はここで終了しますか？","プログラムの終了",3,5
+	if stat=6 : dialog "はい　が選択されました"
+	if stat=7 : dialog "いいえ　が選択されました"
+	if stat=2 : dialog "ｷｬﾝｾﾙ　が選択されました"
+	dialog "次へ進みます"
+*x2
+	ver=0
+	winver ver
+	if ver=$100 : s="NT" : else : s=ver
+	mes "platform = Windows "+s
+	mes "メジャーバージョン = "+ver.1
+	mes "マイナーバージョン = "+ver.2
+	mes "ビルドナンバー = "+ver.3
+	if (ver=95)|(ver=98) : mes "メジャー&マイナーバージョン"+ver.4
+
+	dialog "次へ進みます"
+*x3
+	about "llmodのﾊﾞｰｼﾞｮﾝ情報#HSPモジュールファイル llmod3","tom/S Software"
+	end
+
+

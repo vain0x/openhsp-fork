@@ -1,0 +1,60 @@
+	#include "hidmon.as"
+
+	title "hidmon test"
+	syscolor 15:boxf
+	color 0,0,0
+
+	bits=1,2,4,8,16,32,64,128
+	max_bits=length(bits)
+	dim bit,max_bits
+
+	pos 4,4
+	mes "portB bits"
+	objsize 14,24
+	x=max_bits*24:y=24
+	repeat max_bits
+		pos x,y
+		chkbox "",bit(cnt)
+		pos x+2,y+24
+		mes ""+cnt
+		x-=24
+	loop
+
+	pos 4,68
+	mes "pinD"
+
+	pos 0,120
+	objsize 160,24
+	button "終了",*owari
+
+	;	hidmon.dllサンプル2
+	;
+	hidinit "#"
+	;	↑ヒダピオ等、商用デバイスの場合は、
+	;	「hidinit "#"」で初期化してください
+	if stat<0 {
+		dialog "USBデバイスの初期化に失敗しました。"
+		end
+	}
+*main
+	bvalue=0
+	repeat max_bits
+		if bit(cnt) : bvalue+=bits(cnt)
+	loop
+	hidpoke portb,bvalue
+	value=hidpeek(pind)
+	x=24:y=88
+	if value&1 : color 255,255,255 : else : color 0,0,0
+	boxf x,y,x+15,y+15
+	x=48:y=88
+	if value&2 : color 255,255,255 : else : color 0,0,0
+	boxf x,y,x+15,y+15
+	
+	await 15
+	count=count+1
+	goto *main
+
+*owari
+	hidbye
+	end
+

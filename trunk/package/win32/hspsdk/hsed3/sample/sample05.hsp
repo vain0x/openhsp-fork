@@ -1,0 +1,53 @@
+#include "hsedsdk.as"
+
+#module
+#deffunc mes2 str sCaption, var content, int nStat
+	if nStat{
+		mes sCaption+": Error(Error code: "+nStat+")"
+	} else {
+		mes sCaption+": "+content
+	}
+	return
+#global
+
+color 128, 128, 128
+boxf 5, 53, 634, 54
+
+font "", 12: color 0, 0, 0: objmode 2
+
+pos 5, 9: mes "ID:"
+pos 25, 5: input nTabID, 610, 20
+pos 5, 34: mes "Line:"
+pos 35, 30: nLine = 1: input nLine, 600, 20 
+pos 5, 116: ret = "": mesbox ret, 630, 359, 0
+
+repeat
+	redraw 0
+
+	color 255, 255, 255
+	boxf 5, 55, 635, 475
+	color 0, 0, 0
+
+	hsed_exist
+	if stat{
+		hsed_getfootyid nFootyID, nTabID
+		if stat{
+			pos 5, 60: mes "ID Error"
+		} else {
+			hsed_gettextlength ret, nFootyID
+			pos 5, 60: mes2 "Text length", ret, stat
+			hsed_getlines ret, nFootyID
+			pos 5, 74: mes2 "Number of lines", ret, stat
+			hsed_getlinelength ret, nFootyID, nLine
+			pos 5, 88: mes2 "Line length", ret, stat
+			hsed_getlinecode ret, nFootyID
+			pos 5, 102: mes2 "Line code", ret, stat
+			hsed_gettext ret, nFootyID
+			objprm 2, ret
+		}
+	} else {
+		pos 5, 60: mes "Script editor isn't found"
+	}
+	redraw 1
+	wait 100
+loop
