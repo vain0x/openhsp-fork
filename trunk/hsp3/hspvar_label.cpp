@@ -34,13 +34,7 @@ static int GetVarSize( PVal *pval )
 	//		PVALポインタの変数が必要とするサイズを取得する
 	//		(sizeフィールドに設定される)
 	//
-	int size;
-	size = pval->len[1];
-	if ( pval->len[2] ) size*=pval->len[2];
-	if ( pval->len[3] ) size*=pval->len[3];
-	if ( pval->len[4] ) size*=pval->len[4];
-	size *= sizeof(HSPVAR_LABEL);
-	return size;
+	return HspVarCoreCountElems(pval) * sizeof(HSPVAR_LABEL);
 }
 
 

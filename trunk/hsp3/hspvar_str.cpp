@@ -85,13 +85,7 @@ static int GetVarSize( PVal *pval )
 {
 	//		PVALポインタの変数が必要とするサイズを取得する
 	//
-	int size;
-	size = pval->len[1];
-	if ( pval->len[2] ) size*=pval->len[2];
-	if ( pval->len[3] ) size*=pval->len[3];
-	if ( pval->len[4] ) size*=pval->len[4];
-	size *= sizeof(char *);
-	return size;
+	return HspVarCoreCountElems(pval) * sizeof(char *);
 }
 
 static void HspVarStr_Free( PVal *pval )
