@@ -82,48 +82,7 @@ static void HspVarDouble_Free( PVal *pval )
 
 static void HspVarDouble_Alloc( PVal *pval, const PVal *pval2 )
 {
-	//		pval変数が必要とするサイズを確保する。
-	//		(pvalがすでに確保されているメモリ解放は呼び出し側が行なう)
-	//		(flagの設定は呼び出し側が行なう)
-	//		(pval2がNULLの場合は、新規データ)
-	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
-	//
-	int size;
-	char *pt;
-	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
-	size = GetVarSize( pval );
-
-	int old_size;
-	if ( pval == pval2 ) {
-		old_size = pval2->size;
-		if ( size > STRBUF_BLOCKSIZE ) {
-			size = (size > old_size ? size + size / 8 : old_size);
-		}
-		pt = sbExpand(pval->pt, size);
-	} else {
-		pt = sbAlloc(size);
-
-		if ( pval2 == NULL ) {
-			old_size = 0;
-		} else {
-			old_size = pval2->size;
-			memcpy(pt, pval2->pt, pval2->size);
-			sbFree(pval->pt);
-		}
-	}
-
-	// 新規要素を初期化
-	if ( size > old_size ) {
-		double *fv = (double *)pt;
-		double *fv_end = fv + (size - old_size) / sizeof(double);
-		for ( ; fv != fv_end; fv ++ ) {
-			*fv = 0.0;
-		}
-	}
-
-	pval->pt = pt;
-	pval->size = size;
-	pval->mode = HSPVAR_MODE_MALLOC;
+	HspVarCoreAllocPODArray(pval, pval2, sizeof(double));
 }
 
 /*

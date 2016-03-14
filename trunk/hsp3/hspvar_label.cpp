@@ -56,21 +56,7 @@ static void HspVarLabel_Alloc( PVal *pval, const PVal *pval2 )
 	//		(pval2がNULLの場合は、新規データ)
 	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
 	//
-	int i,size;
-	char *pt;
-	HSPVAR_LABEL *fv;
-	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
-	size = GetVarSize( pval );
-	pval->mode = HSPVAR_MODE_MALLOC;
-	pt = sbAlloc( size );
-	fv = (HSPVAR_LABEL *)pt;
-	for(i=0;i<(int)(size/sizeof(HSPVAR_LABEL));i++) { fv[i]=NULL; }
-	if ( pval2 != NULL ) {
-		memcpy( pt, pval->pt, pval->size );
-		sbFree( pval->pt );
-	}
-	pval->pt = pt;
-	pval->size = size;
+	HspVarCoreAllocPODArray(pval, pval2, sizeof(HSPVAR_LABEL));
 }
 
 // Size

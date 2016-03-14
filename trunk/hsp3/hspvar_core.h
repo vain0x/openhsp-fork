@@ -217,6 +217,7 @@ void *HspVarCoreCnvPtr( PVal *pval, int flag );
 PDAT *HspVarCorePtrAPTR( PVal *pv, APTR ofs );
 void HspVarCoreArray( PVal *pval, int offset );
 int  HspVarCoreCountElems( PVal *pval );
+void HspVarCoreAllocPODArray( PVal *pval, const PVal *pval2, int basesize );
 
 //		macro for PVal
 //
