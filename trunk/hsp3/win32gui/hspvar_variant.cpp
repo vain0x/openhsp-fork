@@ -60,18 +60,6 @@ static void *HspVarVariant_CnvCustom( const void *buffer, int flag )
 	return (void *)buffer;
 }
 
-static int GetVarElememtCount( PVal *pval )
-{
-	//		•Ï”‚Ì—v‘f”‚ðŽæ“¾‚·‚é
-	//
-	int count;
-	count = pval->len[1];
-	if ( pval->len[2] ) count *= pval->len[2];
-	if ( pval->len[3] ) count *= pval->len[3];
-	if ( pval->len[4] ) count *= pval->len[4];
-	return count;
-}
-
 
 static void HspVarVariant_Free( PVal *pval )
 {
@@ -89,7 +77,7 @@ static void HspVarVariant_Free( PVal *pval )
 
 	if ( pval->mode == HSPVAR_MODE_MALLOC ) {
 		if ( (pval->support & HSPVAR_SUPPORT_TEMPVAR) == 0 ) {
-			int count = GetVarElememtCount( pval );
+			int count = HspVarCoreCountElems(pval);
 			var = (VARIANT *)pval->pt;
 			for (int i=0; i<count; i++) {
 				VariantClear( &var[i] );
@@ -116,7 +104,7 @@ static void HspVarVariant_Alloc( PVal *pval, const PVal *pval2 )
 	COM_DBG_MSG( "HspVarVariant_Alloc()\n" );
 #endif
 	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// ”z—ñ‚ðÅ’á 1 ‚ÍŠm•Û‚·‚é
-	count = GetVarElememtCount( pval );
+	count = HspVarCoreCountElems(pval);
 	size  = count * sizeof( VARIANT );
 	var = (VARIANT *)sbAlloc( size );
 	pval->mode = HSPVAR_MODE_MALLOC;

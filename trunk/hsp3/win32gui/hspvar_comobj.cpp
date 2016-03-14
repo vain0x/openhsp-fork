@@ -58,19 +58,6 @@ static void *HspVarComobj_CnvCustom( const void *buffer, int flag )
 	return (void *)buffer;
 }
 
-static int GetVarElememtCount( PVal *pval )
-{
-	//		変数の要素数を取得する
-	//
-	int count;
-	count = pval->len[1];
-	if ( pval->len[2] ) count *= pval->len[2];
-	if ( pval->len[3] ) count *= pval->len[3];
-	if ( pval->len[4] ) count *= pval->len[4];
-	return count;
-}
-
-
 static void HspVarComobj_Free( PVal *pval )
 {
 	//		PVALポインタの変数メモリを解放する
@@ -85,7 +72,7 @@ static void HspVarComobj_Free( PVal *pval )
 #ifdef HSP_COMOBJ_DEBUG
 			COM_DBG_MSG( "HspVarComobj_Free()\n" );
 #endif
-			int count = GetVarElememtCount( pval );
+			int count = HspVarCoreCountElems( pval );
 			ppunk = (IUnknown **)pval->pt;
 			for (int i=0; i<count; i++) {
 				ReleaseComPtr( &ppunk[i] );
@@ -111,7 +98,7 @@ static void HspVarComobj_Alloc( PVal *pval, const PVal *pval2 )
 	COM_DBG_MSG( "HspVarComobj_Alloc()\n" );
 #endif
 	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低 1 は確保する
-	count = GetVarElememtCount( pval );
+	count = HspVarCoreCountElems(pval);
 	size  = count * sizeof( IUnknown* );
 	ppunk = (IUnknown **)sbAlloc( size );
 	pval->mode = HSPVAR_MODE_MALLOC;
