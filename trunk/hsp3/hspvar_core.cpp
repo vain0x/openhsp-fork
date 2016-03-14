@@ -323,6 +323,16 @@ void HspVarCoreArray( PVal *pval, int offset )
 }
 
 
+int HspVarCoreCountElems( PVal *pval )
+{
+	int k = pval->len[1];
+	if ( pval->len[2] ) k *= pval->len[2];
+	if ( pval->len[3] ) k *= pval->len[3];
+	if ( pval->len[4] ) k *= pval->len[4];
+	return k;
+}
+
+
 /*------------------------------------------------------------*/
 
 
