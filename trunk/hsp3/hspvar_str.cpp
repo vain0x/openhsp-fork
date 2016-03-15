@@ -122,10 +122,19 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 
 	size = GetVarSize( pval );
 
+	if ( pval == pval2 && size <= oldvar.size ) {
+		size = oldvar.size;
+		pval->master = oldvar.master;
+	} else {
+		if ( size > STRBUF_BLOCKSIZE ) {
+			size += size / 8;
+		}
+		pval->master = malloc(size);
+	}
+	if ( pval->master == NULL ) throw HSPERR_OUT_OF_MEMORY;
+
 	pval->size = size;
 	pval->mode = HSPVAR_MODE_MALLOC;
-	pval->master = (char *)calloc( size, 1 );
-	if ( pval->master == NULL ) throw HSPERR_OUT_OF_MEMORY;
 
 	if ( pval2 == NULL ) {							// 配列拡張なし
 		bsize = pval->len[0];
@@ -138,8 +147,15 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 		return;
 	}
 
+	i = 0;
 	i2 = oldvar.size / sizeof(char *);
-	for(i=0;i<(int)(size/sizeof(char *));i++) {
+
+	// バッファを使い回す場合、既存要素を更新する必要はない
+	if ( pval->master == oldvar.master ) {
+		i = i2;
+	}
+
+	for(;i<(int)(size/sizeof(char *));i++) {
 		pp = GetFlexBufPtr( pval, i );
 		if ( i>=i2 ) {
 			*pp = sbAllocClear(STRBUF_BLOCKSIZE);	// 新規確保分
@@ -148,7 +164,10 @@ static void HspVarStr_Alloc( PVal *pval, const PVal *pval2 )
 		}
 		sbSetOption( *pp, (void *)pp );
 	}
-	free( oldvar.master );
+
+	if ( pval->master != pval2->master ) {
+		free(oldvar.master);
+	}
 }
 
 /*
