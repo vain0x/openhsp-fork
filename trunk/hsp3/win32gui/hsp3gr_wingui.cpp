@@ -912,8 +912,7 @@ static int cmdfunc_extcmd( int cmd )
 		p1=code_getdi(1);
 
 		if ( p1 == VK_LBUTTON || p1 == VK_RBUTTON ) {
-			static bool const swap_button = GetSystemMetrics(SM_SWAPBUTTON);
-			if ( swap_button ) { p1 ^= VK_LBUTTON ^ VK_RBUTTON; }
+			if ( GetSystemMetrics(SM_SWAPBUTTON) ) { p1 ^= VK_LBUTTON ^ VK_RBUTTON; }
 		}
 
 		if ( code_event( HSPEVENT_GETKEY, p1, 0, &p2 ) == 0 ) {
@@ -1119,12 +1118,11 @@ static int cmdfunc_extcmd( int cmd )
 				break;
 			}
 		}
-		static bool swap_button = GetSystemMetrics(SM_SWAPBUTTON);
 		static int stick_keys[] = {
 			VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN, VK_SPACE, VK_RETURN,
 			VK_CONTROL, VK_ESCAPE,
-			(swap_button ? VK_RBUTTON : VK_LBUTTON),
-			(swap_button ? VK_LBUTTON : VK_RBUTTON),
+			(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON),
+			(GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON),
 			VK_TAB
 		};
 
