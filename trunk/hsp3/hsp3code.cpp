@@ -2090,7 +2090,7 @@ static int cmdfunc_prog( int cmd )
 		break;
 		}
 	case 0x1c:								// logmes
-		code_stmpstr( code_gets() );
+		code_stmpstr( code_getdsi("") );
 		hspctx->runmode = RUNMODE_LOGMES;
 		return RUNMODE_LOGMES;
 
