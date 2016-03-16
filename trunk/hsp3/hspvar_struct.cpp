@@ -78,32 +78,9 @@ static void HspVarStruct_Alloc( PVal *pval, const PVal *pval2 )
 	//		(pval2がNULLの場合は、新規データ)
 	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
 	//
-	int i,size;
-	char *pt;
-	FlexValue *fv;
-	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
-	pval->mode = HSPVAR_MODE_MALLOC;
-	size = sizeof(FlexValue) * pval->len[1];
-	pt = sbAlloc( size );
-	fv = (FlexValue *)pt;
-	for(i=0;i<pval->len[1];i++) {
 
-/*
-	rev 53
-	BT#113: dimtypeでstruct型(モジュール型)変数が不完全な状態で作成される
-	に対処。
-*/
-
-		memset( fv, 0, sizeof( FlexValue ) );
-		fv->type = FLEXVAL_TYPE_NONE;
-		fv++;
-	}
-	if ( pval2 != NULL ) {
-		memcpy( pt, pval->pt, pval->size );
-		sbFree( pval->pt );
-	}
-	pval->pt = pt;
-	pval->size = size;
+	// FLEXVAL_TYPE_NONE == 0 なので、0埋め初期化で問題ない
+	HspVarCoreAllocPODArray(pval, pval2, sizeof(FlexValue));
 }
 
 /*

@@ -333,6 +333,56 @@ void HspVarCoreArray( PVal *pval, int offset )
 }
 
 
+int HspVarCoreCountElems( PVal *pval )
+{
+	int k = pval->len[1];
+	if ( pval->len[2] ) k *= pval->len[2];
+	if ( pval->len[3] ) k *= pval->len[3];
+	if ( pval->len[4] ) k *= pval->len[4];
+	return k;
+}
+
+
+void HspVarCoreAllocPODArray( PVal *pval, const PVal *pval2, int basesize )
+{
+	//		pval変数が必要とするサイズを確保する。
+	//		(pvalがすでに確保されているメモリ解放は呼び出し側が行なう)
+	//		(flagの設定は呼び出し側が行なう)
+	//		(pval2がNULLの場合は、新規データ)
+	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
+	//
+
+	// 配列を最低1は確保する
+	if ( pval->len[1] < 1 ) pval->len[1] = 1;
+
+	int size = HspVarCoreCountElems(pval) * basesize;
+	int old_size = (pval2 ? pval2->size : 0);
+
+	char *pt;
+	if ( pval == pval2 ) {
+		if ( size > STRBUF_BLOCKSIZE ) {
+			size = (size > old_size ? size + size / 8 : old_size);
+		}
+		pt = sbExpand(pval->pt, size);
+	} else {
+		pt = sbAlloc(size);
+
+		if ( pval2 != NULL ) {
+			memcpy(pt, pval2->pt, pval2->size);
+			sbFree(pval->pt);
+		}
+	}
+
+	// 新規要素を0埋め
+	if ( size > old_size ) {
+		memset(pt + old_size, 0, (size - old_size));
+	}
+
+	pval->pt = pt;
+	pval->size = size;
+	pval->mode = HSPVAR_MODE_MALLOC;
+}
+
 /*------------------------------------------------------------*/
 
 

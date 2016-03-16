@@ -73,13 +73,7 @@ static int GetVarSize( PVal *pval )
 	//		PVALポインタの変数が必要とするサイズを取得する
 	//		(sizeフィールドに設定される)
 	//
-	int size;
-	size = pval->len[1];
-	if ( pval->len[2] ) size*=pval->len[2];
-	if ( pval->len[3] ) size*=pval->len[3];
-	if ( pval->len[4] ) size*=pval->len[4];
-	size *= sizeof(int);
-	return size;
+	return HspVarCoreCountElems(pval) * sizeof(int);
 }
 
 
@@ -100,21 +94,7 @@ static void HspVarInt_Alloc( PVal *pval, const PVal *pval2 )
 	//		(pval2がNULLの場合は、新規データ)
 	//		(pval2が指定されている場合は、pval2の内容を継承して再確保)
 	//
-	int i,size;
-	char *pt;
-	int *fv;
-	if ( pval->len[1] < 1 ) pval->len[1] = 1;		// 配列を最低1は確保する
-	size = GetVarSize( pval );
-	pval->mode = HSPVAR_MODE_MALLOC;
-	pt = sbAlloc( size );
-	fv = (int *)pt;
-	for(i=0;i<(int)(size/sizeof(int));i++) { fv[i]=0; }
-	if ( pval2 != NULL ) {
-		memcpy( pt, pval->pt, pval->size );
-		sbFree( pval->pt );
-	}
-	pval->pt = pt;
-	pval->size = size;
+	HspVarCoreAllocPODArray(pval, pval2, sizeof(int));
 }
 
 /*
