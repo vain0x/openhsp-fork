@@ -265,6 +265,7 @@ char 	s_rec[1]= "", *hsp_prestr[] =
 	"$011 13 limit",					// (3.0)
 	"$012 13 getease",					// (3.4)
 	"$013 13 notefind",					// (3.5)
+	"$014 13 memsize",					// (3.5)
 
 	//	3.0 string function
 	"$100 13 str",

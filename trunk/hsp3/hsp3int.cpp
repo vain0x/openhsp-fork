@@ -1541,6 +1541,15 @@ static void *reffunc_intfunc( int *type_res, int arg )
 		break;
 		}
 
+	case 0x0014:							// memsize
+		{
+		PVal *pval;
+		int size;
+		(void)code_getvptr(&pval, &size);
+		reffunc_intfunc_ivalue = size;
+		break;
+		}
+
 
 	// str function
 	case 0x100:								// str
