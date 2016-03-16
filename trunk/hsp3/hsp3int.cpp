@@ -1676,8 +1676,8 @@ static void *reffunc_intfunc( int *type_res, int arg )
 		{
 		HSPREAL d1,d2,d3;
 		d1 = code_getd();
-		d2 = code_getd();
-		d3 = code_getd();
+		d2 = code_getdd(-INFINITY);
+		d3 = code_getdd(INFINITY);
 		if ( d1 < d2 ) d1 = d2;
 		if ( d1 > d3 ) d1 = d3;
 		reffunc_intfunc_value = d1;
