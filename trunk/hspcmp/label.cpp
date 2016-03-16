@@ -127,6 +127,8 @@ int CLabel::Regist( char *name, int type, int opt, char const *filename, int lin
 	lab->rel = NULL;
 	lab->init = LAB_INIT_NO;
 	lab->typefix = LAB_TYPEFIX_NONE;
+	lab->def_file = NULL;
+	lab->def_line = -1;
 	SetDefinition(label_id, filename, line);
 
 	labels.insert(std::make_pair(lab->name, label_id));

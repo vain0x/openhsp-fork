@@ -285,16 +285,14 @@ STRUCTDAT *Hsp3::copy_STRUCTDAT(HSPHED *hsphed, char *ptr, size_t size)
 		if ((dst->index == STRUCTDAT_INDEX_FUNC) ||
 			(dst->index == STRUCTDAT_INDEX_CFUNC) ||
 			(dst->index == STRUCTDAT_INDEX_STRUCT)) {
-			//	STRUCTのoffset,size値を調整する
+			//	STRUCTPRMのoffset,size値を調整する (各メンバのサイズを2倍にする)
 			int j;
-			STRUCTPRM *prm;
-			prm = &hspctx.mem_minfo[dst->prmindex];
 			dst->size *= 2;
 			for (j = 0; j < dst->prmmax; j++) {
+				STRUCTPRM *prm = &hspctx.mem_minfo[dst->prmindex + j];
 				if (prm->mptype == MPTYPE_STRUCTTAG) continue;
 				//Alertf("INIT: type%d: subid:%d offset:%d", prm->mptype, prm->subid, prm->offset);
 				prm->offset *= 2;
-				prm++;
 			}
 		}
 #endif
