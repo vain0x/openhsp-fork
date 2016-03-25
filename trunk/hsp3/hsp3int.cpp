@@ -1454,6 +1454,7 @@ static void *reffunc_intfunc( int *type_res, int arg )
 		aptr = code_getva( &pval );
 		pdat = HspVarCorePtrAPTR( pval, aptr );
 		reffunc_intfunc_ivalue = (int)(size_t)(pdat);
+		(void)HspVarCoreGetBlockSize(pval, pdat, &ctx->strsize);
 		break;
 		}
 	case 0x00d:								// varuse
